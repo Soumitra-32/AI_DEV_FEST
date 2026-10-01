@@ -1,0 +1,189 @@
+# Shonchoy Copilot: Track 03 Final Plan
+AI DEV FEST 2026 | DIU CPC x upay | Track 03: Customer Innovation & Financial Independence
+
+---
+
+## 1. One-liner
+Bangla-first AI coach that turns confusing upay transactions into plain-language guidance, a realistic savings plan, and a 14-day cash-flow forecast, without upselling anything.
+
+## 2. Problem Statement (official template)
+For cash-dependent, irregular-income upay users, month-end cash shortfalls and repeated avoidable cash-out fees cause missed savings goals, borrowing stress, and lost money every month. We will build Shonchoy Copilot, a Bangla-first AI financial coach that uses transaction history to forecast cash flow, detect avoidable spending, and generate a feasible savings plan, with success measured by (a) taka saved in avoidable fees, (b) shortfall days avoided, (c) savings-goal hit-rate, and (d) forecast MAE vs baseline.
+
+## 3. Idea Development Framework (9-step logic chain)
+
+| # | Step | Our answer |
+|---|------|------------|
+| 1 | User | Cash-dependent wallet user with irregular income (day laborer, small shopkeeper, gig worker, student with family remittance). Persona "Rahim". |
+| 2 | Problem | Runs short before month-end, makes many small cash-outs that carry fees, cannot read transaction history, and has no realistic way to plan a goal. Baseline: simulated avg cash-out share, avg fees paid/month, avg shortfall days/month (measured on the generated dataset). |
+| 3 | Why now | Wallet transaction history is rich but unused for coaching. LLMs can now explain in Bangla, and light ML (LightGBM, IsolationForest) runs cheaply. |
+| 4 | Solution | Next.js Bangla/English app with voice. Flow: transactions explained -> health score -> forecast -> savings plan -> fee-switch suggestion -> tips -> consistency signal. |
+| 5 | AI role | Forecasting (LightGBM), anomaly detection (IsolationForest), classification and scoring (LogisticRegression), optimization (savings feasibility solver), generation (LLM Bangla explanation), retrieval (RAG tips). |
+| 6 | Impact | Fees saved (BDT/month), shortfall days avoided, goal hit-rate, % of users with a feasible plan. |
+| 7 | Data | Fully synthetic: 500 users x 6 months (Faker/Pandas). No real data or PII. |
+| 8 | Validation | Offline: MAE vs baselines, anomaly precision/recall vs fixed rule, AUC on a held-out set. Simulation: backtest the plan (plan on months 1-4, test on months 5-6). |
+| 9 | Scale | Same API contracts accept real upay data. See Section 14. |
+
+## 4. Why AI and not just rules (product-readiness check)
+
+| Component | Simple rule baseline | AI approach | Evidence we will show |
+|-----------|----------------------|-------------|-----------------------|
+| Cash-flow forecast | 7-day seasonal naive (same weekday last week) and trailing average | LightGBM with calendar, lag, rolling, and persona features | MAE/RMSE comparison on held-out users, target 15% or more improvement over best baseline |
+| Anomalies | Fixed threshold (amount > X) | IsolationForest on per-user behavior features | Precision/recall on injected anomalies. Rule misses user-relative anomalies (a small amount can be abnormal for a low-spend user) |
+| Credit readiness signal | Hand-weighted score | LogisticRegression with SHAP | AUC on held-out set plus top-3 reasons per user |
+| Savings plan | Goal / months | Constraint solver on the forecasted surplus (not just average income) | Show where the naive plan fails during pressure days and the solver's plan survives |
+| Tips | Static list | Behavior-triggered RAG | Same user gets different tips based on their flags |
+
+Rule: math and decisions live in Python rules or models. The LLM only verbalizes structured JSON and never invents numbers.
+
+## 5. Features and Opportunity Coverage
+
+1. **Health Coach:** score 0-100 from cash dependency %, savings rate, fee burden, and balance volatility. The LLM writes a Bangla summary from the structured metrics.
+2. **Savings Planner:** goal + months -> feasible monthly amount from forecasted surplus -> trade-off options (extend time, lower target, cut a category) -> do-nothing option.
+3. **Spending Companion:** IsolationForest anomalies plus avoidable-fee detection, with a suggested reduce/delay/switch action.
+4. **Cash-Flow Forecasting:** LightGBM 14-day inflow/outflow, pressure days (typically 28-31), explained by top drivers.
+5. **Goal Copilot:** templates for education, emergency fund, travel, device, family.
+6. **Inclusive Assistant (core):** Bangla/English toggle, voice input (Web Speech API, bn-BD), large simple UI, suggestion chips as a text fallback.
+7. **Literacy Personalizer:** RAG over 30 curated tips, triggered by behavior flags (for example "frequent small cash-outs" -> fee tip). Each tip shows why it was chosen.
+8. **Financial Consistency Signal** (renamed from credit score): see the next section.
+
+### Financial Consistency Signal (replaces "credit score")
+- Not a credit score and not a lending decision. Educational only.
+- Output: a band (Building / Steady / Strong) with top-3 SHAP factors and "what could improve it" in plain Bangla.
+- Banner on every view: "This is not a loan eligibility decision. upay and lenders make no automatic decision from this."
+- No "+15 pts" language. Use "moving from Building toward Steady if you do X."
+- Label creation (anti-circularity): the synthetic outcome ("kept stable balance and met obligations next 2 months") is generated from a latent stability variable plus noise and random shocks. It is not computed from the same formula as the features. Report AUC on held-out users, and state that this is a demo of the method, not a validated risk model.
+
+## 6. Empowerment Guardrails
+- No upsell, no loan push, no "buy now". Suggestions are reduce, delay, or switch only.
+- Every card shows **Prediction / Assumption / Explanation** separately, plus a **"Do nothing"** option and the cost of doing nothing.
+- Human confirmation is required for any action. Nothing is autonomous, and there is no approve/deny anywhere.
+- Banned-output filter: blocks loan offers, urgency language ("hurry", "limited time"), guaranteed-return claims, and product promotion.
+- Security:
+  - Prompt-injection defense: the LLM receives only structured JSON context, never raw user text as instructions. User text is classified into whitelisted intents, and system and user prompts are separated.
+  - Access control: user_id comes from the demo auth token, not the request body, so one user cannot query another.
+  - Input validation (Pydantic), rate limiting, and logs with no PII.
+  - LLM fallback: if the API fails, use template-based Bangla explanations so the demo never breaks.
+- Fairness: report metric gaps across persona, district, and income band (see Section 10).
+
+## 7. Synthetic Data Strategy (DATA_ASSUMPTIONS.md content)
+
+**Scale:** 500 users x 6 months, SQLite.
+
+**Schema (transactions):** user_id, persona, district, income_band, timestamp, type, channel, category, amount_bdt, fee_bdt, balance_after.
+**Users table:** user_id, persona, district, income_band, age_band, language_pref.
+
+**Personas (document each):**
+- Daily wage earner (irregular daily income)
+- Small shopkeeper (merchant-heavy inflows, weekend peaks)
+- Salaried worker (income at month start or end)
+- Student (family remittance, low spend)
+- Gig/rider (weekly payouts)
+- Remittance receiver (periodic large inflows)
+
+**Documented assumptions (edit values to match what you decide):**
+- Income patterns per persona (frequency, mean, variance)
+- Month-end pressure: outflow rises in the last 4 days for selected personas, but only some users are affected and with random strength (not all 500)
+- Cash-out fee rate: assumed rate in the generator config (for example 1.85%, labeled "assumed for simulation, not official upay pricing")
+- Digital alternative (app transfer / merchant payment) fee: assumed 0% or lower, labeled as an assumption
+- Injected anomalies: about 2-3% of transactions, in 3 types (unusually large, unusual time, rapid repeats), with ground-truth labels stored separately
+- Noise: random missing days, irregular timing, overlapping persona behavior
+- Districts: 8-10 districts with different persona mixes
+- Everything is synthetic and Faker-generated. No real PII.
+
+**Anti-circularity protocol:**
+1. Split by user (not by row): 70% train / 15% validation / 15% test. The test set is never touched during tuning.
+2. Use different random seeds for the train and test generators.
+3. Add noise and persona overlap so patterns are not perfectly separable.
+4. Report honest metrics, including cases where the model is weak.
+5. State clearly in README and report that patterns are injected, and that the real test is controlled validation with real data.
+
+**Demo-number consistency:** the fee-saving figure must follow from the generator's fee rate. At an assumed 1.85% rate, saving about ৳320/month requires roughly ৳17,000 of monthly cash-outs. So Rahim's demo profile is **5 cash-outs averaging ৳3,500 per month**, not 4 x ৳500 (that would save only about ৳37). Set the Rahim profile in the generator accordingly and have the app compute the number live.
+
+## 8. Architecture (INPUT -> INTELLIGENCE -> ACTION)
+
+- **Data layer:** data/generator.py -> SQLite -> feature pipeline (separate from inference)
+- **ML layer:** LightGBM forecaster, IsolationForest anomaly detector, LogisticRegression consistency signal
+- **Rules layer:** savings solver, fee-switch calculator, pressure-day logic, banned-output filter
+- **GenAI layer:** LLM + JSON tip-bank RAG, Bangla/English, structured-input only
+- **API (FastAPI):**
+  - GET /health
+  - POST /forecast
+  - POST /savings-plan
+  - POST /anomalies
+  - POST /credit-readiness (returns band, not score)
+  - POST /chat-explain
+  - GET /metrics
+- **Frontend:** Next.js + Recharts + voice, with a language toggle
+- **Monitoring:** /metrics page with MAE vs baselines, anomaly precision/recall, SHAP plot, fairness table, and request logs (no PII)
+- **Feedback loop:** a user "was this helpful?" button logs to the metrics store, closing the INPUT -> ACTION -> outcome loop
+- **Feature flags:** each module can be switched on or off by environment variable, so on-site updates are quick
+
+**Savings solver logic (rule-based, explainable):**
+monthly_feasible = forecasted_surplus - safety_buffer (the buffer covers the forecast's pressure-day dip). If goal/months > feasible, show 3 trade-offs: extend the timeline, reduce the target, or cut named avoidable spending. Always include a do-nothing outcome.
+
+## 9. Explainability Coverage
+
+| Output | Explanation method |
+|--------|--------------------|
+| Forecast | Top drivers (lag/rolling/calendar features) via LightGBM feature importance or SHAP, shown as "why pressure on day 29" |
+| Anomaly | Which feature deviated from the user's own norm (rule trace) |
+| Consistency signal | SHAP top-3 factors |
+| Savings plan | Rule trace: surplus, buffer, and the arithmetic shown step by step |
+| Tips | The behavior flag that triggered the tip |
+
+## 10. Responsible AI Checklist (maps to Guideline Section 14)
+
+| Principle | What we do |
+|-----------|------------|
+| Privacy | Synthetic data only, no PII, no real logs |
+| Explainability | Section 9 |
+| Fairness | Compute MAE gap (forecast), flag-rate gap (anomaly), and band-distribution gap (consistency signal) across persona, district, and income band. Target: no group worse than 15% relative gap, and publish the table. If a gap exists, state it and the mitigation. |
+| Security | Prompt-injection block, access control, validation, rate limits |
+| Human oversight | User confirms every action. No auto-decisions. Consistency signal is educational. |
+| Transparency | Prediction / Assumption / Explanation separated on every card |
+| No harmful automation | No lending, approve/deny, or auto-transfer |
+
+## 11. Impact Measurement
+- **Fee savings (BDT/month):** the average across simulated users who follow the fee-switch suggestion, computed with the documented fee rates. Report the potential saving and an assumed adoption range, for example 20-50% (an assumption, not a measured result).
+- **Shortfall days avoided:** the plan's timing advice vs baseline on the test set.
+- **Goal hit-rate backtest:** plan on months 1-4, then check whether the plan would have been feasible in months 5-6. Compare the AI plan with the naive goal/months plan.
+- **Model metrics:** forecast MAE vs baselines, anomaly precision/recall, signal AUC.
+- **Future experiment (stated in the report):** an A/B pilot with real users, measuring fees paid and savings balance for treated vs control.
+
+## 12. Demo Story (3 minutes)
+1. Rahim says (by voice, in Bangla): "৬ মাসে ৳৩০,০০০ জমাতে চাই।"
+2. The app shows a ৳5,000/month plan, marked feasible, with a visible Prediction / Assumption / Explanation and trade-offs.
+3. The forecast warns of pressure on days 28-31 and shows why.
+4. The Spending Companion flags 5 cash-outs averaging ৳3,500, shows the fee paid, and says that switching to app transfer saves about ৳320/month (computed live).
+5. Two behavior-triggered tips appear, each with its trigger shown.
+6. The Consistency Signal shows "Building -> Steady" with 3 reasons and the "not a lending decision" banner.
+7. The user taps "Do nothing" to see the cost of inaction, then confirms or dismisses.
+8. Show the /metrics page: MAE vs baselines, SHAP, fairness table.
+
+## 13. Scope Priority (protect the demo)
+- **P0 (must ship):** generator, forecast, savings plan, Rahim flow, Bangla UI, explain endpoint, deployed live URL, README.
+- **P1:** anomaly detection + fee switch, voice input, health score, metrics page.
+- **P2:** RAG tips (start with 15 tips, grow to 30), goal templates, fairness table polish.
+- **P3 (cut first):** consistency signal. If cut, keep the SHAP demo on the forecast instead.
+- Cut order: P3 -> goal templates -> RAG polish -> extra charts.
+- Voice: Web Speech API Bangla support depends on browser and internet, so always keep the text input and suggestion chips. Test on Chrome and Android before the demo.
+
+## 14. Future-Ready and Scale Plan (framework step 9)
+- **Path:** Competition -> Technical review -> Business review -> Controlled validation -> POC -> Pilot -> Decision.
+- **Data mapping:** real upay transaction fields map to our schema through an adapter, and the endpoints stay the same.
+- **Governance with real data:** consent, anonymization or aggregation, data minimization, role-based access, audit logs.
+- **Model operations:** retrain on real data, monitor drift (MAE trend, feature distribution), re-run fairness checks before any release, version models.
+- **Integration:** FastAPI services plug into the app backend. The LLM layer can be swapped for a bank-approved provider.
+- **Business case to state:** better engagement and trust, lower support load on "what is this transaction", and a foundation for responsible financial products. We do not claim revenue from upsell.
+
+## 15. 72-Hour Execution (2-3 members)
+
+**Roles:** (A) data and ML, (B) backend and LLM/RAG, (C) frontend and demo. With 2 people, B also covers part of C.
+
+- **Day 1:** public repo from T+0, generator + DATA_ASSUMPTIONS.md, SQLite, API schemas, Next shell, baselines. Commits: feat(data), feat(api): schemas, feat(baseline)
+- **Day 2:** train forecast, anomaly, and signal models, savings solver, /chat-explain with banned-output filter and template fallback. One commit per model.
+- **Day 3:** Bangla UI + voice + charts, metrics/fairness page, README, deploy (Vercel + Render), video, report. Freeze the demo flow by hour 60.
+- **Git:** step-by-step commits, no single upload.
+- **Rehearse the demo at least twice** and keep a recorded backup video.
+
+## 16. Repo Structure
