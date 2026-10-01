@@ -4,31 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import DoNothingToggle from "@/components/DoNothingToggle";
 import InsightCard from "@/components/InsightCard";
-import LangToggle, { useLanguage } from "@/components/LangToggle";
+import TopBar from "@/components/TopBar";
+import { useLanguage } from "@/components/LangToggle";
 import { fetchHealth, fetchIdentity } from "@/lib/api";
 import type { HealthResponse, IdentityResponse } from "@/lib/api";
 import { formatInteger } from "@/lib/i18n";
 
 type Status = "checking" | "ok" | "unreachable";
-
-function TopBar() {
-  const { tr } = useLanguage();
-  return (
-    <header className="topbar">
-      <strong>{tr("appName")}</strong>
-      <nav>
-        <Link href="/">{tr("nav.home")}</Link>
-        <Link href="/plan">{tr("nav.plan")}</Link>
-        <Link href="/forecast">{tr("nav.forecast")}</Link>
-        <Link href="/spending">{tr("nav.spending")}</Link>
-        <Link href="/tips">{tr("nav.tips")}</Link>
-        <Link href="/signal">{tr("nav.signal")}</Link>
-        <Link href="/metrics">{tr("nav.metrics")}</Link>
-      </nav>
-      <LangToggle />
-    </header>
-  );
-}
 
 function StatusCard() {
   const { lang, tr } = useLanguage();
@@ -139,7 +121,13 @@ export default function HomePage() {
         <InsightCard title={tr("home.next.title")}>
           <p>{tr("home.next.body")}</p>
         </InsightCard>
-        <ComingSoon phaseKey="comingSoon.phase3" href="/plan" />
+        <InsightCard title={tr("plan.title")}>
+          <p>{tr("plan.subtitle")}</p>
+          <p>
+            <Link href="/plan">{tr("nav.plan")}</Link> ·{" "}
+            <Link href="/forecast">{tr("nav.forecast")}</Link>
+          </p>
+        </InsightCard>
         <ComingSoon phaseKey="comingSoon.phase5" href="/spending" />
         <ComingSoon phaseKey="comingSoon.phase7" href="/tips" />
         <ComingSoon phaseKey="comingSoon.phase8" href="/metrics" />

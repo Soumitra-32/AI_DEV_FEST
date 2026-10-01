@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Settings, get_settings
-from .routers import health
+from .routers import forecast, health, savings_plan
 
 
 def create_app(settings: Optional[Settings] = None) -> FastAPI:
@@ -35,6 +35,8 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(health.router)
+    app.include_router(forecast.router)
+    app.include_router(savings_plan.router)
 
     @app.get("/", include_in_schema=False)
     def root() -> Dict[str, str]:

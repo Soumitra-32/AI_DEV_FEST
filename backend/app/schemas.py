@@ -106,6 +106,9 @@ class DayForecast(BaseModel):
     predicted_inflow_bdt: float
     predicted_outflow_bdt: float
     predicted_net_bdt: float
+    predicted_balance_bdt: Optional[float] = Field(
+        default=None, description="Expected wallet balance at the end of the day"
+    )
     is_pressure_day: bool = False
     pressure_reason: Optional[str] = None
 
@@ -132,6 +135,9 @@ class ForecastResponse(BaseModel):
     user_id: str
     horizon_days: int
     generated_at: datetime
+    generated_from: Optional[date] = Field(
+        default=None, description="Last day of real history the forecast was made from"
+    )
     days: List[DayForecast] = Field(default_factory=list)
     pressure_days: List[date] = Field(default_factory=list)
     drivers: List[Driver] = Field(default_factory=list)
@@ -178,6 +184,9 @@ class SavingsPlanResponse(BaseModel):
     )
     trade_offs: List[TradeOffOption] = Field(default_factory=list)
     do_nothing: DoNothingOutcome
+    pressure_days: List[date] = Field(
+        default_factory=list, description="Days the plan has to survive (from the forecast)"
+    )
     provenance: Provenance
 
 

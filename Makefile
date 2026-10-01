@@ -9,8 +9,8 @@ data:            ## Generate synthetic dataset (Phase 1)
 seed:            ## Seed the demo user "Rahim" (Phase 1)
 	python backend/scripts/seed_demo_user.py
 
-train:           ## Train all models (Phase 3+)
-	@echo "TODO(phase 3): python backend/scripts/train_all.py"
+train:           ## Train all models and write ml/artifacts/metrics.json
+	python backend/scripts/train_all.py
 
 test:            ## Run backend tests
 	python -m pytest backend/tests -q

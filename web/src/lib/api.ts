@@ -41,6 +41,85 @@ export interface Provenance {
   source: "rule" | "model" | "template" | "llm";
 }
 
+/** POST /forecast */
+export interface ForecastRequest {
+  horizon_days?: number;
+  include_pressure_days?: boolean;
+}
+
+export type PressureReason = "negative_net" | "below_buffer" | "both";
+
+export interface DayForecast {
+  date: string;
+  predicted_inflow_bdt: number;
+  predicted_outflow_bdt: number;
+  predicted_net_bdt: number;
+  predicted_balance_bdt: number | null;
+  is_pressure_day: boolean;
+  pressure_reason: PressureReason | null;
+}
+
+export interface ForecastMetrics {
+  model_name: string;
+  mae_bdt: number;
+  rmse_bdt: number;
+  baseline_name: string;
+  baseline_mae_bdt: number;
+  improvement_pct: number;
+}
+
+export interface ForecastResponse {
+  user_id: string;
+  horizon_days: number;
+  generated_at: string;
+  generated_from: string | null;
+  days: DayForecast[];
+  pressure_days: string[];
+  metrics: ForecastMetrics | null;
+  provenance: Provenance;
+}
+
+/** POST /savings-plan */
+export interface SavingsPlanRequest {
+  goal_bdt: number;
+  months: number;
+  goal_label?: string | null;
+}
+
+export type TradeOffAction = "reduce" | "delay" | "switch" | "do_nothing";
+
+export interface TradeOffOption {
+  action: TradeOffAction;
+  title: string;
+  description: string;
+  months: number | null;
+  target_bdt: number | null;
+  monthly_amount_bdt: number | null;
+  monthly_effect_bdt: number | null;
+}
+
+export interface DoNothingOutcome {
+  description: string;
+  estimated_cost_bdt: number;
+  horizon_months: number;
+}
+
+export interface SavingsPlanResponse {
+  user_id: string;
+  goal_bdt: number;
+  months: number;
+  feasible: boolean;
+  required_monthly_bdt: number;
+  forecasted_surplus_bdt: number;
+  safety_buffer_bdt: number;
+  feasible_monthly_bdt: number;
+  arithmetic: string[];
+  trade_offs: TradeOffOption[];
+  do_nothing: DoNothingOutcome;
+  pressure_days: string[];
+  provenance: Provenance;
+}
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -67,4 +146,22 @@ export function fetchHealth(): Promise<HealthResponse> {
 
 export function fetchIdentity(): Promise<IdentityResponse> {
   return request<IdentityResponse>("/me");
+}
+/** POST /forecast — the 14-day cash-flow forecast plus pressure days. */
+export function fetchForecast(body: ForecastRequest = {}): Promise<ForecastResponse> {
+  return request<ForecastResponse>("/forecast", {
+    method: "POST",
+    body: JSON.stringify({
+      horizon_days: body.horizon_days ?? 14,
+      include_pressure_days: body.include_pressure_days ?? true,
+    }),
+  });
+}
+
+/** POST /savings-plan — feasibility, trade-offs and the do-nothing cost. */
+export function fetchSavingsPlan(body: SavingsPlanRequest): Promise<SavingsPlanResponse> {
+  return request<SavingsPlanResponse>("/savings-plan", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
