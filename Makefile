@@ -16,10 +16,10 @@ test:            ## Run backend tests
 	python -m pytest backend/tests -q
 
 api:             ## Start FastAPI server (Phase 2)
-	@echo "TODO(phase 2): uvicorn app.main:app --reload"
+	python -m uvicorn backend.app.main:app --reload --port 8000
 
 web:             ## Start Next.js dev server (Phase 2)
-	@echo "TODO(phase 2): cd web && npm run dev"
+	cd web && npm run dev
 
 deploy:          ## Deploy (Vercel + Render) (Phase 9)
 	@echo "TODO(phase 9): deploy steps"
