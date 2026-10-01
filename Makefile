@@ -4,16 +4,16 @@
 .PHONY: data seed train test api web deploy clean
 
 data:            ## Generate synthetic dataset (Phase 1)
-	@echo "TODO(phase 1): python backend/scripts/generate_data.py"
+	python backend/scripts/generate_data.py
 
 seed:            ## Seed the demo user "Rahim" (Phase 1)
-	@echo "TODO(phase 1): python backend/scripts/seed_demo_user.py"
+	python backend/scripts/seed_demo_user.py
 
 train:           ## Train all models (Phase 3+)
 	@echo "TODO(phase 3): python backend/scripts/train_all.py"
 
 test:            ## Run backend tests
-	@echo "TODO(phase 1): pytest backend/tests"
+	python -m pytest backend/tests -q
 
 api:             ## Start FastAPI server (Phase 2)
 	@echo "TODO(phase 2): uvicorn app.main:app --reload"
