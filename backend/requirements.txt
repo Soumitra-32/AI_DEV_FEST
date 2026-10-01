@@ -1,0 +1,26 @@
+# Web framework
+fastapi>=0.115
+uvicorn[standard]>=0.30
+
+# Validation / config
+pydantic>=2.7
+pydantic-settings>=2.2
+PyYAML>=6.0
+
+# Data & ML (per plan.txt)
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.4
+lightgbm>=4.3
+shap>=0.45
+
+# Synthetic data
+Faker>=25.0
+
+# LLM + HTTP (Phase 4)
+openai>=1.30
+httpx>=0.27
+
+# Tests
+pytest>=8.0
+
