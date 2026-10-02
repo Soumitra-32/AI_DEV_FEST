@@ -1,4 +1,4 @@
-"""Tests for the consistency signal (Phase 7).
+﻿"""Tests for the consistency signal (Phase 7).
 
 Three things are worth proving here, and the third is the one that matters:
 
@@ -162,9 +162,122 @@ def test_the_rule_band_moves_with_the_numbers() -> None:
     assert signal.rule_band(strong)[0] == "Strong"
 
 
+# --- the SHAP explanation --------------------------------------------------
+def test_shap_contributions_reconstruct_the_log_odds(trained: Path) -> None:
+    """The audit property: base + every contribution == the model's log-odds.
+
+    This is the test that would catch a wrong SHAP implementation. A plausible
+    mistake -- adding the intercept to each feature, or summing against the wrong
+    reference -- still produces plausible-looking per-feature numbers, but the sum
+    no longer reconstructs the score. Checking the arithmetic pins the semantics.
+    """
+    model, scaler = signal.load(trained)
+    rows = _user_rows()
+    one = rows.loc[rows["user_id"].eq("rahim")]
+
+    explanation = signal.shap_explanation(model, scaler, one.iloc[0])
+    total = explanation["base_value"] + sum(
+        item["contribution"] for item in explanation["features"]
+    )
+    assert total == pytest.approx(explanation["log_odds"], abs=0.05)
+
+    # The cross-check that matters: the same number the model itself produces.
+    probability = float(model.predict_proba(scaler.transform(signal.build_matrix(one)))[0, 1])
+    assert probability == pytest.approx(
+        1.0 / (1.0 + pow(2.718281828459045, -explanation["log_odds"])), abs=1e-3
+    )
+
+
+def test_shap_explanation_covers_every_feature_and_ranks_by_size(trained: Path) -> None:
+    model, scaler = signal.load(trained)
+    explanation = signal.shap_explanation(model, scaler, _user_rows().iloc[0])
+
+    features = explanation["features"]
+    # Every model input is explained, in magnitude order rather than column order.
+    assert {item["feature"] for item in features} == set(signal.FEATURE_COLUMNS)
+    assert [item["rank"] for item in features] == list(range(1, len(features) + 1))
+    magnitudes = [abs(item["contribution"]) for item in features]
+    assert magnitudes == sorted(magnitudes, reverse=True)
+    assert explanation["method"] == signal.SHAP_METHOD
+    assert set(explanation["band_cutoffs"]) == {"Building", "Steady"}
+
+
+def test_shap_factors_agree_with_the_explanation(trained: Path) -> None:
+    """The card's top-3 and the audit list are one derivation, not two."""
+    model, scaler = signal.load(trained)
+    row = _user_rows().iloc[0]
+    factors = signal.shap_factors(model, scaler, row, top_k=3)
+    explanation = signal.shap_explanation(model, scaler, row)
+
+    assert [factor["feature"] for factor in factors] == [
+        item["feature"] for item in explanation["features"][:3]
+    ]
+    for factor, item in zip(factors, explanation["features"][:3]):
+        assert factor["direction"] == item["direction"]
+        assert factor["magnitude"] == pytest.approx(abs(item["contribution"]), abs=1e-3)
+
+
+def test_shap_importance_is_ranked_and_never_raises(trained: Path, tmp_path: Path) -> None:
+    rows = _user_rows()
+    importance = signal.shap_importance(rows, trained)
+    assert importance is not None
+    assert importance["rows"] == len(rows)
+    assert {item["feature"] for item in importance["features"]} == set(signal.FEATURE_COLUMNS)
+    totals = [item["mean_abs_contribution"] for item in importance["features"]]
+    assert totals == sorted(totals, reverse=True)
+    assert importance["total_mean_abs"] > 0
+    assert importance["method"] == signal.SHAP_METHOD
+    for item in importance["features"]:
+        assert item["direction"] in ("improves", "weakens")
+    assert signal.shap_importance(rows, tmp_path / "empty") is None
+
+
+def test_the_endpoint_returns_the_shap_block(client: TestClient) -> None:
+    body = client.post("/credit-readiness", headers={"X-Demo-Token": TOKEN}).json()
+    shap = body["shap"]
+    assert shap is not None, "the model path must expose its exact contributions"
+    assert shap["method"]
+    assert isinstance(shap["base_value"], float)
+    total = shap["base_value"] + sum(item["contribution"] for item in shap["features"])
+    assert total == pytest.approx(shap["log_odds"], abs=0.05)
+    for item in shap["features"]:
+        assert item["direction"] in ("improves", "weakens")
+        assert item["rank"] >= 1
+    ConsistencySignalResponse.model_validate(body)
+
+
+def test_the_shap_block_is_null_on_the_rule_path(tmp_path: Path) -> None:
+    """No artifact means no SHAP values -- and an empty list would be a lie.
+
+    ``factors: []`` reads as "nothing moved this user"; ``shap: null`` reads as
+    "nothing was explained", which is what actually happened.
+    """
+    payload = signal_service.build_signal(
+        "rahim", db_path=None, artifact_dir=tmp_path / "no_artifact"
+    )
+    assert payload["provenance"]["source"] == "rule"
+    assert payload["shap"] is None
+
+
+# --- the route contract ----------------------------------------------------
+def test_the_frontend_path_is_credit_readiness(client: TestClient) -> None:
+    """``web/src/lib/api.ts`` posts here, and posts an empty JSON body."""
+    response = client.post("/credit-readiness", json={}, headers={"X-Demo-Token": TOKEN})
+    assert response.status_code == 200
+    body = response.json()
+    for field in ("user_id", "band", "factors", "improvements", "not_a_decision",
+                  "banner_en", "banner_bn", "auc", "provenance"):
+        assert field in body, f"the frontend contract requires {field}"
+
+
+def test_the_old_signal_path_is_gone(client: TestClient) -> None:
+    """One route, one path: an alias is how two cards start to disagree."""
+    assert client.post("/signal", headers={"X-Demo-Token": TOKEN}).status_code == 404
+
+
 # --- the response is never a decision -------------------------------------
 def test_response_carries_no_probability(client: TestClient) -> None:
-    body = client.post("/signal", headers={"X-Demo-Token": TOKEN}).json()
+    body = client.post("/credit-readiness", headers={"X-Demo-Token": TOKEN}).json()
     # The probability picks the band and is then dropped; nothing that could be
     # quoted as a credit score may appear in the payload.
     assert "probability" not in body
@@ -174,14 +287,14 @@ def test_response_carries_no_probability(client: TestClient) -> None:
 
 
 def test_response_is_pinned_to_not_a_decision(client: TestClient) -> None:
-    body = client.post("/signal", headers={"X-Demo-Token": TOKEN}).json()
+    body = client.post("/credit-readiness", headers={"X-Demo-Token": TOKEN}).json()
     assert body["not_a_decision"] is True
     assert body["banner_en"]
     assert body["banner_bn"]
 
 
 def test_response_validates_against_the_frozen_schema(client: TestClient) -> None:
-    response = client.post("/signal", headers={"X-Demo-Token": TOKEN})
+    response = client.post("/credit-readiness", headers={"X-Demo-Token": TOKEN})
     assert response.status_code == 200
     ConsistencySignalResponse.model_validate(response.json())
 
@@ -189,22 +302,22 @@ def test_response_validates_against_the_frozen_schema(client: TestClient) -> Non
 def test_factors_carry_plain_language_in_both_scripts(client: TestClient) -> None:
     for language in ("bn", "en"):
         body = client.post(
-            "/signal", headers={"X-Demo-Token": TOKEN}, params={"language": language}
+            "/credit-readiness", headers={"X-Demo-Token": TOKEN}, params={"language": language}
         ).json()
         for factor in body["factors"]:
             assert factor["plain_language"].strip()
 
 
 def test_endpoint_requires_a_token(client: TestClient) -> None:
-    assert client.post("/signal").status_code == 401
-    assert client.post("/signal", headers={"X-Demo-Token": "wrong"}).status_code == 403
+    assert client.post("/credit-readiness").status_code == 401
+    assert client.post("/credit-readiness", headers={"X-Demo-Token": "wrong"}).status_code == 403
 
 
 def test_feature_flag_switches_the_signal_off() -> None:
     settings = Settings(demo_auth_token=TOKEN, feature_signal=False)
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
-    response = TestClient(app).post("/signal", headers={"X-Demo-Token": TOKEN})
+    response = TestClient(app).post("/credit-readiness", headers={"X-Demo-Token": TOKEN})
     assert response.status_code == 503
 
 
@@ -212,5 +325,5 @@ def test_unknown_user_is_a_404_not_an_empty_band() -> None:
     settings = Settings(demo_auth_token=TOKEN, demo_user_id="nobody")
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
-    response = TestClient(app).post("/signal", headers={"X-Demo-Token": TOKEN})
+    response = TestClient(app).post("/credit-readiness", headers={"X-Demo-Token": TOKEN})
     assert response.status_code == 404

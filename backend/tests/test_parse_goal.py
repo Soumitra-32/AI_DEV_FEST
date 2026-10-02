@@ -46,9 +46,14 @@ def test_parse_goal_rejects_empty_message(client: TestClient) -> None:
 def test_metrics_serves_model_scoreboard() -> None:
     from fastapi.testclient import TestClient
 
+    from backend.app.config import get_settings
     from backend.app.main import create_app
 
-    response = TestClient(create_app()).get("/metrics")
+    # /metrics follows the demo-token convention like every other app router.
+    token = get_settings().demo_auth_token
+    response = TestClient(create_app()).get(
+        "/metrics", headers={"X-Demo-Token": token}
+    )
     assert response.status_code == 200
     body = response.json()
     assert {"forecast", "anomaly", "signal", "fairness", "notes"} <= set(body)

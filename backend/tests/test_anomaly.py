@@ -7,8 +7,12 @@ Three layers are pinned here:
   low-spend user (the plan's stated gap between rule and model);
 * the **IsolationForest** — per-user behaviour features, train/predict round trip,
   and the ``None``-instead-of-raising degradation when no artifact exists;
-* the **service and the endpoint** — ranking + fee switch shaped into the frozen
-  ``/anomalies`` contract, with the token deciding whose data is read.
+* the **measured claim** — :func:`anomaly.evaluate` scoring the forest and the
+  rule on the same held-out rows, so "the model beats the rule" is pinned as
+  numbers rather than prose;
+* the **service** — which engine actually ranked, surfaced in
+  ``provenance.source`` *and* in the assumption text, so the rule fallback can
+  never quietly claim per-user behaviour.
 """
 from __future__ import annotations
 
@@ -16,6 +20,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from backend.app.services import anomaly_service
 from backend.data import features as user_features
 from backend.data import generator, split as split_module
 from backend.ml import anomaly, baselines
@@ -109,3 +114,144 @@ def test_the_baseline_score_is_amount_over_the_threshold(transactions: pd.DataFr
     scores = baselines.fixed_threshold_scores(transactions, threshold=threshold)
     expected = transactions["amount_bdt"].astype(float) / threshold
     assert np.allclose(scores.to_numpy(), expected.to_numpy())
+
+
+# ---------------------------------------------------------------------------
+# the IsolationForest itself: artifact, round trip, and ``None`` degradation
+# ---------------------------------------------------------------------------
+def test_train_writes_the_artifact_and_predict_round_trips(
+    trained_artifact: str, features: pd.DataFrame
+) -> None:
+    loaded = anomaly.load(trained_artifact)
+    assert loaded is not None
+
+    meta = anomaly.load_meta(trained_artifact)
+    assert meta["model_name"] == anomaly.MODEL_NAME
+    assert meta["features"] == anomaly.FEATURE_COLUMNS
+    assert meta["contamination"] > 0
+    assert meta["n_train_transactions"] > 0
+
+    scores = anomaly.predict(features, trained_artifact)
+    assert scores is not None
+    assert scores.source == "model"
+    assert len(scores.frame) == len(features)
+    assert scores.frame["anomaly_score"].notna().all()
+    # higher score = odder, which is what the API's AnomalyItem.score documents
+    assert scores.frame["anomaly_score"].min() < scores.frame["anomaly_score"].max()
+    assert scores.threshold == pytest.approx(anomaly.load(trained_artifact).offset_)
+
+
+def test_predict_returns_none_when_the_artifact_is_missing(tmp_path) -> None:
+    """Degrade, never raise: a missing artifact must not become a 500."""
+    empty = tmp_path / "no_artifacts_here"
+    assert anomaly.load(empty) is None
+    assert anomaly.load_meta(empty) == {}
+    assert anomaly.predict(pd.DataFrame(), empty) is None
+
+
+def test_train_uses_train_users_only(trained_artifact: str, small_db, features) -> None:
+    """The fit must not see val/test, and never the demo user."""
+    splits = split_module.load_splits(small_db)
+    train_users = set(splits.loc[splits["split"].eq("train"), "user_id"])
+    expected = int(features["user_id"].isin(train_users).sum())
+    assert anomaly.load_meta(trained_artifact)["n_train_transactions"] == expected
+
+
+# ---------------------------------------------------------------------------
+# the measured claim: model vs the rule, on the same held-out rows
+# ---------------------------------------------------------------------------
+def test_evaluate_scores_model_against_the_rule_on_the_same_rows(
+    trained_artifact: str, small_db, features: pd.DataFrame, transactions: pd.DataFrame
+) -> None:
+    labels = user_features.load_anomaly_labels(small_db)
+    splits = split_module.load_splits(small_db)
+    report = anomaly.evaluate(
+        features,
+        transactions,
+        labels,
+        splits,
+        generator.load_config(),
+        artifact_dir=trained_artifact,
+    )
+
+    assert report["model_name"] == anomaly.MODEL_NAME
+    assert report["baseline_name"] == baselines.ANOMALY_BASELINE_NAME
+    assert report["n_anomalies"] > 0
+    assert report["n_test_transactions"] > report["n_anomalies"]
+
+    for side in ("model", "baseline"):
+        for metric in ("precision", "recall", "f1"):
+            assert 0.0 <= report[side][metric] <= 100.0
+        assert report[side]["auc"] is None or 0.0 <= report[side]["auc"] <= 1.0
+
+    # The forest ranks better than one absolute cutoff even though the rule wins
+    # raw recall: it gets there by flagging far fewer rows. Pin the direction of
+    # each measured difference so a regression in either half is caught.
+    assert report["model"]["auc"] > report["baseline"]["auc"]
+    assert report["model"]["f1"] > report["baseline"]["f1"]
+    assert report["model"]["precision"] > report["baseline"]["precision"]
+    assert report["improvement_f1_pct"] > 0
+    assert report["improvement_auc_pct"] > 0
+
+    # The rule's specific blind spot: one absolute cutoff cannot see an
+    # unusual_time injection, because those rows keep a normal-sized amount.
+    by_type = report["by_type"]
+    assert by_type
+    for kind, row in by_type.items():
+        assert row["count"] > 0
+        assert 0.0 <= row["model_recall"] <= 100.0
+        assert 0.0 <= row["baseline_recall"] <= 100.0
+    if "unusual_time" in by_type:
+        assert by_type["unusual_time"]["baseline_recall"] < by_type["unusual_time"]["model_recall"]
+
+
+def test_evaluate_refuses_to_score_without_labels_or_artifact(
+    trained_artifact: str, tmp_path, small_db, features: pd.DataFrame, transactions: pd.DataFrame
+) -> None:
+    splits = split_module.load_splits(small_db)
+    labels = user_features.load_anomaly_labels(small_db)
+
+    with pytest.raises(ValueError, match="no anomaly labels"):
+        anomaly.evaluate(features, transactions, labels.iloc[0:0], splits, None, trained_artifact)
+
+    with pytest.raises(ValueError, match="no anomaly artifact"):
+        anomaly.evaluate(
+            features, transactions, labels, splits, None, tmp_path / "empty_dir"
+        )
+
+
+# ---------------------------------------------------------------------------
+# the service: which engine actually answered must be visible, not implied
+# ---------------------------------------------------------------------------
+def test_the_service_reports_the_model_when_the_forest_is_trained(
+    small_db, trained_artifact: str
+) -> None:
+    payload = anomaly_service.build_anomalies(
+        DEMO_USER, db_path=small_db, artifact_dir=trained_artifact
+    )
+    assert payload["source"] == "model"
+    assert payload["provenance"]["source"] == "model"
+    # the per-user assumption is only true of the forest, so it must be present
+    assert "not a fixed taka amount" in payload["provenance"]["assumption"]
+
+
+def test_the_service_falls_back_loudly_and_never_claims_the_model(
+    small_db, tmp_path
+) -> None:
+    payload = anomaly_service.build_anomalies(
+        DEMO_USER, db_path=small_db, artifact_dir=tmp_path / "no_artifact"
+    )
+    assert payload["source"] == "rule"
+    assert payload["provenance"]["source"] == "rule"
+    # The failure mode this pins: claiming per-user behaviour while a single
+    # absolute cutoff did the ranking.
+    assumption = payload["provenance"]["assumption"]
+    assert "not a fixed taka amount" not in assumption
+    assert "fallback" in assumption
+    assert payload["items"]
+
+
+def test_the_service_raises_for_a_user_with_no_transactions(small_db) -> None:
+    with pytest.raises(KeyError):
+        anomaly_service.build_anomalies("nobody-here", db_path=small_db)
+
