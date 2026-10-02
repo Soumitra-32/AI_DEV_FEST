@@ -23,7 +23,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Mapping, Optional, Sequence, Union
 
 import joblib
 import numpy as np
@@ -207,19 +207,26 @@ def _shap_values(model: Any, scaler: Any, scaled: np.ndarray) -> np.ndarray:
         return scaled * weights + bias
 
 
-def feature_mapping(row: Mapping[Any, float]) -> dict[str, float]:
+#: Anything this module will accept as "one user's numbers". ``pd.Series`` is
+#: named explicitly because pandas does *not* register it as a ``Mapping``
+#: subclass -- it quacks like one (``row[name]``, ``row.get``), but the type
+#: checkers are right to refuse it. Without this union every call site would need
+#: a ``.to_dict()`` cast.
+RowLike = Union["pd.Series", Mapping[str, float]]
+
+
+def feature_mapping(row: RowLike) -> dict[str, float]:
     """The model's own inputs from any row-like object, as ``{str: float}``.
 
-    Two jobs. It narrows the key type to ``str`` so callers can hand over a
-    pandas ``Series`` without the declared ``Mapping[str, float]`` being a lie,
-    and it coerces a missing or NaN feature to ``0.0`` -- the same default
-    :func:`build_matrix` applies, so the SHAP values and the model's own input
-    for this user can never disagree about what the number was.
+    Two jobs. It narrows the key type to ``str`` so the result is a real
+    ``Mapping[str, float]``, and it coerces a missing or NaN feature to ``0.0``
+    -- the same default :func:`build_matrix` applies, so the SHAP values and the
+    model's own input for this user can never disagree about what the number was.
     """
     values: dict[str, float] = {}
     for name in FEATURE_COLUMNS:
         try:
-            value = float(row.get(name, 0.0)) if name in row else 0.0
+            value = float(row[name]) if name in row else 0.0
         except (TypeError, ValueError):
             value = 0.0
         values[name] = 0.0 if pd.isna(value) else value
@@ -229,7 +236,7 @@ def feature_mapping(row: Mapping[Any, float]) -> dict[str, float]:
 def shap_factors(
     model: Any,
     scaler: Any,
-    row: Mapping[Any, float],
+    row: RowLike,
     top_k: int = 3,
 ) -> list[dict[str, Any]]:
     """The strongest factors for one user, biggest contribution first.
