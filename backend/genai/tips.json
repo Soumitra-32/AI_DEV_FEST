@@ -181,6 +181,126 @@
       "trigger": {"feature": "cash_out_share_of_outflow", "op": ">", "value": 0.3},
       "intents": ["fees", "tips"],
       "priority": 84
+    },
+    {
+      "id": "merchant_over_cash",
+      "title_en": "Pay by merchant, not by cash-out",
+      "title_bn": "ক্যাশ-আউট নয়, মার্চেন্ট পেমেন্টে দিন",
+      "body_en": "When most of your spending leaves as cash, you pay a fee on money you were already going to spend. A merchant payment usually costs nothing.",
+      "body_bn": "খরচের বড় অংশ ক্যাশ হয়ে বেরোলে, যে টাকা আপনি খরচই করতেন তার উপর ফি দিতে হয়। মার্চেন্ট পেমেন্টে সাধারণত ফি লাগে না।",
+      "trigger": {"feature": "cash_out_share_of_outflow", "op": ">", "value": 0.4},
+      "intents": ["fees", "tips"],
+      "priority": 89
+    },
+    {
+      "id": "keep_fee_receipt",
+      "title_en": "Add up one month of fees",
+      "title_bn": "এক মাসের ফি যোগ করুন",
+      "body_en": "A small fee per transaction feels like nothing until the month's total is on one line — that total is your easiest saving.",
+      "body_bn": "প্রতি লেনদেনে ছোট ফি কিছুই মনে হয় না, কিন্তু মাসের মোট এক লাইনে দেখলে বোঝা যায় — এই মোটটাই সবচেয়ে সহজ সঞ্চয়।",
+      "trigger": {"feature": "fee_per_month_bdt", "op": ">", "value": 100},
+      "intents": ["fees", "tips"],
+      "priority": 83
+    },
+    {
+      "id": "weekend_plan",
+      "title_en": "Set the weekend budget on Thursday",
+      "title_bn": "বৃহস্পতিবারেই সপ্তাহান্তের বাজেট ঠিক করুন",
+      "body_en": "Weekend spending runs high when it is decided on the day. A number set beforehand is the whole fix.",
+      "body_bn": "ছুটির দিনে খরচ বাড়ে যখন সেদিনই সিদ্ধান্ত হয়। আগে থেকে একটা সংখ্যা ঠিক করলেই সমাধান।",
+      "trigger": {"feature": "weekend_spend_ratio", "op": ">", "value": 1.3},
+      "intents": ["tips"],
+      "priority": 72
+    },
+    {
+      "id": "spend_consistency",
+      "title_en": "Steady spending beats small spending",
+      "title_bn": "কম খরচের চেয়ে সমান খরচ ভালো",
+      "body_en": "When spending swings a lot week to week, planning becomes guesswork. A steadier week is easier to forecast and easier to save from.",
+      "body_bn": "সপ্তাহে সপ্তাহে খরচ বেশি ওঠানামা করলে পরিকল্পনা আন্দাজে পরিণত হয়। সমান খরচ আগাম বলা সহজ, সঞ্চয়ও সহজ।",
+      "trigger": {"feature": "spend_cv", "op": ">", "value": 0.8},
+      "intents": ["tips", "forecast"],
+      "priority": 70
+    },
+    {
+      "id": "round_up_savings",
+      "title_en": "Round up each saving day",
+      "title_bn": "প্রতিটি সঞ্চয়ের দিন গোল করে রাখুন",
+      "body_en": "With a regular income, saving a fixed, rounded amount each payday is easier to keep than saving 'whatever is left'.",
+      "body_bn": "নিয়মিত আয় থাকলে প্রতি বেতনের দিনে গোল একটা নির্দিষ্ট টাকা সরিয়ে রাখা 'যা থাকে' সঞ্চয়ের চেয়ে সহজ।",
+      "trigger": {"feature": "income_mean_bdt", "op": ">=", "value": 5000},
+      "intents": ["savings_plan", "tips"],
+      "priority": 66
+    },
+    {
+      "id": "balance_floor",
+      "title_en": "Never let the wallet hit zero",
+      "title_bn": "ওয়ালেট শূন্য হতে দেবেন না",
+      "body_en": "A wallet that touches zero forces a costly cash-out later. Keeping a small floor avoids the most expensive moments.",
+      "body_bn": "একবার ওয়ালেট শূন্য হলে পরে বাধ্য হয়ে দামি ক্যাশ-আউট করতে হয়। ছোট একটা ফ্লোর রাখলেই সবচেয়ে দামি মুহূর্ত এড়ানো যায়।",
+      "trigger": {"feature": "balance_min_bdt", "op": "<", "value": 1000},
+      "intents": ["consistency", "tips"],
+      "priority": 79
+    },
+    {
+      "id": "weekly_cap",
+      "title_en": "Give the week a spending cap",
+      "title_bn": "সপ্তাহে খরচের একটা সীমা দিন",
+      "body_en": "A daily habit of high spending is hard to see; a weekly cap turns it into one number you can check on Friday.",
+      "body_bn": "প্রতিদিন বেশি খরচ চোখে পড়ে না; সপ্তাহের সীমা ঠিক করলে শুক্রবারে এক নম্বরেই দেখা যায়।",
+      "trigger": {"feature": "spend_mean_bdt", "op": ">", "value": 800},
+      "intents": ["tips", "savings_plan"],
+      "priority": 64
+    },
+    {
+      "id": "income_days_boost",
+      "title_en": "More income days, steadier month",
+      "title_bn": "আয়ের দিন বেশি হলে মাস স্থিতিশীল",
+      "body_en": "If your income arrives on only a few days, a mid-month top-up is what keeps the second half steady.",
+      "body_bn": "আয় মাত্র কয়েক দিনে এলে, মাসের মাঝে একটা টপ-আপই শেষ অর্ধেক স্থির রাখে।",
+      "trigger": {"feature": "income_days_per_month", "op": "<", "value": 3},
+      "intents": ["consistency", "tips"],
+      "priority": 74
+    },
+    {
+      "id": "fee_free_week",
+      "title_en": "Try one fee-free week",
+      "title_bn": "এক সপ্তাহ ফি ছাড়া চেষ্টা করুন",
+      "body_en": "Even a small fee share adds up over a year. One week without a cash-out shows how much is avoidable.",
+      "body_bn": "ছোট ফিও বছরে জমে বড় হয়। এক সপ্তাহ ক্যাশ-আউট না করলেই বোঝা যায় কতটা এড়ানো যায়।",
+      "trigger": {"feature": "fee_share_of_income", "op": ">", "value": 0.01},
+      "intents": ["fees", "tips"],
+      "priority": 81
+    },
+    {
+      "id": "automate_saving",
+      "title_en": "Put saving before spending",
+      "title_bn": "খরচের আগে সঞ্চয় সরিয়ে রাখুন",
+      "body_en": "When you earn steadily, moving the goal amount aside on payday works far better than saving what is left at month end.",
+      "body_bn": "নিয়মিত আয় থাকলে বেতনের দিনেই লক্ষ্যের টাকা সরিয়ে রাখা, মাস শেষে যা থাকে তা সঞ্চয়ের চেয়ে অনেক ভালো কাজ করে।",
+      "trigger": {"feature": "income_mean_bdt", "op": ">=", "value": 8000},
+      "intents": ["savings_plan", "tips"],
+      "priority": 68
+    },
+    {
+      "id": "plan_big_purchase",
+      "title_en": "Plan the big cash-outs",
+      "title_bn": "বড় ক্যাশ-আউটের পরিকল্পনা করুন",
+      "body_en": "Large cash-outs are usually planned purchases. Moving them to a cheaper channel costs nothing and saves on a big amount.",
+      "body_bn": "বড় ক্যাশ-আউট সাধারণত পরিকল্পিত কেনাকাটা। সস্তা চ্যানেলে করলে কিছুই লাগে না, বড় টাকায় সঞ্চয় হয়।",
+      "trigger": {"feature": "cash_out_volume_per_month_bdt", "op": ">", "value": 8000},
+      "intents": ["fees", "tips"],
+      "priority": 86
+    },
+    {
+      "id": "review_statement",
+      "title_en": "Read the statement once a month",
+      "title_bn": "মাসে একবার স্টেটমেন্ট দেখুন",
+      "body_en": "Knowing which channel each payment used is what turns a confusing statement into a plan.",
+      "body_bn": "কোন পেমেন্ট কোন চ্যানেলে গেছে জানলে জটিল স্টেটমেন্টই পরিকল্পনায় বদলে যায়।",
+      "trigger": {"feature": "income_mean_bdt", "op": ">", "value": 0},
+      "intents": ["explain_transactions", "tips"],
+      "priority": 58
     }
   ]
 }
