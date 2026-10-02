@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import DoNothingToggle from "@/components/DoNothingToggle";
 import InsightCard from "@/components/InsightCard";
@@ -23,13 +24,36 @@ const ACTION_KEY: Record<TradeOffAction, TranslationKey> = {
   do_nothing: "plan.action.do_nothing",
 };
 
-export default function PlanPage() {
+function PlanContent() {
   const { lang, tr } = useLanguage();
-  const [goal, setGoal] = useState(String(DEFAULT_GOAL));
-  const [months, setMonths] = useState(String(DEFAULT_MONTHS));
+  const searchParams = useSearchParams();
+  // Voice (and suggestion chips) arrive via ?goal=&months=&prompt= from the
+  // home page. Read them once for the initial form values; the prompt also
+  // triggers one automatic calculation below.
+  const [goal, setGoal] = useState(
+    () => searchParams.get("goal") ?? String(DEFAULT_GOAL),
+  );
+  const [months, setMonths] = useState(
+    () => searchParams.get("months") ?? String(DEFAULT_MONTHS),
+  );
   const [plan, setPlan] = useState<SavingsPlanResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const autoRan = useRef(false);
+
+  function runPlan(goalBdt: number, monthsCount: number) {
+    setBusy(true);
+    setError(null);
+    fetchSavingsPlan({ goal_bdt: goalBdt, months: Math.round(monthsCount) })
+      .then((body) => {
+        setPlan(body);
+        setBusy(false);
+      })
+      .catch(() => {
+        setError(tr("error.title"));
+        setBusy(false);
+      });
+  }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -46,18 +70,26 @@ export default function PlanPage() {
       return;
     }
 
-    setBusy(true);
-    setError(null);
-    fetchSavingsPlan({ goal_bdt: goalBdt, months: Math.round(monthsCount) })
-      .then((body) => {
-        setPlan(body);
-        setBusy(false);
-      })
-      .catch(() => {
-        setError(tr("error.title"));
-        setBusy(false);
-      });
+    runPlan(goalBdt, monthsCount);
   }
+
+  // Voice handoff: landing with ?prompt= means the user already spoke, so
+  // calculate immediately instead of showing an empty form. Runs once.
+  useEffect(() => {
+    if (autoRan.current || !searchParams.get("prompt")) return;
+    autoRan.current = true;
+    const goalBdt = Number(searchParams.get("goal") ?? goal);
+    const monthsCount = Number(searchParams.get("months") ?? months);
+    if (
+      Number.isFinite(goalBdt) &&
+      goalBdt > 0 &&
+      Number.isFinite(monthsCount) &&
+      monthsCount >= 1
+    ) {
+      runPlan(goalBdt, monthsCount);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>
@@ -277,5 +309,15 @@ export default function PlanPage() {
         )}
       </main>
     </>
+  );
+}
+
+export default function PlanPage() {
+  // useSearchParams() requires a Suspense boundary (Next.js rule).
+  // Wrapping changes nothing visually — same page, same layout.
+  return (
+    <Suspense>
+      <PlanContent />
+    </Suspense>
   );
 }

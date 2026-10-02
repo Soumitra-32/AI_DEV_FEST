@@ -9,7 +9,7 @@ import DoNothingToggle from "@/components/DoNothingToggle";
 import VoiceInput from "@/components/VoiceInput";
 import SuggestionChips from "@/components/SuggestionChips";
 import { useLanguage } from "@/components/LangToggle";
-import { fetchHealth, fetchIdentity } from "@/lib/api";
+import { fetchHealth, fetchIdentity, fetchParseGoal } from "@/lib/api";
 import type { HealthResponse, IdentityResponse } from "@/lib/api";
 import { formatInteger } from "@/lib/i18n";
 
@@ -155,7 +155,25 @@ export default function HomePage() {
         <section className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
           <VoiceInput
             onSubmitText={(text) => {
-              router.push(`/plan?goal=30000&months=6&prompt=${encodeURIComponent(text)}`);
+              // Speech carries the numbers: parse them first so the plan page
+              // computes what was SAID, not the hardcoded defaults. Missing
+              // halves keep the defaults; parse failures do too (never block).
+              fetchParseGoal(text)
+                .then((parsed) => {
+                  const goal =
+                    parsed.goal_bdt && parsed.goal_bdt > 0
+                      ? Math.round(parsed.goal_bdt)
+                      : 30000;
+                  const months = parsed.months ?? 6;
+                  router.push(
+                    `/plan?goal=${goal}&months=${months}&prompt=${encodeURIComponent(text)}`,
+                  );
+                })
+                .catch(() => {
+                  router.push(
+                    `/plan?goal=30000&months=6&prompt=${encodeURIComponent(text)}`,
+                  );
+                });
             }}
           />
           <SuggestionChips

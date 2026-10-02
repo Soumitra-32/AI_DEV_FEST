@@ -306,8 +306,8 @@ export function fetchExplain(body: ExplainRequest): Promise<ExplainResponse> {
   });
 }
 
-export function fetchCreditReadiness(): Promise<ConsistencySignalResponse> {
-  return request<ConsistencySignalResponse>("/credit-readiness", {
+export function fetchCreditReadiness(language: "bn" | "en" = "bn"): Promise<ConsistencySignalResponse> {
+  return request<ConsistencySignalResponse>(`/signal?language=${language}`, {
     method: "POST",
     body: JSON.stringify({}),
   });
@@ -315,4 +315,18 @@ export function fetchCreditReadiness(): Promise<ConsistencySignalResponse> {
 
 export function fetchMetrics(): Promise<MetricsResponse> {
   return request<MetricsResponse>("/metrics");
+}
+
+/** POST /parse-goal (public: no user data, pure text parsing) */
+export interface ParseGoalResponse {
+  goal_bdt: number | null;
+  months: number | null;
+  is_complete: boolean;
+}
+
+export function fetchParseGoal(message: string): Promise<ParseGoalResponse> {
+  return request<ParseGoalResponse>("/parse-goal", {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  });
 }

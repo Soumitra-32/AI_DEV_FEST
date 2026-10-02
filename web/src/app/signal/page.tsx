@@ -1,12 +1,33 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import TopBar from "@/components/TopBar";
 import NotADecisionBanner from "@/components/NotADecisionBanner";
 import DoNothingToggle from "@/components/DoNothingToggle";
 import { useLanguage } from "@/components/LangToggle";
+import { fetchCreditReadiness } from "@/lib/api";
+import type { ConsistencySignalResponse } from "@/lib/api";
+
+const BAND_INDEX: Record<string, number> = {
+  Building: 0,
+  Steady: 1,
+  Strong: 2,
+};
 
 export default function SignalPage() {
   const { lang, tr } = useLanguage();
+  // Live band from POST /signal; null (offline/error) keeps the static
+  // content below, so the page never breaks without the backend.
+  const [live, setLive] = useState<ConsistencySignalResponse | null>(null);
+
+  useEffect(() => {
+    fetchCreditReadiness(lang)
+      .then(setLive)
+      .catch(() => setLive(null));
+  }, [lang]);
+
+  const activeStep = live ? (BAND_INDEX[live.band] ?? 1) : 1;
+  const stepKeys = ["signal.step1", "signal.step2", "signal.step3"] as const;
 
   const factors = [
     {
@@ -67,7 +88,7 @@ export default function SignalPage() {
           <div className="space-y-3 py-2">
             <div className="flex items-baseline justify-between">
               <span className="font-serif-bn font-bold text-2xl md:text-3xl text-ink">
-                {tr("signal.bandSteady")}
+                {live ? live.band : tr("signal.bandSteady")}
               </span>
               <span className="badge success">
                 {tr("signal.bandRating")}
@@ -76,15 +97,18 @@ export default function SignalPage() {
 
             {/* Stepped Ledger Indicator */}
             <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono pt-2">
-              <div className="p-2 border border-rule bg-paper/60 rounded-stamp text-ink-muted">
-                {tr("signal.step1")}
-              </div>
-              <div className="p-2 border-2 border-primaryGreen bg-surface rounded-stamp font-bold text-primaryGreen">
-                {tr("signal.step2")}
-              </div>
-              <div className="p-2 border border-rule bg-paper/60 rounded-stamp text-ink-muted">
-                {tr("signal.step3")}
-              </div>
+              {stepKeys.map((key, idx) => (
+                <div
+                  key={key}
+                  className={
+                    idx === activeStep
+                      ? "p-2 border-2 border-primaryGreen bg-surface rounded-stamp font-bold text-primaryGreen"
+                      : "p-2 border border-rule bg-paper/60 rounded-stamp text-ink-muted"
+                  }
+                >
+                  {tr(key)}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -98,11 +122,24 @@ export default function SignalPage() {
           </div>
 
           <div className="divide-y divide-rule font-hind">
-            {factors.map((f, idx) => (
+            {(live && live.factors.length > 0
+              ? live.factors.map((f) => ({
+                  title: f.feature,
+                  desc: f.plain_language,
+                  direction: f.direction,
+                  weight: f.magnitude,
+                }))
+              : factors.map((f) => ({
+                  title: lang === "bn" ? f.featureBn : f.featureEn,
+                  desc: lang === "bn" ? f.descBn : f.descEn,
+                  direction: f.direction,
+                  weight: f.weight,
+                }))
+            ).map((f, idx) => (
               <div key={idx} className="py-3 space-y-1">
                 <div className="flex items-baseline justify-between">
                   <span className="font-bold text-sm text-ink">
-                    {lang === "bn" ? f.featureBn : f.featureEn}
+                    {f.title}
                   </span>
                   <span className="dotted-leader" />
                   <span
@@ -115,7 +152,7 @@ export default function SignalPage() {
                   </span>
                 </div>
                 <p className="text-xs text-ink-muted leading-relaxed">
-                  {lang === "bn" ? f.descBn : f.descEn}
+                  {f.desc}
                 </p>
               </div>
             ))}
