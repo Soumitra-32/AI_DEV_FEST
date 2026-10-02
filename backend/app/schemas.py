@@ -264,6 +264,43 @@ class SignalFactor(BaseModel):
     plain_language: str
 
 
+class ShapFeature(BaseModel):
+    """One feature's exact contribution to this user's log-odds.
+
+    Signed, unlike :class:`SignalFactor.magnitude`, which is an absolute size
+    stripped of direction: a positive value pushes towards "stable", a negative
+    one pushes away. :mod:`backend.ml.signal` produces these from
+    ``shap.LinearExplainer``, which is exact for a linear model.
+    """
+
+    feature: str
+    contribution: float = Field(description="Signed SHAP value in log-odds")
+    direction: Literal["improves", "weakens"]
+    rank: int = Field(ge=1, description="1 = the largest absolute contribution")
+
+
+class ShapExplanation(BaseModel):
+    """The model's reasoning for the band, in the units the model actually used.
+
+    ``base_value`` is the model's output before any of this user's features are
+    applied, so ``base_value + sum(contribution)`` reconstructs the log-odds that
+    produced the band. Exposing the whole ranked list (not just the three
+    summarised in ``factors``) is what makes the band auditable: a reader can
+    check the arithmetic instead of taking the top three on trust.
+
+    Absent (``None``) when the rule band answered, because a rule has no SHAP
+    values -- an empty contribution list would look like "nothing mattered".
+    """
+
+    method: str = Field(description="How the values were computed, e.g. shap.LinearExplainer")
+    base_value: float
+    log_odds: float = Field(description="The model's log-odds for this user")
+    band_cutoffs: Dict[str, float] = Field(
+        default_factory=dict, description="Probability at which each band starts"
+    )
+    features: List[ShapFeature] = Field(default_factory=list)
+
+
 class ConsistencySignalResponse(StrictModel):
     """A band, never a score, and never a lending decision."""
 
@@ -275,6 +312,13 @@ class ConsistencySignalResponse(StrictModel):
     banner_en: str = "This is not a loan eligibility decision."
     banner_bn: str = "এটি ঋণ পাওয়ার সিদ্ধান্ত নয়।"
     auc: Optional[float] = Field(default=None, description="Held-out AUC of the demo model")
+    shap: Optional[ShapExplanation] = Field(
+        default=None,
+        description=(
+            "Exact per-feature contributions behind the band; null when the rule "
+            "band answered, since a rule has no SHAP values"
+        ),
+    )
     provenance: Provenance
 
 
@@ -328,7 +372,151 @@ class MetricsResponse(BaseModel):
     anomaly: List[ModelMetric] = Field(default_factory=list)
     signal: List[ModelMetric] = Field(default_factory=list)
     fairness: List[FairnessRow] = Field(default_factory=list)
+    impact: List[ModelMetric] = Field(
+        default_factory=list,
+        description=(
+            "Outcome metrics: fee savings, shortfall days avoided and the goal "
+            "hit-rate backtest. Separate from the model blocks because these are "
+            "consequences, not model accuracy."
+        ),
+    )
+    feedback: Optional["FeedbackSummary"] = Field(
+        default=None,
+        description=(
+            "Aggregated 'was this helpful?' responses, with no PII: only a count "
+            "and rates per surface."
+        ),
+    )
     notes: List[str] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# GET /health-coach  (Financial Health Coach)
+# ---------------------------------------------------------------------------
+class HealthFactor(BaseModel):
+    """One scored behaviour behind the 0-100 health score."""
+
+    key: str
+    label_en: str
+    label_bn: str
+    points: float = Field(description="Points earned for this factor")
+    max_points: float = Field(description="Points this factor could earn")
+    share: float = Field(ge=0.0, le=1.0, description="Earned fraction of the maximum")
+    detail_en: str
+    detail_bn: str
+
+
+class HealthCoachResponse(BaseModel):
+    """A coaching reading of behaviour in 0-100, never a credit score.
+
+    The score is deliberately a coaching number, not a grade: it says how the
+    observed habits read, and ``is_not_a_credit_score`` travels with it so no
+    surface can present it as a lending signal.
+    """
+
+    user_id: str
+    score: int = Field(ge=0, le=100, description="0-100 behaviour score")
+    score_max: int = 100
+    band: Literal["Fragile", "Building", "Steady", "Strong"]
+    band_bn: str
+    summary_bn: str = Field(description="Plain-language Bangla summary of the score")
+    summary_en: str = Field(description="Plain-language English summary of the score")
+    factors: List[HealthFactor] = Field(default_factory=list)
+    arithmetic: List[str] = Field(default_factory=list, description="Step-by-step sum")
+    is_not_a_credit_score: bool = True
+    banner_bn: str = "এটি ক্রেডিট স্কোর বা ঋণের সিদ্ধান্ত নয়।"
+    banner_en: str = "This is a coaching reading, not a credit score or a lending decision."
+    provenance: Provenance
+
+
+# ---------------------------------------------------------------------------
+# POST /feedback  (was this helpful?)
+# ---------------------------------------------------------------------------
+class FeedbackRequest(BaseModel):
+    """A 'was this helpful?' tap. Nothing here identifies the person."""
+
+    surface: str = Field(
+        min_length=1,
+        max_length=40,
+        description="Which card the tap came from, e.g. forecast | savings_plan",
+    )
+    helpful: bool = Field(description="True for a thumbs-up, False for a thumbs-down")
+    intent: Optional[str] = Field(
+        default=None, max_length=40, description="Optional intent the answer served"
+    )
+    comment: Optional[str] = Field(
+        default=None,
+        max_length=280,
+        description=(
+            "Optional free text. It is intentionally NOT persisted (it could "
+            "contain PII); only the fact that a comment was offered is stored."
+        ),
+    )
+
+
+class FeedbackResponse(BaseModel):
+    """The anonymised record that was written (never the raw user id)."""
+
+    status: Literal["recorded"] = "recorded"
+    recorded_at: datetime
+    respondent: str = Field(description="Salted hash of the user id, never the id")
+    surface: str
+    helpful: bool
+    stored_fields: List[str] = Field(default_factory=list)
+    note: str = (
+        "No PII is stored: the user id is salted-hashed and any comment text is discarded."
+    )
+
+
+class FeedbackSurfaceSummary(BaseModel):
+    surface: str
+    responses: int
+    helpful: int
+    helpful_rate_pct: float
+
+
+class FeedbackSummary(BaseModel):
+    """Aggregate of the feedback store, shown on the metrics page."""
+
+    responses: int = 0
+    helpful: int = 0
+    helpful_rate_pct: float = 0.0
+    by_surface: List[FeedbackSurfaceSummary] = Field(default_factory=list)
+    note: str = (
+        "Aggregated from the append-only store; no PII is recorded (ids are "
+        "salted-hashed and free text is dropped)."
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /goal-templates  (Goal Copilot)
+# ---------------------------------------------------------------------------
+class GoalTemplate(BaseModel):
+    """A curated savings-goal shape (education, emergency fund, travel...)."""
+
+    key: str
+    label_en: str
+    label_bn: str
+    description_en: str
+    description_bn: str
+    default_months: int = Field(ge=1)
+    suggested_goal_bdt: float = Field(ge=0, description="Scaled to the caller's income")
+    goal_label_bn: str
+    goal_label_en: str
+    factors: List[str] = Field(
+        default_factory=list, description="What usually drives the amount"
+    )
+    provenance: Provenance
+
+
+class GoalTemplatesResponse(BaseModel):
+    user_id: str
+    templates: List[GoalTemplate] = Field(default_factory=list)
+
+
+FeedbackSummary.model_rebuild()
+MetricsResponse.model_rebuild()
+
 
 
 

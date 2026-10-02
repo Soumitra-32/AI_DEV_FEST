@@ -70,11 +70,46 @@ class Settings(BaseSettings):
     feature_tips: bool = True
     feature_voice: bool = True
     feature_llm: bool = True
+    feature_metrics: bool = True
+    feature_health_coach: bool = True
+    feature_feedback: bool = True
+    feature_goal_templates: bool = True
+
+    # Where the trained artifacts live. ``/metrics`` reads metrics.json from here
+    # and nothing else, so a deployment can point at a read-only artifact mount.
+    artifact_dir: str = "backend/ml/artifacts"
+
+    # --- feedback + request logs (both PII-free, both beside metrics.json) ---
+    # The feedback store is append-only JSONL in the same directory as
+    # metrics.json (the "metrics store"), so ``/metrics`` can read it without a
+    # new datastore. ``feedback_salt`` anonymises the respondent: only a hash of
+    # the demo user id is written, never the id itself.
+    feedback_salt: str = "shonchoy-feedback-v1"
+    # The request log the no-PII middleware appends to. Optional: if the file
+    # cannot be written the logger falls back to the process log only.
+    request_log_path: str = "backend/ml/artifacts/requests.jsonl"
 
     @property
     def db_path(self) -> Path:
         """Absolute path to the SQLite database."""
         path = Path(self.database_path)
+        return path if path.is_absolute() else REPO_ROOT / path
+
+    @property
+    def artifact_path(self) -> Path:
+        """Absolute path to the directory holding the trained artifacts."""
+        path = Path(self.artifact_dir)
+        return path if path.is_absolute() else REPO_ROOT / path
+
+    @property
+    def feedback_path(self) -> Path:
+        """Absolute path to the append-only feedback store (JSONL)."""
+        return self.artifact_path / "feedback.jsonl"
+
+    @property
+    def request_log_file(self) -> Path:
+        """Absolute path to the PII-free request log (JSONL)."""
+        path = Path(self.request_log_path)
         return path if path.is_absolute() else REPO_ROOT / path
 
     @property
@@ -108,6 +143,10 @@ class Settings(BaseSettings):
             "savings_plan": self.feature_savings_plan,
             "anomalies": self.feature_anomalies,
             "signal": self.feature_signal,
+            "metrics": self.feature_metrics,
+            "health_coach": self.feature_health_coach,
+            "feedback": self.feature_feedback,
+            "goal_templates": self.feature_goal_templates,
             "tips": self.feature_tips,
             "voice": self.feature_voice,
             "llm": self.llm_enabled,
