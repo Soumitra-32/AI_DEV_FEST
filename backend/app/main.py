@@ -45,7 +45,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         CORSMiddleware,
         allow_origins=active.cors_origin_list,
         allow_credentials=True,
-        allow_methods=["GET", "POST"],
+        allow_methods=["*"],
         allow_headers=["*"],
     )
     # PII-free request logging: method/path/status/ms only, beside metrics.json.
