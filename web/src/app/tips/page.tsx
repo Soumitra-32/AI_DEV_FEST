@@ -6,71 +6,102 @@ import NotADecisionBanner from "@/components/NotADecisionBanner";
 import InsightCard from "@/components/InsightCard";
 import DoNothingToggle from "@/components/DoNothingToggle";
 import { useLanguage } from "@/components/LangToggle";
-import { fetchExplain } from "@/lib/api";
-import type { ExplainResponse } from "@/lib/api";
-
-const CURATED_TIPS = [
-  {
-    titleBn: "ঘন ঘন ছোট ক্যাশ-আউট কমান",
-    titleEn: "Consolidate Frequent Small Cash-Outs",
-    descBn:
-      "আপনি মাসে ৫ বার গড়ে ৳৩,৫০০ করে ক্যাশ-আউট করেন। বারবার ক্যাশ-আউট না করে একবার বা দুইবারে প্রয়োজনমতো তুললে প্রতি মাসে আনুমানিক ৳৩২০ ফি সাশ্রয় সম্ভব।",
-    descEn:
-      "You currently cash out ~5 times/month averaging ৳3,500. Consolidating into 1-2 withdrawals or paying merchants directly can save ~৳320 in monthly fees.",
-    tagBn: "ফি সাশ্রয়",
-    tagEn: "Fee Saving",
-    stampKey: "tips.stampRule" as const,
-  },
-  {
-    titleBn: "২৮–৩১ তারিখের জন্য অগ্রিম বাফার রাখুন",
-    titleEn: "Maintain Month-End Cash Buffer for Days 28–31",
-    descBn:
-      "মাসের শেষ সপ্তাহে আপনার দোকানের বিল ও ক্যাশ খরচের চাপ বেশি থাকে। মাসের ১৫ তারিখ থেকেই দৈনিক ৳৫০ আলাদা রাখলে মাস শেষে টানাটানি পড়বে না।",
-    descEn:
-      "Outflows spike near month-end due to rent and utility schedules. Retaining a small safety buffer earlier prevents emergency borrowing.",
-    tagBn: "ক্যাশ-ফ্লো",
-    tagEn: "Cash Flow",
-    stampKey: "tips.stampForecast" as const,
-  },
-  {
-    titleBn: "সঞ্চয়ের বাস্তবসম্মত লক্ষ্য নির্ধারণ",
-    titleEn: "Set a Realistic Surplus-Matched Goal",
-    descBn:
-      "আপনার বর্তমান মাসিক উদ্বৃত্ত থেকে সেফটি বাফার বাদ দিলে প্রতি মাসে ৳৫,০০০ সঞ্চয় করা সম্ভব। ৬ মাসে ৳৩০,০০০ লক্ষ্য আপনার স্বাভাবিক উপার্জনের সাথে মানানসই।",
-    descEn:
-      "After retaining a safety buffer, your forecasted monthly surplus supports ৳5,000/month. The ৳30,000 in 6 months goal fits your profile.",
-    tagBn: "সঞ্চয়",
-    tagEn: "Savings",
-    stampKey: "tips.stampPlan" as const,
-  },
-];
+import { fetchExplain, fetchAnomalies } from "@/lib/api";
+import type { ExplainResponse, FeeSwitchSuggestion } from "@/lib/api";
+import { formatBDT, formatDigits } from "@/lib/i18n";
 
 export default function TipsPage() {
   const { lang, tr } = useLanguage();
   const [explainRes, setExplainRes] = useState<ExplainResponse | null>(null);
+  const [feeSwitch, setFeeSwitch] = useState<FeeSwitchSuggestion | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    fetchExplain({
-      message: lang === "bn" ? "আমার ক্যাশ খরচ ও সঞ্চয়ের পরামর্শ দিন" : "Give me tips for savings and cash flow",
-      language: lang,
-    })
-      .then((res) => {
-        if (!cancelled) {
-          setExplainRes(res);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setLoading(false);
-      });
+
+    Promise.allSettled([
+      fetchExplain({
+        message:
+          lang === "bn"
+            ? "আমার ক্যাশ খরচ ও সঞ্চয়ের পরামর্শ দিন"
+            : "Give me tips for savings and cash flow",
+        language: lang,
+      }),
+      fetchAnomalies({ window_days: 30, limit: 20 }),
+    ]).then(([explainResult, anomResult]) => {
+      if (cancelled) return;
+
+      if (explainResult.status === "fulfilled") {
+        setExplainRes(explainResult.value);
+      }
+      if (anomResult.status === "fulfilled" && anomResult.value.fee_switch) {
+        setFeeSwitch(anomResult.value.fee_switch);
+      }
+      setLoading(false);
+    });
 
     return () => {
       cancelled = true;
     };
   }, [lang]);
+
+  const cashOutCount = feeSwitch?.cash_out_count ?? 5;
+  const avgAmount =
+    feeSwitch && feeSwitch.cash_out_count > 0
+      ? feeSwitch.cash_out_volume_bdt / feeSwitch.cash_out_count
+      : 3500;
+  const potentialSaving = feeSwitch?.potential_saving_bdt ?? 324;
+
+  const tip1DescBn = `আপনি মাসে ${formatDigits(
+    String(cashOutCount),
+    "bn"
+  )} বার গড়ে ${formatBDT(avgAmount, "bn")} করে ক্যাশ-আউট করেন। বারবার ক্যাশ-আউট না করে একবার বা দুইবারে প্রয়োজনমতো তুললে বা সরাসরি অ্যাপ ট্রান্সফার করলে প্রতি মাসে আনুমানিক ${formatBDT(
+    potentialSaving,
+    "bn"
+  )} ফি সাশ্রয় সম্ভব।`;
+
+  const tip1DescEn = `You currently cash out ~${cashOutCount} times/month averaging ${formatBDT(
+    avgAmount,
+    "en"
+  )}. Consolidating into 1-2 withdrawals or paying via app transfer can save ~${formatBDT(
+    potentialSaving,
+    "en"
+  )} in monthly fees.`;
+
+  const curatedTips = [
+    {
+      titleBn: "ঘন ঘন ছোট ক্যাশ-আউট কমান",
+      titleEn: "Consolidate Frequent Small Cash-Outs",
+      descBn: tip1DescBn,
+      descEn: tip1DescEn,
+      tagBn: "ফি সাশ্রয়",
+      tagEn: "Fee Saving",
+      stampKey: "tips.stampRule" as const,
+    },
+    {
+      titleBn: "২৮–৩১ তারিখের জন্য অগ্রিম বাফার রাখুন",
+      titleEn: "Maintain Month-End Cash Buffer for Days 28–31",
+      descBn:
+        "মাসের শেষ সপ্তাহে আপনার দোকানের বিল ও ক্যাশ খরচের চাপ বেশি থাকে। মাসের ১৫ তারিখ থেকেই দৈনিক ৳৫০ আলাদা রাখলে মাস শেষে টানাটানি পড়বে না।",
+      descEn:
+        "Outflows spike near month-end due to rent and utility schedules. Retaining a small safety buffer earlier prevents emergency borrowing.",
+      tagBn: "ক্যাশ-ফ্লো",
+      tagEn: "Cash Flow",
+      stampKey: "tips.stampForecast" as const,
+    },
+    {
+      titleBn: "সঞ্চয়ের বাস্তবসম্মত লক্ষ্য নির্ধারণ",
+      titleEn: "Set a Realistic Surplus-Matched Goal",
+      descBn:
+        "আপনার বর্তমান মাসিক উদ্বৃত্ত থেকে সেফটি বাফার বাদ দিলে প্রতি মাসে ৳৫,০০০ সঞ্চয় করা সম্ভব। ৬ মাসে ৳৩০,০০০ লক্ষ্য আপনার স্বাভাবিক উপার্জনের সাথে মানানসই।",
+      descEn:
+        "After retaining a safety buffer, your forecasted monthly surplus supports ৳5,000/month. The ৳30,000 in 6 months goal fits your profile.",
+      tagBn: "সঞ্চয়",
+      tagEn: "Savings",
+      stampKey: "tips.stampPlan" as const,
+    },
+  ];
 
   return (
     <>
@@ -99,7 +130,7 @@ export default function TipsPage() {
           </div>
         )}
 
-        {explainRes && (
+        {explainRes && !loading && (
           <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-rule pb-2">
               <span className="text-xs font-mono uppercase text-primaryGreen font-bold">
@@ -139,7 +170,7 @@ export default function TipsPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            {CURATED_TIPS.map((tip, idx) => (
+            {curatedTips.map((tip, idx) => (
               <div
                 key={idx}
                 className="bg-surface border border-rule rounded-ledger p-5 space-y-2.5"

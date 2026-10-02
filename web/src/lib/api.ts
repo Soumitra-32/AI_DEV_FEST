@@ -69,6 +69,13 @@ export interface ForecastMetrics {
   net_source?: "model" | "difference";
 }
 
+export interface Driver {
+  feature: string;
+  direction: "increases" | "decreases";
+  impact_bdt: number;
+  detail: string;
+}
+
 export interface ForecastResponse {
   user_id: string;
   horizon_days: number;
@@ -77,6 +84,7 @@ export interface ForecastResponse {
   net_source: "model" | "difference";
   days: DayForecast[];
   pressure_days: string[];
+  drivers: Driver[];
   metrics: ForecastMetrics | null;
   provenance: Provenance;
 }
@@ -219,11 +227,12 @@ export interface ModelMetric {
 }
 
 export interface FairnessRow {
-  dimension: "persona" | "district" | "income_band";
+  dimension: string;
   group: string;
   metric: string;
   value: number;
   relative_gap_pct: number;
+  exceeds_target?: boolean;
 }
 
 export interface MetricsResponse {
@@ -232,7 +241,8 @@ export interface MetricsResponse {
   anomaly: ModelMetric[];
   signal: ModelMetric[];
   fairness: FairnessRow[];
-  notes: string[];
+  impact?: ModelMetric[];
+  notes?: string[];
 }
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";

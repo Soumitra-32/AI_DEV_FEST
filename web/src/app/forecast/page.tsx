@@ -168,6 +168,41 @@ export default function ForecastPage() {
               </div>
             </div>
 
+            {/* Top SHAP Drivers */}
+            {data.drivers && data.drivers.length > 0 && (
+              <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-3">
+                <div className="flex items-center justify-between border-b border-rule pb-2">
+                  <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
+                    {tr("forecast.driversTitle")}
+                  </h3>
+                  <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono">
+                    SHAP
+                  </span>
+                </div>
+                <div className="divide-y divide-rule font-hind text-sm">
+                  {data.drivers.map((driver, idx) => (
+                    <div key={idx} className="py-2.5 flex items-baseline justify-between gap-2">
+                      <div className="space-y-0.5">
+                        <div className="font-bold text-ink">
+                          {driver.feature}
+                        </div>
+                        <div className="text-xs text-ink-muted">
+                          {driver.detail || (driver.direction === "increases" ? tr("forecast.increasesOutflow") : tr("forecast.decreasesOutflow"))}
+                        </div>
+                      </div>
+                      <span className="dotted-leader hidden sm:inline-block" />
+                      <div className="font-serif-bn font-bold text-sm whitespace-nowrap">
+                        <span className={driver.direction === "increases" ? "text-brickRed" : "text-primaryGreen"}>
+                          {driver.direction === "increases" ? "+" : "-"}
+                          {formatBDT(driver.impact_bdt, lang)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* 3-Layer Provenance */}
             {data.provenance && (
               <InsightCard provenance={data.provenance} />

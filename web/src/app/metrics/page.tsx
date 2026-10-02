@@ -4,32 +4,58 @@ import { useEffect, useState } from "react";
 import TopBar from "@/components/TopBar";
 import NotADecisionBanner from "@/components/NotADecisionBanner";
 import { useLanguage } from "@/components/LangToggle";
-import { fetchForecast } from "@/lib/api";
-import type { ForecastMetrics } from "@/lib/api";
-import { formatBDT } from "@/lib/i18n";
+import { fetchMetrics } from "@/lib/api";
+import type { MetricsResponse, ModelMetric, FairnessRow } from "@/lib/api";
+import { formatBDT, formatDigits, formatInteger } from "@/lib/i18n";
 
 export default function MetricsPage() {
   const { lang, tr } = useLanguage();
-  const [metrics, setMetrics] = useState<ForecastMetrics | null>(null);
+  const [data, setData] = useState<MetricsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    fetchForecast({ horizon_days: 14 })
+    setLoading(true);
+    fetchMetrics()
       .then((res) => {
         if (!cancelled) {
-          setMetrics(res.metrics);
+          setData(res);
           setLoading(false);
         }
       })
       .catch(() => {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setError(true);
+          setLoading(false);
+        }
       });
 
     return () => {
       cancelled = true;
     };
   }, []);
+
+  const formatMetricVal = (metric: string, val: number) => {
+    if (metric.includes("bdt")) {
+      return formatBDT(val, lang);
+    }
+    if (metric.includes("pct") || metric === "precision" || metric === "recall") {
+      return `${formatDigits(val.toFixed(2), lang)}%`;
+    }
+    if (metric === "auc" || metric === "f1") {
+      return formatDigits(val.toFixed(4), lang);
+    }
+    return formatDigits(val.toFixed(2), lang);
+  };
+
+  const getFlowLabel = (idx: number) => {
+    if (idx === 0 || idx === 1) return tr("metrics.inflow");
+    if (idx === 2 || idx === 3) return tr("metrics.outflow");
+    return tr("metrics.net");
+  };
+
+  const maeForecastRows = (data?.forecast || []).filter((f) => f.metric === "mae_bdt");
 
   return (
     <>
@@ -49,87 +75,289 @@ export default function MetricsPage() {
 
         <NotADecisionBanner />
 
-        {/* Forecast Model Evaluation */}
-        <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-rule pb-2">
-            <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
-              {tr("metrics.forecast")}
-            </h2>
-            <span className="border border-primaryGreen rounded-stamp px-2 py-0.5 text-[10px] font-mono text-primaryGreen font-bold">
-              LightGBM
-            </span>
-          </div>
-
-          {loading ? (
-            <p className="text-xs font-mono text-ink-muted animate-pulse">
+        {loading && (
+          <div className="bg-surface border border-rule rounded-ledger p-8 text-center">
+            <p className="font-mono text-sm text-ink-muted animate-pulse">
               {tr("metrics.loading")}
             </p>
-          ) : metrics ? (
-            <div className="space-y-3 font-hind text-sm">
-              <div className="flex items-baseline justify-between">
-                <span className="text-ink-muted">{tr("metrics.model")} ({metrics.model_name})</span>
-                <span className="dotted-leader" />
-                <strong className="font-serif-bn text-ink text-base">
-                  MAE {formatBDT(metrics.mae_bdt, lang)}
-                </strong>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="bg-surface border border-brickRed rounded-ledger p-5 space-y-2">
+            <p className="font-mono text-sm text-brickRed">{tr("error.title")}</p>
+          </div>
+        )}
+
+        {data && !loading && (
+          <>
+            {/* Forecast Model Evaluation */}
+            <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-rule pb-2">
+                <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
+                  {tr("metrics.forecast")}
+                </h2>
+                <span className="border border-primaryGreen rounded-stamp px-2 py-0.5 text-[10px] font-mono text-primaryGreen font-bold">
+                  LightGBM (14d)
+                </span>
               </div>
 
-              <div className="flex items-baseline justify-between">
-                <span className="text-ink-muted">{tr("metrics.baseline")} ({metrics.baseline_name})</span>
-                <span className="dotted-leader" />
-                <strong className="font-serif-bn text-ink-muted text-base">
-                  MAE {formatBDT(metrics.baseline_mae_bdt, lang)}
-                </strong>
-              </div>
+              <div className="space-y-4 font-hind text-sm">
+                {maeForecastRows.map((row, idx) => (
+                  <div key={idx} className="border-b border-rule pb-3 space-y-1.5 last:border-b-0 last:pb-0">
+                    <div className="flex items-baseline justify-between text-xs font-mono text-ink-muted uppercase">
+                      <span>{getFlowLabel(idx * 2)}</span>
+                      <span>{row.baseline_name ? `vs ${row.baseline_name}` : ""}</span>
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-ink-muted">
+                        {tr("metrics.model")} ({row.model_name})
+                      </span>
+                      <span className="dotted-leader" />
+                      <strong className="font-serif-bn text-ink text-base">
+                        MAE {formatBDT(row.value, lang)}
+                      </strong>
+                    </div>
 
-              <div className="pt-2 border-t border-rule ledger-double-bottom pb-2 flex items-baseline justify-between">
-                <span className="font-bold text-ink font-serif-bn">
-                  {tr("metrics.improvement")}
-                </span>
-                <span className="dotted-leader" />
-                <span className="font-serif-bn font-bold text-xl text-primaryGreen">
-                  +{metrics.improvement_pct}%
-                </span>
+                    {row.baseline_value !== null && row.baseline_value !== undefined && (
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-ink-muted">
+                          {tr("metrics.baseline")} ({row.baseline_name})
+                        </span>
+                        <span className="dotted-leader" />
+                        <strong className="font-serif-bn text-ink-muted text-base">
+                          MAE {formatBDT(row.baseline_value, lang)}
+                        </strong>
+                      </div>
+                    )}
+
+                    {row.improvement_pct !== null && row.improvement_pct !== undefined && (
+                      <div className="pt-1 flex items-baseline justify-between">
+                        <span className="font-bold text-ink font-serif-bn">
+                          {tr("metrics.improvement")}
+                        </span>
+                        <span className="dotted-leader" />
+                        <span
+                          className={`font-serif-bn font-bold text-lg ${
+                            row.improvement_pct >= 0 ? "text-primaryGreen" : "text-brickRed"
+                          }`}
+                        >
+                          {row.improvement_pct >= 0 ? "+" : ""}
+                          {formatDigits(row.improvement_pct.toFixed(1), lang)}%
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
-          ) : (
-            <p className="text-xs font-mono text-ink-muted">{tr("forecast.noMetrics")}</p>
-          )}
-        </div>
 
-        {/* Anomaly Detection Model Specs */}
-        <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-3">
-          <div className="flex items-center justify-between border-b border-rule pb-2">
-            <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
-              {tr("metrics.anomaly")}
-            </h3>
-            <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono">
-              Isolation Forest
-            </span>
-          </div>
-          <p className="text-xs text-ink-muted font-hind leading-relaxed">
-            {tr("metrics.anomalyDesc")}
-          </p>
-          <div className="flex items-center gap-3 pt-2 font-mono text-xs text-ink">
-            <span className="badge">Precision: 0.84</span>
-            <span className="badge">Recall: 0.79</span>
-          </div>
-        </div>
+            {/* Anomaly Detection Model Specs */}
+            <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-rule pb-2">
+                <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
+                  {tr("metrics.anomaly")}
+                </h3>
+                <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono">
+                  Isolation Forest
+                </span>
+              </div>
+              <p className="text-xs text-ink-muted font-hind leading-relaxed">
+                {tr("metrics.anomalyDesc")}
+              </p>
 
-        {/* Fairness Specification */}
-        <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-3">
-          <div className="flex items-center justify-between border-b border-rule pb-2">
-            <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
-              {tr("metrics.fairness")}
-            </h3>
-            <span className="text-xs font-mono text-ink-muted">
-              {tr("metrics.demoAudit")}
-            </span>
-          </div>
-          <p className="text-xs text-ink-muted font-hind leading-relaxed">
-            {tr("metrics.fairnessDesc")}
-          </p>
-        </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 font-mono text-xs">
+                {data.anomaly.map((anom, idx) => (
+                  <div
+                    key={idx}
+                    className="border border-rule rounded-stamp p-2.5 bg-paper/50 space-y-1"
+                  >
+                    <div className="text-[10px] text-ink-muted uppercase">
+                      {anom.metric === "precision"
+                        ? tr("metrics.precision")
+                        : anom.metric === "recall"
+                        ? tr("metrics.recall")
+                        : anom.metric === "f1"
+                        ? tr("metrics.f1")
+                        : anom.metric === "auc"
+                        ? tr("metrics.auc")
+                        : anom.metric}
+                    </div>
+                    <div className="font-serif-bn font-bold text-base text-ink">
+                      {formatMetricVal(anom.metric, anom.value)}
+                    </div>
+                    {anom.baseline_value !== null && anom.baseline_value !== undefined && (
+                      <div className="text-[10px] text-ink-muted">
+                        base: {formatMetricVal(anom.metric, anom.baseline_value)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Consistency Model Specs */}
+            <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-rule pb-2">
+                <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
+                  {tr("metrics.signal")}
+                </h3>
+                <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono">
+                  Logistic Regression
+                </span>
+              </div>
+
+              {data.signal.filter((s) => s.metric === "auc").map((sig, idx) => (
+                <div key={idx} className="space-y-2 font-hind text-sm">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-ink-muted">
+                      {tr("metrics.auc")} ({sig.model_name})
+                    </span>
+                    <span className="dotted-leader" />
+                    <strong className="font-serif-bn text-ink text-base">
+                      {formatDigits(sig.value.toFixed(4), lang)}
+                    </strong>
+                  </div>
+                  {sig.baseline_value !== null && sig.baseline_value !== undefined && (
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-ink-muted">
+                        {tr("metrics.baseline")} ({sig.baseline_name})
+                      </span>
+                      <span className="dotted-leader" />
+                      <strong className="font-serif-bn text-ink-muted text-base">
+                        {formatDigits(sig.baseline_value.toFixed(4), lang)}
+                      </strong>
+                    </div>
+                  )}
+                  {sig.improvement_pct !== null && sig.improvement_pct !== undefined && (
+                    <div className="pt-1 flex items-baseline justify-between">
+                      <span className="font-bold text-ink font-serif-bn">
+                        {tr("metrics.improvement")}
+                      </span>
+                      <span className="dotted-leader" />
+                      <span className="font-serif-bn font-bold text-lg text-primaryGreen">
+                        +{formatDigits(sig.improvement_pct.toFixed(1), lang)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Realized Impact */}
+            {data.impact && data.impact.length > 0 && (
+              <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+                <div className="flex items-center justify-between border-b border-rule pb-2">
+                  <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
+                    {tr("metrics.impactTitle")}
+                  </h3>
+                  <span className="border border-primaryGreen rounded-stamp px-2 py-0.5 text-[10px] font-mono text-primaryGreen">
+                    Outcome
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
+                  {data.impact
+                    .filter((imp) => imp.metric === "avg_potential_fee_saving_bdt_per_month" || imp.metric === "observed_shortfall_days_per_month" || imp.metric === "requests")
+                    .map((imp, idx) => (
+                      <div key={idx} className="border border-rule rounded-stamp p-3 bg-paper/40 space-y-1">
+                        <div className="text-[10px] text-ink-muted uppercase">
+                          {imp.metric === "avg_potential_fee_saving_bdt_per_month"
+                            ? (lang === "bn" ? "গড় সম্ভাব্য ফি সাশ্রয় / মাস" : "Avg Potential Fee Saving / Mo")
+                            : imp.metric === "observed_shortfall_days_per_month"
+                            ? (lang === "bn" ? "মাসিক শর্টফল দিন" : "Observed Shortfall Days / Mo")
+                            : (lang === "bn" ? "মোট সার্ভ করা রিকোয়েস্ট" : "Total Served Requests")}
+                        </div>
+                        <div className="font-serif-bn font-bold text-base text-ink">
+                          {imp.metric.includes("bdt")
+                            ? formatBDT(imp.value, lang)
+                            : formatDigits(imp.value.toFixed(1), lang)}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Fairness Audit Ledger Table */}
+            <div className="bg-surface border border-rule rounded-ledger p-4 md:p-6 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 border-b border-rule pb-2">
+                <h3 className="font-serif-bn font-bold text-xl text-ink m-0">
+                  {tr("metrics.fairnessTable")}
+                </h3>
+                <span className="text-xs font-mono text-ink-muted">
+                  {formatDigits(String(data.fairness.length), lang)} {lang === "bn" ? "টি অডিট রো" : "audit rows"}
+                </span>
+              </div>
+              <p className="text-xs text-ink-muted font-hind leading-relaxed">
+                {tr("metrics.fairnessDesc")}
+              </p>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-rule text-[11px] font-mono text-ink-muted uppercase">
+                      <th className="py-2 pr-3">{tr("metrics.dimension")}</th>
+                      <th className="py-2 pr-3">{tr("metrics.group")}</th>
+                      <th className="py-2 pr-3">{tr("metrics.metric")}</th>
+                      <th className="py-2 pr-3">{tr("metrics.value")}</th>
+                      <th className="py-2 text-right">{tr("metrics.gap")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-rule font-hind text-xs">
+                    {data.fairness.slice(0, 15).map((row, idx) => (
+                      <tr key={idx} className="hover:bg-paper/50">
+                        <td className="py-2 pr-3 font-mono text-ink-muted capitalize">
+                          {row.dimension}
+                        </td>
+                        <td className="py-2 pr-3 font-bold text-ink capitalize">
+                          {row.group}
+                        </td>
+                        <td className="py-2 pr-3 font-mono text-ink-muted text-[11px]">
+                          {row.metric}
+                        </td>
+                        <td className="py-2 pr-3 font-serif-bn font-bold text-ink">
+                          {formatMetricVal(row.metric, row.value)}
+                        </td>
+                        <td className="py-2 text-right font-serif-bn font-bold">
+                          <span
+                            className={
+                              row.relative_gap_pct >= 0 ? "text-primaryGreen" : "text-brickRed"
+                            }
+                          >
+                            {row.relative_gap_pct >= 0 ? "+" : ""}
+                            {formatDigits(row.relative_gap_pct.toFixed(2), lang)}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {data.fairness.length > 15 && (
+                <div className="text-center pt-2 border-t border-rule text-xs font-mono text-ink-muted">
+                  {lang === "bn"
+                    ? `... আরও ${formatDigits(String(data.fairness.length - 15), lang)} টি পরিমাপ অন্তর্ভুক্ত`
+                    : `... and ${data.fairness.length - 15} more audited slices`}
+                </div>
+              )}
+            </div>
+
+            {/* Notes & Caveats */}
+            {data.notes && data.notes.length > 0 && (
+              <div className="border-t border-rule pt-4 space-y-2">
+                <h4 className="text-xs font-mono text-ink-muted uppercase tracking-wider">
+                  {tr("metrics.notesTitle")}
+                </h4>
+                <ul className="space-y-1 text-xs text-ink-muted font-hind list-disc list-inside leading-relaxed">
+                  {data.notes.map((note, idx) => (
+                    <li key={idx}>{note}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </>
+        )}
       </main>
     </>
   );
