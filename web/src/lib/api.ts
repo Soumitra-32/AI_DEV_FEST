@@ -1,9 +1,6 @@
-﻿/**
- * Minimal typed client for the FastAPI shell.
- *
- * Phase 2 implements only /health and /me, but the base URL, the demo-token
- * header, and the shared response shapes are fixed here so later phase routers
- * can be added without touching any component.
+/**
+ * Minimal typed client for the FastAPI backend.
+ * All types mirror backend/app/schemas.py frozen contracts.
  */
 
 export interface DatabaseInfo {
@@ -66,7 +63,6 @@ export interface ForecastMetrics {
   baseline_name: string;
   baseline_mae_bdt: number;
   improvement_pct: number;
-  /** net is the number the savings plan is solved from, so it is measured too */
   net_mae_bdt?: number;
   net_baseline_name?: string;
   net_improvement_pct?: number;
@@ -126,11 +122,47 @@ export interface SavingsPlanResponse {
   provenance: Provenance;
 }
 
-/** POST /chat-explain — the Bangla-first assistant's answer in both languages. */
+/** POST /anomalies (Spending Companion) */
+export interface AnomalyRequest {
+  window_days?: number;
+  limit?: number;
+}
+
+export interface AnomalyItem {
+  transaction_id: string;
+  timestamp: string;
+  amount_bdt: number;
+  channel: string;
+  category: string;
+  anomaly_type: string | null;
+  score: number | null;
+  reason: string;
+  suggested_action: TradeOffAction;
+  suggested_channel: string | null;
+}
+
+export interface FeeSwitchSuggestion {
+  cash_out_count: number;
+  cash_out_volume_bdt: number;
+  fee_paid_bdt: number;
+  alternative_channel: string;
+  alternative_fee_bdt: number;
+  potential_saving_bdt: number;
+  adoption_range: string;
+}
+
+export interface AnomalyResponse {
+  user_id: string;
+  window_days: number;
+  items: AnomalyItem[];
+  fee_switch: FeeSwitchSuggestion | null;
+  provenance: Provenance;
+}
+
+/** POST /chat-explain */
 export interface ExplainRequest {
   message: string;
   language?: "bn" | "en";
-  /** Optional client hint; the server always re-classifies and ignores it. */
   intent?: ExplainIntent | null;
 }
 
@@ -149,31 +181,84 @@ export interface ExplainResponse {
   answer_en: string;
   bullets_bn: string[];
   bullets_en: string[];
-  /** "llm" when the model wrote it, "template" when the fallback answered. */
   source: "rule" | "model" | "template" | "llm";
-  /** True when the guardrail replaced a generated answer. */
   blocked: boolean;
   provenance: Provenance | null;
 }
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+/** POST /credit-readiness */
+export type ConsistencyBand = "Building" | "Steady" | "Strong";
 
+export interface SignalFactor {
+  feature: string;
+  direction: "improves" | "weakens";
+  magnitude: number;
+  plain_language: string;
+}
+
+export interface ConsistencySignalResponse {
+  user_id: string;
+  band: ConsistencyBand;
+  factors: SignalFactor[];
+  improvements: string[];
+  not_a_decision: boolean;
+  banner_en: string;
+  banner_bn: string;
+  auc: number | null;
+  provenance: Provenance;
+}
+
+/** GET /metrics */
+export interface ModelMetric {
+  model_name: string;
+  metric: string;
+  value: number;
+  baseline_name: string | null;
+  baseline_value: number | null;
+  improvement_pct: number | null;
+}
+
+export interface FairnessRow {
+  dimension: "persona" | "district" | "income_band";
+  group: string;
+  metric: string;
+  value: number;
+  relative_gap_pct: number;
+}
+
+export interface MetricsResponse {
+  generated_at: string;
+  forecast: ModelMetric[];
+  anomaly: ModelMetric[];
+  signal: ModelMetric[];
+  fairness: FairnessRow[];
+  notes: string[];
+}
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 const DEMO_TOKEN = process.env.NEXT_PUBLIC_DEMO_TOKEN ?? "change-me";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Demo-Token": DEMO_TOKEN,
-      ...(init?.headers ?? {}),
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`API ${path} failed with status ${response.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+  try {
+    const response = await fetch(`${BASE_URL}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Demo-Token": DEMO_TOKEN,
+        ...(init?.headers ?? {}),
+      },
+    });
+    if (!response.ok) {
+      throw new Error(`API ${path} failed with status ${response.status}`);
+    }
+    return (await response.json()) as T;
+  } finally {
+    clearTimeout(timeoutId);
   }
-  return (await response.json()) as T;
 }
 
 export function fetchHealth(): Promise<HealthResponse> {
@@ -183,7 +268,7 @@ export function fetchHealth(): Promise<HealthResponse> {
 export function fetchIdentity(): Promise<IdentityResponse> {
   return request<IdentityResponse>("/me");
 }
-/** POST /forecast — the 14-day cash-flow forecast plus pressure days. */
+
 export function fetchForecast(body: ForecastRequest = {}): Promise<ForecastResponse> {
   return request<ForecastResponse>("/forecast", {
     method: "POST",
@@ -194,7 +279,6 @@ export function fetchForecast(body: ForecastRequest = {}): Promise<ForecastRespo
   });
 }
 
-/** POST /savings-plan — feasibility, trade-offs and the do-nothing cost. */
 export function fetchSavingsPlan(body: SavingsPlanRequest): Promise<SavingsPlanResponse> {
   return request<SavingsPlanResponse>("/savings-plan", {
     method: "POST",
@@ -202,10 +286,17 @@ export function fetchSavingsPlan(body: SavingsPlanRequest): Promise<SavingsPlanR
   });
 }
 
-/** POST /chat-explain — ask one question in Bangla or English. */
-export function fetchExplain(
-  body: ExplainRequest,
-): Promise<ExplainResponse> {
+export function fetchAnomalies(body: AnomalyRequest = {}): Promise<AnomalyResponse> {
+  return request<AnomalyResponse>("/anomalies", {
+    method: "POST",
+    body: JSON.stringify({
+      window_days: body.window_days ?? 30,
+      limit: body.limit ?? 20,
+    }),
+  });
+}
+
+export function fetchExplain(body: ExplainRequest): Promise<ExplainResponse> {
   return request<ExplainResponse>("/chat-explain", {
     method: "POST",
     body: JSON.stringify({
@@ -213,4 +304,15 @@ export function fetchExplain(
       language: body.language ?? "bn",
     }),
   });
+}
+
+export function fetchCreditReadiness(): Promise<ConsistencySignalResponse> {
+  return request<ConsistencySignalResponse>("/credit-readiness", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export function fetchMetrics(): Promise<MetricsResponse> {
+  return request<MetricsResponse>("/metrics");
 }

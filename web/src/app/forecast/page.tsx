@@ -8,132 +8,186 @@ import NotADecisionBanner from "@/components/NotADecisionBanner";
 import TopBar from "@/components/TopBar";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchForecast } from "@/lib/api";
-import type { ForecastResponse, PressureReason } from "@/lib/api";
-import type { TranslationKey } from "@/lib/i18n";
-import { formatBDT, formatInteger } from "@/lib/i18n";
-
-const REASON_KEY: Record<PressureReason, TranslationKey> = {
-  negative_net: "forecast.reasonNegativeNet",
-  below_buffer: "forecast.reasonBelowBuffer",
-  both: "forecast.reasonBoth",
-};
+import type { ForecastResponse } from "@/lib/api";
+import { formatBDT } from "@/lib/i18n";
 
 export default function ForecastPage() {
   const { lang, tr } = useLanguage();
   const [data, setData] = useState<ForecastResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
+    setLoading(true);
     setError(null);
     fetchForecast({ horizon_days: 14 })
-      .then(setData)
-      .catch(() => setError(tr("error.title")));
+      .then((res) => {
+        setData(res);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError(tr("error.title"));
+        setLoading(false);
+      });
   }, [tr]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <>
       <TopBar />
-      <main>
-        <h1>{tr("forecast.title")}</h1>
-        <p>{tr("forecast.subtitle")}</p>
+      <main className="space-y-6">
+        <header className="border-b border-rule pb-4 space-y-2">
+          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
+            ১৪ দিনের নগদ প্রবাহ • {tr("stamp.computed")}
+          </div>
+          <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
+            {tr("forecast.title")}
+          </h1>
+          <p className="text-base text-ink-muted leading-relaxed font-hind">
+            {tr("forecast.subtitle")}
+          </p>
+        </header>
+
         <NotADecisionBanner />
 
-        {error ? (
-          <div className="card">
-            <p>{error}</p>
-            <button type="button" onClick={load}>
+        {error && (
+          <div className="bg-surface border border-brickRed rounded-ledger p-5 space-y-3">
+            <p className="font-mono text-sm text-brickRed">{error}</p>
+            <button type="button" onClick={load} className="primary text-xs">
               {tr("error.retry")}
             </button>
           </div>
-        ) : null}
+        )}
 
-        {!data && !error ? <p>{tr("forecast.loading")}</p> : null}
+        {loading && !error && (
+          <div className="bg-surface border border-rule rounded-ledger p-8 text-center">
+            <p className="font-mono text-sm text-ink-muted animate-pulse">
+              {tr("forecast.loading")}
+            </p>
+          </div>
+        )}
 
-        {data ? (
+        {data && (
           <>
-            <InsightCard title={tr("forecast.title")} provenance={data.provenance}>
+            {/* Chart Container */}
+            <div className="bg-surface border border-rule rounded-ledger p-4 md:p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-rule pb-2">
+                <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
+                  {tr("forecast.title")}
+                </h2>
+                <span className="text-xs font-mono text-ink-muted uppercase">
+                  {tr("stamp.computed")}
+                </span>
+              </div>
               <ForecastChart days={data.days} />
-              <p>
-                <strong>{tr("forecast.pressureTitle")}: </strong>
-                {data.pressure_days.length === 0 ? (
-                  <span className="badge">{tr("forecast.pressureNone")}</span>
-                ) : (
-                  data.pressure_days.map((date) => {
-                    const day = data.days.find((item) => item.date === date);
-                    return (
-                      <span key={date} className="badge warn">
-                        {date} — {tr(REASON_KEY[day?.pressure_reason ?? "both"])}
-                      </span>
-                    );
-                  })
-                )}
-              </p>
-            </InsightCard>
+            </div>
 
-            <div className="card">
-              <h2>{tr("forecast.modelAccuracy")}</h2>
+            {/* Model Accuracy Card */}
+            <div className="bg-surface border border-rule rounded-ledger p-5 space-y-2">
+              <div className="text-xs font-mono text-ink-muted uppercase">
+                {tr("forecast.modelAccuracy")}
+              </div>
               {data.metrics ? (
-                <p>
-                  {data.metrics.model_name}: MAE{" "}
-                  <strong>{formatBDT(data.metrics.mae_bdt, lang)}</strong> ·{" "}
-                  {data.metrics.baseline_name}: MAE{" "}
-                  <strong>{formatBDT(data.metrics.baseline_mae_bdt, lang)}</strong> ·{" "}
-                  <span className="badge">
-                    +{data.metrics.improvement_pct}% better
+                <div className="text-sm font-hind text-ink flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <span>
+                    {data.metrics.model_name}: MAE{" "}
+                    <strong className="font-serif-bn">{formatBDT(data.metrics.mae_bdt, lang)}</strong>
                   </span>
-                </p>
+                  <span className="text-rule">·</span>
+                  <span>
+                    {data.metrics.baseline_name}: MAE{" "}
+                    <strong className="font-serif-bn">{formatBDT(data.metrics.baseline_mae_bdt, lang)}</strong>
+                  </span>
+                  <span className="text-rule">·</span>
+                  <span className="badge success">
+                    +{data.metrics.improvement_pct}% {tr("metrics.improvement")}
+                  </span>
+                </div>
               ) : (
-                <p className="muted">{tr("forecast.noMetrics")}</p>
+                <p className="text-xs font-mono text-ink-muted">{tr("forecast.noMetrics")}</p>
               )}
             </div>
 
-            <div className="card">
-              <h2>{tr("forecast.table")}</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>{tr("forecast.days")}</th>
-                    <th>{tr("forecast.inflow")}</th>
-                    <th>{tr("forecast.outflow")}</th>
-                    <th>{tr("forecast.net")}</th>
-                    <th>{tr("forecast.balance")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.days.map((day) => (
-                    <tr key={day.date}>
-                      <td>
-                        {day.date}
-                        {day.is_pressure_day ? (
-                          <span className="badge warn"> {tr("forecast.pressureTitle")}</span>
-                        ) : null}
-                      </td>
-                      <td>{formatBDT(day.predicted_inflow_bdt, lang)}</td>
-                      <td>{formatBDT(day.predicted_outflow_bdt, lang)}</td>
-                      <td>{formatBDT(day.predicted_net_bdt, lang)}</td>
-                      <td>
-                        {day.predicted_balance_bdt === null
-                          ? "—"
-                          : formatBDT(day.predicted_balance_bdt, lang)}
-                      </td>
+            {/* Day-by-Day Table */}
+            <div className="bg-surface border border-rule rounded-ledger p-4 md:p-6 space-y-4">
+              <div className="flex items-baseline justify-between border-b border-rule pb-2">
+                <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
+                  {tr("forecast.table")}
+                </h2>
+                <span className="text-xs font-mono text-ink-muted uppercase">
+                  ১৪ দিনের বিবরণী
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr>
+                      <th>{tr("forecast.days")}</th>
+                      <th>{tr("forecast.inflow")}</th>
+                      <th>{tr("forecast.outflow")}</th>
+                      <th>{tr("forecast.net")}</th>
+                      <th>{tr("forecast.balance")}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-rule font-hind">
+                    {data.days.map((day) => (
+                      <tr
+                        key={day.date}
+                        className={day.is_pressure_day ? "bg-brickRed/5" : ""}
+                      >
+                        <td className="font-mono text-xs text-ink whitespace-nowrap">
+                          {day.date}
+                          {day.is_pressure_day && (
+                            <span className="ml-2 border border-brickRed rounded-stamp px-1.5 py-0.5 text-[10px] text-brickRed font-mono">
+                              {tr("forecast.pressureBadge")}
+                            </span>
+                          )}
+                        </td>
+                        <td className="font-serif-bn font-bold text-primaryGreen">
+                          {formatBDT(day.predicted_inflow_bdt, lang)}
+                        </td>
+                        <td className="font-serif-bn font-bold text-brickRed">
+                          {formatBDT(day.predicted_outflow_bdt, lang)}
+                        </td>
+                        <td className="font-serif-bn">
+                          {formatBDT(day.predicted_net_bdt, lang)}
+                        </td>
+                        <td className="font-serif-bn font-bold text-ink">
+                          {day.predicted_balance_bdt === null
+                            ? "—"
+                            : formatBDT(day.predicted_balance_bdt, lang)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
-            <p>
-              {tr("nav.plan")}:{" "}
-              <Link href="/plan">
-                {formatInteger(30000, lang)}
+            {/* 3-Layer Provenance */}
+            {data.provenance && (
+              <InsightCard provenance={data.provenance} />
+            )}
+
+            {/* Next Action Link */}
+            <div className="p-4 bg-surface border border-rule rounded-ledger flex items-center justify-between">
+              <span className="font-hind text-sm text-ink-muted">
+                {lang === "bn" ? "উদ্বৃত্তের ওপর সঞ্চয় পরিকল্পনা করতে চান?" : "Want to plan savings from your surplus?"}
+              </span>
+              <Link
+                href="/plan"
+                className="text-sm font-semibold text-primaryGreen underline underline-offset-4 decoration-primaryGreen/60 hover:text-ink transition-colors font-hind"
+              >
+                {tr("nav.plan")} →
               </Link>
-            </p>
+            </div>
           </>
-        ) : null}
+        )}
       </main>
     </>
   );
 }
-

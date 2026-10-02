@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { DEFAULT_LANG, LANGUAGES, t } from "@/lib/i18n";
+import { DEFAULT_LANG, t } from "@/lib/i18n";
 import type { Lang, TranslationKey } from "@/lib/i18n";
 
 interface LanguageContextValue {
@@ -32,23 +32,41 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Language switch. Plain buttons (not a select) so the choice is obvious even
- * for users who have never changed a language setting before.
+ * Language switch.
+ * Elegant ledger typographic switch with 2px solid primaryGreen underline under active language.
  */
 export default function LangToggle() {
   const { lang, setLang, tr } = useLanguage();
+
   return (
-    <div role="group" aria-label={tr("lang.switchTo")}>
-      {LANGUAGES.map((option) => (
-        <button
-          key={option.code}
-          type="button"
-          aria-pressed={lang === option.code}
-          onClick={() => setLang(option.code)}
-        >
-          {option.label}
-        </button>
-      ))}
+    <div
+      role="group"
+      aria-label={tr("lang.switchTo")}
+      className="text-xs font-mono text-ink flex items-center gap-2 select-none"
+    >
+      <button
+        type="button"
+        className={`bg-transparent border-0 p-0 cursor-pointer text-xs font-mono ${
+          lang === "bn"
+            ? "font-bold text-primaryGreen pb-0.5 border-b-2 border-primaryGreen"
+            : "text-ink-muted hover:text-ink"
+        }`}
+        onClick={() => setLang("bn")}
+      >
+        বাংলা
+      </button>
+      <span className="text-rule">·</span>
+      <button
+        type="button"
+        className={`bg-transparent border-0 p-0 cursor-pointer text-xs font-mono ${
+          lang === "en"
+            ? "font-bold text-primaryGreen pb-0.5 border-b-2 border-primaryGreen"
+            : "text-ink-muted hover:text-ink"
+        }`}
+        onClick={() => setLang("en")}
+      >
+        EN
+      </button>
     </div>
   );
 }

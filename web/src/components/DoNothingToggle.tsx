@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useLanguage } from "@/components/LangToggle";
 import { formatBDT } from "@/lib/i18n";
 
@@ -9,37 +10,84 @@ interface DoNothingToggleProps {
 }
 
 /**
- * The consent pattern: every suggestion ships with an explicit
- * "do nothing" option whose cost is stated up front.
+ * Section 7: "কিছু না করলে কী হবে?" (Do Nothing Option)
+ * Both Collapsed & Expanded states matching the ledger design system.
  */
 export default function DoNothingToggle({ costBdt }: DoNothingToggleProps) {
   const { lang, tr } = useLanguage();
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState(false);
+
+  if (!open) {
+    return (
+      <div
+        className="bg-surface border border-rule rounded-ledger p-4 flex items-center justify-between cursor-pointer mb-6 hover:border-ink transition-colors"
+        onClick={() => setOpen(true)}
+      >
+        <div className="space-y-0.5">
+          <span className="text-xs font-mono text-ink-muted uppercase">
+            {tr("common.doNothing")}
+          </span>
+          <div className="font-bold text-base text-ink">
+            {tr("common.doNothing")}
+          </div>
+        </div>
+        <ChevronDown className="w-5 h-5 text-ink-muted" strokeWidth={1.5} />
+      </div>
+    );
+  }
+
   return (
-    <div className="card">
-      <h3>{tr("common.doNothing")}</h3>
-      <p className="muted">{tr("common.doNothingHint")}</p>
-      {typeof costBdt === "number" ? (
-        <p>
-          {tr("common.doNothingCost")}: <strong>{formatBDT(costBdt, lang)}</strong>
-        </p>
-      ) : null}
-      {!open ? (
-        <button type="button" onClick={() => setOpen(true)}>
+    <div className="bg-surface border border-rule rounded-ledger p-5 space-y-3 mb-6">
+      <div
+        className="flex items-center justify-between border-b border-rule pb-2 cursor-pointer"
+        onClick={() => setOpen(false)}
+      >
+        <div className="font-serif-bn font-bold text-base text-ink">
           {tr("common.doNothing")}
-        </button>
-      ) : !chosen ? (
-        <div>
-          <button type="button" className="primary" onClick={() => setChosen(true)}>
+        </div>
+        <ChevronUp className="w-5 h-5 text-ink-muted" strokeWidth={1.5} />
+      </div>
+
+      <p className="text-sm font-medium text-ink leading-relaxed">
+        {tr("common.doNothingOutcome")}
+      </p>
+
+      {typeof costBdt === "number" && (
+        <div className="flex items-baseline justify-between text-sm py-1 border-t border-b border-rule">
+          <span className="text-ink-muted">{tr("common.doNothingCost")}</span>
+          <span className="dotted-leader" />
+          <strong className="font-serif-bn text-base text-brickRed">
+            {formatBDT(costBdt, lang)}
+          </strong>
+        </div>
+      )}
+
+      <div className="text-xs text-ink-muted border-t border-rule pt-2 leading-relaxed">
+        {tr("common.doNothingDisclaimer")}
+      </div>
+
+      {!chosen ? (
+        <div className="pt-2 flex items-center gap-3">
+          <button
+            type="button"
+            className="primary text-xs"
+            onClick={() => setChosen(true)}
+          >
             {tr("common.doNothingConfirm")}
-          </button>{" "}
-          <button type="button" onClick={() => setOpen(false)}>
+          </button>
+          <button
+            type="button"
+            className="text-xs"
+            onClick={() => setOpen(false)}
+          >
             {tr("common.doNothingDismiss")}
           </button>
         </div>
       ) : (
-        <p role="status">{tr("common.doNothingChosen")}</p>
+        <p className="text-xs font-mono text-primaryGreen pt-2" role="status">
+          ✓ {tr("common.doNothingChosen")}
+        </p>
       )}
     </div>
   );

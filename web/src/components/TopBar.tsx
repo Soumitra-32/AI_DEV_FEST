@@ -1,26 +1,51 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import LangToggle, { useLanguage } from "@/components/LangToggle";
 
-/**
- * Shared navigation, used by every screen so the language toggle and the route
- * list never drift between pages.
- */
 export default function TopBar() {
-const { tr } = useLanguage();
+  const { tr } = useLanguage();
+  const pathname = usePathname();
+
+  const links = [
+    { href: "/", label: tr("nav.home") },
+    { href: "/forecast", label: tr("nav.forecast") },
+    { href: "/plan", label: tr("nav.plan") },
+    { href: "/spending", label: tr("nav.spending") },
+    { href: "/tips", label: tr("nav.tips") },
+    { href: "/signal", label: tr("nav.signal") },
+    { href: "/metrics", label: tr("nav.metrics") },
+  ];
+
   return (
-    <header className="topbar">
-      <strong>{tr("appName")}</strong>
-      <nav>
-        <Link href="/">{tr("nav.home")}</Link>
-        <Link href="/plan">{tr("nav.plan")}</Link>
-        <Link href="/forecast">{tr("nav.forecast")}</Link>
-        <Link href="/spending">{tr("nav.spending")}</Link>
-        <Link href="/tips">{tr("nav.tips")}</Link>
-        <Link href="/signal">{tr("nav.signal")}</Link>
-        <Link href="/metrics">{tr("nav.metrics")}</Link>
-      </nav>
+    <header className="border-b border-rule px-4 py-3 bg-surface rounded-ledger flex items-center justify-between gap-3 mb-6">
+      <div className="flex items-center gap-6">
+        <Link
+          href="/"
+          className="font-serif-bn font-bold text-xl text-ink tracking-tight no-underline hover:text-primaryGreen transition-colors"
+        >
+          {tr("appName")}
+        </Link>
+        <nav className="hidden md:flex items-center gap-4 text-xs font-mono tracking-wider">
+          {links.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`no-underline transition-colors ${
+                  isActive
+                    ? "font-bold text-primaryGreen border-b-2 border-primaryGreen pb-0.5"
+                    : "text-ink-muted hover:text-ink"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
       <LangToggle />
     </header>
   );

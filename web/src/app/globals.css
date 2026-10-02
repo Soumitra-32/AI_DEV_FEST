@@ -1,167 +1,225 @@
-/*
- * Base styles. Deliberately plain, large and high-contrast: the product is aimed
- * at users who may be reading financial information in Bangla for the first time,
- * so text is big, spacing is generous and nothing is hidden behind hover states.
- */
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #F4EFE3;
+  --color-surface: #FBF8F1;
+  --color-ink: #1E1B16;
+  --color-ink-muted: #6A6355;
+  --color-rule: #D8CFBB;
+  --color-primaryGreen: #1F4D36;
+  --color-brickRed: #B0431F;
+
+  --font-hind: "Hind Siliguri", sans-serif;
+  --font-serif-bn: "Noto Serif Bengali", serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --radius-ledger: 6px;
+  --radius-stamp: 4px;
+}
+
 :root {
-  --ink: #10233a;
-  --ink-soft: #46586e;
-  --line: #d7dee8;
-  --surface: #ffffff;
-  --surface-alt: #f4f7fb;
-  --brand: #0a6b5b;
-  --brand-soft: #e6f3f0;
-  --warn: #8a4b00;
-  --warn-soft: #fff5e6;
-  --danger: #a4231f;
-  --danger-soft: #fdeceb;
+  --paper: #F4EFE3;
+  --surface: #FBF8F1;
+  --ink: #1E1B16;
+  --ink-muted: #6A6355;
+  --rule: #D8CFBB;
+  --primaryGreen: #1F4D36;
+  --brickRed: #B0431F;
 }
 
 * {
   box-sizing: border-box;
 }
 
-html,
 body {
-  margin: 0;
-  padding: 0;
-  background: var(--surface-alt);
-  color: var(--ink);
-  font-family: "Noto Sans Bengali", "Nirmala UI", "Hind Siliguri", system-ui,
-    -apple-system, "Segoe UI", sans-serif;
+  background-color: #F4EFE3;
+  color: #1E1B16;
+  font-family: "Hind Siliguri", "Nirmala UI", sans-serif;
   font-size: 17px;
   line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0;
 }
 
-a {
-  color: var(--brand);
+.font-serif-bn {
+  font-family: "Noto Serif Bengali", serif;
+  font-feature-settings: "tnum" 1;
 }
 
+.font-hind {
+  font-family: "Hind Siliguri", sans-serif;
+}
+
+.font-mono {
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* Double accounting rules */
+.ledger-double-top {
+  border-top: 3px double #D8CFBB;
+}
+
+.ledger-double-bottom {
+  border-bottom: 3px double #1E1B16;
+}
+
+/* Diagonal hatch for pressure calendar ledger indicator */
+.diagonal-hatch-pattern {
+  background-color: #FBF8F1;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 5px,
+    rgba(176, 67, 31, 0.28) 5px,
+    rgba(176, 67, 31, 0.28) 7px
+  );
+}
+
+.dotted-leader {
+  border-bottom: 1.5px dotted #D8CFBB;
+  flex-grow: 1;
+  margin: 0 10px 4px 10px;
+  height: 1px;
+}
+
+/* Classic ledger container shell */
 .shell {
-  max-width: 880px;
+  max-width: 920px;
   margin: 0 auto;
-  padding: 24px 20px 64px;
+  padding: 16px 16px 88px;
 }
 
-.topbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 20px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-}
-
-.topbar nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-}
-
-.topbar nav a {
-  text-decoration: none;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
+/* Base Ledger Card */
 .card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 14px;
+  background: #FBF8F1;
+  border: 1px solid #D8CFBB;
+  border-radius: 6px;
   padding: 18px 20px;
   margin-bottom: 18px;
 }
 
 .card h2,
 .card h3 {
+  font-family: "Noto Serif Bengali", serif;
+  font-weight: 700;
   margin-top: 0;
+  color: #1E1B16;
 }
 
 .muted {
-  color: var(--ink-soft);
+  color: #6A6355;
 }
 
+/* Rubber Stamp Badges - 1px border, no pill, no heavy gradient */
 .badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  background: var(--brand-soft);
-  color: var(--brand);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid #6A6355;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: "JetBrains Mono", monospace;
+  background: #FBF8F1;
+  color: #1E1B16;
+  text-transform: uppercase;
 }
 
 .badge.warn {
-  background: var(--warn-soft);
-  color: var(--warn);
+  border-color: #B0431F;
+  color: #B0431F;
 }
 
 .badge.danger {
-  background: var(--danger-soft);
-  color: var(--danger);
+  border-color: #B0431F;
+  color: #B0431F;
 }
 
-.provenance {
-  display: grid;
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--line);
+.badge.success {
+  border-color: #1F4D36;
+  color: #1F4D36;
 }
 
-.provenance dt {
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.provenance dd {
-  margin: 0;
-}
-
+/* Warning Strip (3px brick-red left rule, no solid red background fill) */
 .banner {
-  border-left: 5px solid var(--warning, #8a4b00);
-  background: var(--warn-soft);
-  color: var(--warn);
-  padding: 12px 16px;
-  border-radius: 10px;
+  border-left: 4px solid #B0431F;
+  border-top: 1px solid #D8CFBB;
+  border-right: 1px solid #D8CFBB;
+  border-bottom: 1px solid #D8CFBB;
+  background: #FBF8F1;
+  color: #1E1B16;
+  padding: 14px 16px;
+  border-radius: 4px;
   margin-bottom: 18px;
-  font-weight: 600;
 }
 
+/* Flat Ledger Buttons */
 button,
 .button {
   font: inherit;
-  padding: 9px 16px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
+  padding: 9px 18px;
+  border-radius: 6px;
+  border: 1px solid #D8CFBB;
+  background: #FBF8F1;
+  color: #1E1B16;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+button:hover,
+.button:hover {
+  border-color: #1E1B16;
 }
 
 button.primary {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
+  background: #1F4D36;
+  border-color: #1F4D36;
+  color: #ffffff;
   font-weight: 600;
 }
 
-button[aria-pressed="true"] {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
+button.primary:hover {
+  opacity: 0.95;
 }
 
+/* Table Ledger Formatting */
 table {
   width: 100%;
   border-collapse: collapse;
 }
 
-th,
-td {
+th {
   text-align: left;
   padding: 8px 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid #D8CFBB;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6A6355;
+}
+
+td {
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid #D8CFBB;
+  color: #1E1B16;
+}
+
+/* Suggestions - text-only with green underline, NO pills */
+.suggestion-link {
+  color: #1F4D36;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(31, 77, 54, 0.5);
+  font-weight: 500;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.suggestion-link:hover {
+  color: #1E1B16;
 }

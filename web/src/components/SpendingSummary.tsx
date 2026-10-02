@@ -1,0 +1,92 @@
+"use client";
+
+import { useLanguage } from "@/components/LangToggle";
+import { formatBDT, formatInteger } from "@/lib/i18n";
+import type { FeeSwitchSuggestion } from "@/lib/api";
+
+interface SpendingSummaryProps {
+  feeSwitch?: FeeSwitchSuggestion | null;
+  windowDays?: number;
+}
+
+/**
+ * Section 5: Ledger Rows with Dotted Leaders & Accounting Rules
+ */
+export default function SpendingSummary({ feeSwitch, windowDays = 30 }: SpendingSummaryProps) {
+  const { lang, tr } = useLanguage();
+
+  if (!feeSwitch) {
+    return null;
+  }
+
+  return (
+    <div className="bg-surface border border-rule rounded-ledger p-4 md:p-6 mb-6 space-y-4">
+      <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
+        <span className="uppercase">{tr("spending.summary")} ({windowDays} {lang === "bn" ? "দিন" : "days"})</span>
+        <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[11px]">
+          {tr("stamp.computed")}
+        </span>
+      </div>
+
+      <div className="space-y-3 font-hind text-base">
+        {/* Row 1: Cash-out count */}
+        <div>
+          <div className="flex items-baseline justify-between">
+            <span className="font-medium text-ink">{tr("spending.cashOutCount")}</span>
+            <span className="dotted-leader" />
+            <span className="font-serif-bn font-bold text-lg text-ink">
+              {formatInteger(feeSwitch.cash_out_count, lang)} {lang === "bn" ? "বার" : "times"}
+            </span>
+          </div>
+          <div className="text-[12px] text-ink-muted -mt-1 pl-1">
+            {lang === "bn" ? "গত ১ মাসের মোট ক্যাশ-আউটের সংখ্যা" : "Total cash-outs in the last 30 days"}
+          </div>
+        </div>
+
+        {/* Row 2: Cash-out volume */}
+        <div>
+          <div className="flex items-baseline justify-between pt-1">
+            <span className="font-medium text-ink">{tr("spending.cashOutVolume")}</span>
+            <span className="dotted-leader" />
+            <span className="font-serif-bn font-bold text-lg text-ink">
+              {formatBDT(feeSwitch.cash_out_volume_bdt, lang)}
+            </span>
+          </div>
+          <div className="text-[12px] text-ink-muted -mt-1 pl-1">
+            {lang === "bn" ? "এজেন্ট পয়েন্ট থেকে উত্তোলিত নগদ টাকা" : "Total cash withdrawn via agent points"}
+          </div>
+        </div>
+
+        {/* Row 3: Fee paid */}
+        <div>
+          <div className="flex items-baseline justify-between pt-1">
+            <span className="font-medium text-ink">{tr("spending.feePaid")}</span>
+            <span className="dotted-leader" />
+            <span className="font-serif-bn font-bold text-lg text-brickRed">
+              {formatBDT(feeSwitch.fee_paid_bdt, lang)}
+            </span>
+          </div>
+          <div className="text-[12px] text-ink-muted -mt-1 pl-1">
+            {lang === "bn" ? "ক্যাশ-আউটে কাটা নির্ধারিত ফি (১.৮৫%)" : "Calculated cash-out fee paid"}
+          </div>
+        </div>
+
+        {/* Total Accounting Rule: Potential saving */}
+        <div className="pt-3 mt-2">
+          <div className="border-t border-rule pt-2 pb-2 ledger-double-bottom flex items-baseline justify-between">
+            <span className="font-bold text-ink font-serif-bn text-lg">
+              {tr("spending.potentialSaving")}
+            </span>
+            <span className="dotted-leader" />
+            <span className="font-serif-bn font-bold text-2xl text-primaryGreen">
+              {formatBDT(feeSwitch.potential_saving_bdt, lang)}
+            </span>
+          </div>
+          <div className="text-xs text-ink-muted pt-1 text-right font-mono">
+            {lang === "bn" ? "উপরে একক দাগ • নিচে ডবল দাগ (হিসাব সম্পন্ন)" : "Single rule top • Double rule bottom"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
