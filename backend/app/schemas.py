@@ -201,6 +201,19 @@ class SavingsPlanResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# POST /parse-goal  (voice/text -> numbers for the savings form)
+# ---------------------------------------------------------------------------
+class ParseGoalRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=500, description="Free Bangla/English text")
+
+
+class ParseGoalResponse(BaseModel):
+    goal_bdt: Optional[float] = Field(default=None, description="Parsed amount, if present")
+    months: Optional[int] = Field(default=None, description="Parsed horizon, if present")
+    is_complete: bool = Field(description="True when both halves are present")
+
+
+# ---------------------------------------------------------------------------
 # POST /anomalies  (Spending Companion)
 # ---------------------------------------------------------------------------
 class AnomalyRequest(BaseModel):

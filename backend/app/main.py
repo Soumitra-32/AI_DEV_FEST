@@ -21,6 +21,7 @@ from .routers import (
     credit_readiness,
     forecast,
     health,
+    parse_goal,
     savings_plan,
 )
 
@@ -49,6 +50,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     app.include_router(chat_explain.router)
     app.include_router(anomalies.router)
     app.include_router(credit_readiness.router)
+    app.include_router(parse_goal.router)
 
     @app.get("/", include_in_schema=False)
     def root() -> Dict[str, str]:
