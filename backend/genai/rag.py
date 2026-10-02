@@ -42,7 +42,7 @@ def _compare(actual: float, op: str, expected: float) -> bool:
 
 
 @lru_cache(maxsize=4)
-def load_bank(path: str | Path = TIPS_FILE) -> tuple[dict[str, Any], ...]:
+def load_bank(path: str | Path = TIPS_FILE) -> tuple[Mapping[str, Any], ...]:
     """The curated tips, loaded once and cached.
 
     A missing or malformed bank returns an empty tuple rather than raising: a

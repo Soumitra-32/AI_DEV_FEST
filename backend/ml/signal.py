@@ -259,7 +259,7 @@ def predict(
         probability=probability,
         band=band_for(probability, bands),
         source="model",
-        factors=shap_factors(model, scaler, features.iloc[0], top_k=top_k),
+        factors=shap_factors(model, scaler, features.iloc[0].to_dict(), top_k=top_k),
     )
 
 
