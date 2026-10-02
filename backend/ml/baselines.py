@@ -11,7 +11,8 @@ frame, so evaluation compares identical (date, horizon) cells across methods.
 
 from __future__ import annotations
 
-import numpy as np
+from typing import Sequence
+
 import pandas as pd
 
 #: Baseline names, in the order reported by ``evaluate.py``.
@@ -45,13 +46,18 @@ def _signals(frame: pd.DataFrame) -> pd.DataFrame:
 
 
 def predict(
-    daily: pd.DataFrame, user_ids: pd.Series | None = None, horizon_days: int = 14
+    daily: pd.DataFrame,
+    user_ids: Sequence[str] | pd.Series | None = None,
+    horizon_days: int = 14,
 ) -> pd.DataFrame:
     """Baseline predictions for horizons 1..N.
 
     Returns one row per (user_id, date, horizon) with ``pred_inflow`` and
     ``pred_outflow`` per baseline. The ``date`` is the *feature* date (the day
     the forecast is made from); the predicted day is ``date + horizon``.
+
+    ``user_ids`` is a sequence of ids or the ``user_id`` column itself; ``None``
+    predicts for every user in ``daily``.
     """
     frame = _signals(_completed(daily))
     if user_ids is not None:

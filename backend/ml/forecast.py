@@ -30,7 +30,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, TypedDict
 
 import lightgbm as lgb
 import numpy as np
@@ -43,6 +43,21 @@ INFLOW_MODEL = "forecast_inflow.txt"
 OUTFLOW_MODEL = "forecast_outflow.txt"
 NET_MODEL = "forecast_net.txt"
 META_FILE = "forecast_meta.json"
+
+
+class LoadedModels(TypedDict, total=False):
+    """What :func:`load` returns: boosters keyed by flow, plus ``_meta``.
+
+    ``total=False`` because an artifact directory may be missing any booster —
+    an older one has no ``forecast_net.txt``, and a partially-written directory
+    should degrade rather than raise. ``_meta`` is always present when ``load``
+    returns, but it shares the mapping so there is one object to pass around.
+    """
+
+    inflow: lgb.Booster
+    outflow: lgb.Booster
+    net: lgb.Booster
+    _meta: dict[str, Any]
 
 #: The prior each booster corrects. The model is trained on the *residual*
 #: from the user's own trailing 4-week mean, not on the raw level.
@@ -202,22 +217,24 @@ def train(
     }
 
 
-def load(artifact_dir: str | Path = ARTIFACT_DIR) -> dict[str, lgb.Booster]:
+def load(artifact_dir: str | Path = ARTIFACT_DIR) -> LoadedModels:
     """Load the trained boosters, keyed by flow, plus their metadata under ``_meta``.
 
     Artifacts written before the net model existed have no ``forecast_net.txt``;
     that is tolerated so an older artifact directory still serves a forecast
     (with net falling back to the difference of the two flow models) instead of
     failing the request.
+
+    Callers must go through the mapping (``models["inflow"]``), never unpack it:
+    a 3-tuple unpack would silently yield the dict's *keys*.
     """
     directory = Path(artifact_dir)
-    boosters: dict[str, lgb.Booster] = {}
+    boosters: LoadedModels = {}
     for flow, filename in (("inflow", INFLOW_MODEL), ("outflow", OUTFLOW_MODEL), ("net", NET_MODEL)):
         path = directory / filename
         if path.exists():
             boosters[flow] = lgb.Booster(model_file=str(path))
-    meta = json.loads((directory / META_FILE).read_text(encoding="utf-8"))
-    boosters["_meta"] = meta  # type: ignore[assignment]
+    boosters["_meta"] = json.loads((directory / META_FILE).read_text(encoding="utf-8"))
     return boosters
 
 
@@ -240,7 +257,10 @@ def predict_mean(
     and ``net_source`` says so, which keeps the gap visible instead of silent.
     """
     boosters = load(artifact_dir)
-    meta = boosters["_meta"]
+    # ``_meta`` is written on every successful load, but the TypedDict marks it
+    # optional so a partial artifact directory still type-checks; the empty
+    # fallback keeps a missing metadata file from turning into a KeyError.
+    meta = boosters.get("_meta") or {}
     matrix = features[FORECAST_FEATURE_COLUMNS]
     anchors = meta.get("anchor_columns", ANCHOR_COLUMNS)
 

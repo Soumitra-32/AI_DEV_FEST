@@ -1,9 +1,10 @@
 """FastAPI application for Shonchoy Copilot.
 
 Phase 2 wires the shell: CORS for the Next.js app, settings-driven feature flags
-and the health/identity routers. The feature routers (forecast, savings plan,
-anomalies, chat-explain, signal, metrics) are added in later phases against the
-contracts already frozen in :mod:`backend.app.schemas`.
+and the health/identity routers. Phase 3 added the forecast and savings-plan
+routers, and Phase 4 the explanation layer (``/chat-explain``); the anomaly,
+signal and metrics routers arrive in later phases against the same contracts
+already frozen in :mod:`backend.app.schemas`.
 """
 from __future__ import annotations
 
@@ -13,7 +14,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Settings, get_settings
-from .routers import forecast, health, savings_plan
+from .routers import chat_explain, forecast, health, savings_plan
 
 
 def create_app(settings: Optional[Settings] = None) -> FastAPI:
@@ -37,6 +38,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     app.include_router(health.router)
     app.include_router(forecast.router)
     app.include_router(savings_plan.router)
+    app.include_router(chat_explain.router)
 
     @app.get("/", include_in_schema=False)
     def root() -> Dict[str, str]:

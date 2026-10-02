@@ -78,7 +78,9 @@ def spread_predictions(dates, mean_flows, daily, horizon_days=HORIZON_DAYS):
         start = pd.to_datetime(row["date"])
         table = by_user.get(user_id)
         net_table = net_by_user.get(user_id)
-        inflow_w, outflow_w, net_w = [], [], []
+        inflow_w: list[float] = []
+        outflow_w: list[float] = []
+        net_w: list[float | None] = []
         for horizon in range(1, horizon_days + 1):
             weekday = (start + pd.Timedelta(days=horizon)).weekday()
             match = None
@@ -103,9 +105,14 @@ def spread_predictions(dates, mean_flows, daily, horizon_days=HORIZON_DAYS):
             net_w = [overall if value is None else value for value in net_w]
             if overall is None:
                 net_w = [0.0] * horizon_days
+        # the None sentinels above are all resolved by now; the explicit
+        # conversion is what lets the spread arithmetic below stay float-only
+        net_weights: list[float] = [
+            0.0 if value is None else float(value) for value in net_w
+        ]
         inflow_total = sum(inflow_w) or 1.0
         outflow_total = sum(outflow_w) or 1.0
-        net_total = sum(net_w)
+        net_total = sum(net_weights)
         mean_in = float(mean_flows["mean_inflow"].iloc[index])
         mean_out = float(mean_flows["mean_outflow"].iloc[index])
         mean_net = (
@@ -119,7 +126,7 @@ def spread_predictions(dates, mean_flows, daily, horizon_days=HORIZON_DAYS):
                 "predicted_inflow": max(mean_in * horizon_days * inflow_w[horizon - 1] / inflow_total, 0.0),
                 "predicted_outflow": max(mean_out * horizon_days * outflow_w[horizon - 1] / outflow_total, 0.0),
                 "predicted_net": (
-                    mean_net * horizon_days * net_w[horizon - 1] / net_total
+                    mean_net * horizon_days * net_weights[horizon - 1] / net_total
                     if net_total
                     else mean_net
                 ),
