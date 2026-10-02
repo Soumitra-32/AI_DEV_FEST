@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { DEFAULT_LANG, t } from "@/lib/i18n";
 import type { Lang, TranslationKey } from "@/lib/i18n";
@@ -23,7 +23,31 @@ export function useLanguage(): LanguageContextValue {
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(DEFAULT_LANG);
-  const setLang = useCallback((next: Lang) => setLangState(next), []);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("shonchoy_lang") as Lang | null;
+      if (saved === "bn" || saved === "en") {
+        setLangState(saved);
+        document.documentElement.lang = saved;
+      } else {
+        document.documentElement.lang = DEFAULT_LANG;
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const setLang = useCallback((next: Lang) => {
+    setLangState(next);
+    try {
+      localStorage.setItem("shonchoy_lang", next);
+      document.documentElement.lang = next;
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const value = useMemo<LanguageContextValue>(
     () => ({ lang, setLang, tr: (key: TranslationKey) => t(lang, key) }),
     [lang, setLang],

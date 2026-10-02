@@ -19,7 +19,7 @@ const CURATED_TIPS = [
       "You currently cash out ~5 times/month averaging ৳3,500. Consolidating into 1-2 withdrawals or paying merchants directly can save ~৳320 in monthly fees.",
     tagBn: "ফি সাশ্রয়",
     tagEn: "Fee Saving",
-    stamp: "নিয়ম-ভিত্তিক",
+    stampKey: "tips.stampRule" as const,
   },
   {
     titleBn: "২৮–৩১ তারিখের জন্য অগ্রিম বাফার রাখুন",
@@ -30,7 +30,7 @@ const CURATED_TIPS = [
       "Outflows spike near month-end due to rent and utility schedules. Retaining a small safety buffer earlier prevents emergency borrowing.",
     tagBn: "ক্যাশ-ফ্লো",
     tagEn: "Cash Flow",
-    stamp: "পূর্বাভাস",
+    stampKey: "tips.stampForecast" as const,
   },
   {
     titleBn: "সঞ্চয়ের বাস্তবসম্মত লক্ষ্য নির্ধারণ",
@@ -41,7 +41,7 @@ const CURATED_TIPS = [
       "After retaining a safety buffer, your forecasted monthly surplus supports ৳5,000/month. The ৳30,000 in 6 months goal fits your profile.",
     tagBn: "সঞ্চয়",
     tagEn: "Savings",
-    stamp: "পরিকল্পনা",
+    stampKey: "tips.stampPlan" as const,
   },
 ];
 
@@ -78,7 +78,7 @@ export default function TipsPage() {
       <main className="space-y-6">
         <header className="border-b border-rule pb-4 space-y-2">
           <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            ব্যক্তিগত কোচিং • {tr("stamp.easyExplain")}
+            {tr("tips.headerTag")} • {tr("stamp.easyExplain")}
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("tips.title")}
@@ -103,7 +103,7 @@ export default function TipsPage() {
           <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-rule pb-2">
               <span className="text-xs font-mono uppercase text-primaryGreen font-bold">
-                {lang === "bn" ? "সহায়কের পরামর্শ" : "Coach Advice"}
+                {tr("tips.coachAdvice")}
               </span>
               <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono">
                 {explainRes.source}
@@ -134,7 +134,7 @@ export default function TipsPage() {
         <div className="space-y-4">
           <div className="border-b border-rule pb-2">
             <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
-              {lang === "bn" ? "খতিয়ান-ভিত্তিক মূল পরামর্শসমূহ" : "Core Behavioral Guidance"}
+              {tr("tips.coreGuidance")}
             </h2>
           </div>
 
@@ -149,7 +149,7 @@ export default function TipsPage() {
                     {lang === "bn" ? tip.tagBn : tip.tagEn}
                   </span>
                   <span className="text-xs font-mono text-ink-muted">
-                    [{tip.stamp}]
+                    [{tr(tip.stampKey)}]
                   </span>
                 </div>
 

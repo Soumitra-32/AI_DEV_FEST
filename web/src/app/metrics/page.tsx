@@ -37,7 +37,7 @@ export default function MetricsPage() {
       <main className="space-y-6">
         <header className="border-b border-rule pb-4 space-y-2">
           <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            স্বচ্ছতা ও মডেল মূল্যায়ন • {tr("stamp.verified")}
+            {tr("metrics.headerTag")} • {tr("stamp.verified")}
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("metrics.title")}
@@ -108,9 +108,7 @@ export default function MetricsPage() {
             </span>
           </div>
           <p className="text-xs text-ink-muted font-hind leading-relaxed">
-            {lang === "bn"
-              ? "ব্যবহারকারীর নিজস্ব ঐতিহাসিক ব্যয়ের গড়ের চেয়ে ৪ গুণ বেশি ক্যাশ-আউট বা অস্বাভাবিক সময়ের লেনদেন নির্ভুলভাবে শনাক্তকরণ।"
-              : "Detects volume anomalies (e.g. 4x normal withdrawal amount) and temporal outliers without circular data leakage."}
+            {tr("metrics.anomalyDesc")}
           </p>
           <div className="flex items-center gap-3 pt-2 font-mono text-xs text-ink">
             <span className="badge">Precision: 0.84</span>
@@ -125,13 +123,11 @@ export default function MetricsPage() {
               {tr("metrics.fairness")}
             </h3>
             <span className="text-xs font-mono text-ink-muted">
-              ডেমো নিরীক্ষা
+              {tr("metrics.demoAudit")}
             </span>
           </div>
           <p className="text-xs text-ink-muted font-hind leading-relaxed">
-            {lang === "bn"
-              ? "মডেলটি ঢাকা, চট্টগ্রাম সহ বিভিন্ন জেলার ৫টি পেশা-গ্রুপে (দৈনিক মজুর, দোকানদার, চাকরিজীবী, গিগ রাইডার ও শিক্ষার্থী) কোনো ভৌগোলিক বা পেশাগত পক্ষপাত ছাড়াই সমান পারফরম্যান্স প্রদর্শন করে।"
-              : "Evaluation across 5 personas and 10 districts ensures consistent accuracy across rural and urban user cohorts."}
+            {tr("metrics.fairnessDesc")}
           </p>
         </div>
       </main>

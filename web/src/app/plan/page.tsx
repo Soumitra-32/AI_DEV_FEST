@@ -11,7 +11,7 @@ import { useLanguage } from "@/components/LangToggle";
 import { fetchSavingsPlan } from "@/lib/api";
 import type { SavingsPlanResponse, TradeOffAction } from "@/lib/api";
 import type { TranslationKey } from "@/lib/i18n";
-import { formatBDT, formatInteger } from "@/lib/i18n";
+import { formatBDT, formatDigits, formatInteger } from "@/lib/i18n";
 
 const DEFAULT_GOAL = 30000;
 const DEFAULT_MONTHS = 6;
@@ -65,7 +65,7 @@ export default function PlanPage() {
       <main className="space-y-6">
         <header className="border-b border-rule pb-4 space-y-2">
           <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            সঞ্চয় ও উদ্বৃত্ত হিসাব • {tr("stamp.computed")}
+            {tr("plan.headerTag")} • {tr("stamp.computed")}
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("plan.title")}
@@ -201,7 +201,7 @@ export default function PlanPage() {
                   </div>
                   <p className="text-xs text-ink-muted leading-relaxed font-hind">
                     {tr("plan.pressureWarning")} (
-                    {plan.pressure_days.map((d) => d.slice(8, 10)).join(" · ")} {lang === "bn" ? "তারিখ" : ""}
+                    {plan.pressure_days.map((d) => formatDigits(d.slice(8, 10), lang)).join(" · ")} {lang === "bn" ? "তারিখ" : ""}
                     )
                   </p>
                 </div>
@@ -264,7 +264,7 @@ export default function PlanPage() {
 
             <div className="p-4 bg-surface border border-rule rounded-ledger flex items-center justify-between">
               <span className="font-hind text-sm text-ink-muted">
-                {lang === "bn" ? "১৪ দিনের ক্যাশ প্রবাহ পরীক্ষা করতে চান?" : "Review 14-day cash-flow forecast?"}
+                {tr("plan.reviewForecastPrompt")}
               </span>
               <Link
                 href="/forecast"

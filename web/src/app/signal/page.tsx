@@ -41,7 +41,7 @@ export default function SignalPage() {
       <main className="space-y-6">
         <header className="border-b border-rule pb-4 space-y-2">
           <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            ধারাবাহিকতা সূচক • {tr("stamp.easyExplain")}
+            {tr("signal.headerTag")} • {tr("stamp.easyExplain")}
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("signal.title")}
@@ -60,30 +60,30 @@ export default function SignalPage() {
               {tr("signal.band")}
             </span>
             <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono">
-              শিক্ষামূলক
+              {tr("signal.educationalBadge")}
             </span>
           </div>
 
           <div className="space-y-3 py-2">
             <div className="flex items-baseline justify-between">
               <span className="font-serif-bn font-bold text-2xl md:text-3xl text-ink">
-                Steady (স্থিতিশীল)
+                {tr("signal.bandSteady")}
               </span>
               <span className="badge success">
-                {lang === "bn" ? "মাঝারি-উচ্চ ধারাবাহিকতা" : "Medium-High Consistency"}
+                {tr("signal.bandRating")}
               </span>
             </div>
 
             {/* Stepped Ledger Indicator */}
             <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono pt-2">
               <div className="p-2 border border-rule bg-paper/60 rounded-stamp text-ink-muted">
-                ১. Building
+                {tr("signal.step1")}
               </div>
               <div className="p-2 border-2 border-primaryGreen bg-surface rounded-stamp font-bold text-primaryGreen">
-                ২. Steady ●
+                {tr("signal.step2")}
               </div>
               <div className="p-2 border border-rule bg-paper/60 rounded-stamp text-ink-muted">
-                ৩. Strong
+                {tr("signal.step3")}
               </div>
             </div>
           </div>
@@ -125,7 +125,7 @@ export default function SignalPage() {
         {/* Educational Guarantee Banner */}
         <div className="bg-surface border border-rule rounded-ledger p-4 text-xs font-mono text-ink-muted space-y-1">
           <div className="font-bold text-ink uppercase">
-            {lang === "bn" ? "খতিয়ান নিশ্চয়তা" : "Ledger Guarantee"}
+            {tr("signal.guaranteeTitle")}
           </div>
           <p className="font-hind text-xs leading-relaxed">
             {tr("signal.educationalNote")}

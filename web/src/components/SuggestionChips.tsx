@@ -31,7 +31,8 @@ export default function SuggestionChips({ onSelectQuery }: SuggestionChipsProps)
       labelEn: "Save ৳30,000 in 6 months",
       href: "/plan?goal=30000&months=6",
       isQuery: true,
-      query: "৬ মাসে ৳৩০,০০০ জমাতে চাই",
+      queryBn: "৬ মাসে ৳৩০,০০০ জমাতে চাই",
+      queryEn: "Save ৳30,000 in 6 months",
     },
   ];
 
@@ -43,12 +44,13 @@ export default function SuggestionChips({ onSelectQuery }: SuggestionChipsProps)
       <div className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-2 text-sm font-medium">
         {suggestions.map((item, idx) => {
           const label = lang === "bn" ? item.labelBn : item.labelEn;
+          const query = lang === "bn" ? item.queryBn : item.queryEn;
           return (
             <span key={item.labelBn} className="inline-flex items-center gap-x-4 md:gap-x-6">
               {item.isQuery && onSelectQuery ? (
                 <button
                   type="button"
-                  onClick={() => onSelectQuery(item.query ?? label)}
+                  onClick={() => onSelectQuery(query ?? label)}
                   className="bg-transparent border-0 p-0 text-primaryGreen underline underline-offset-4 decoration-primaryGreen/50 hover:text-ink cursor-pointer text-sm font-medium font-hind"
                 >
                   {label}

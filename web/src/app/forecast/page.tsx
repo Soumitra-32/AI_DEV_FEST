@@ -9,7 +9,7 @@ import TopBar from "@/components/TopBar";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchForecast } from "@/lib/api";
 import type { ForecastResponse } from "@/lib/api";
-import { formatBDT } from "@/lib/i18n";
+import { formatBDT, formatDigits } from "@/lib/i18n";
 
 export default function ForecastPage() {
   const { lang, tr } = useLanguage();
@@ -41,7 +41,7 @@ export default function ForecastPage() {
       <main className="space-y-6">
         <header className="border-b border-rule pb-4 space-y-2">
           <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            ১৪ দিনের নগদ প্রবাহ • {tr("stamp.computed")}
+            {tr("forecast.headerTag")} • {tr("stamp.computed")}
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("forecast.title")}
@@ -118,7 +118,7 @@ export default function ForecastPage() {
                   {tr("forecast.table")}
                 </h2>
                 <span className="text-xs font-mono text-ink-muted uppercase">
-                  ১৪ দিনের বিবরণী
+                  {tr("forecast.tableSub")}
                 </span>
               </div>
 
@@ -140,7 +140,7 @@ export default function ForecastPage() {
                         className={day.is_pressure_day ? "bg-brickRed/5" : ""}
                       >
                         <td className="font-mono text-xs text-ink whitespace-nowrap">
-                          {day.date}
+                          {formatDigits(day.date, lang)}
                           {day.is_pressure_day && (
                             <span className="ml-2 border border-brickRed rounded-stamp px-1.5 py-0.5 text-[10px] text-brickRed font-mono">
                               {tr("forecast.pressureBadge")}
@@ -176,7 +176,7 @@ export default function ForecastPage() {
             {/* Next Action Link */}
             <div className="p-4 bg-surface border border-rule rounded-ledger flex items-center justify-between">
               <span className="font-hind text-sm text-ink-muted">
-                {lang === "bn" ? "উদ্বৃত্তের ওপর সঞ্চয় পরিকল্পনা করতে চান?" : "Want to plan savings from your surplus?"}
+                {tr("forecast.planSavingsPrompt")}
               </span>
               <Link
                 href="/plan"

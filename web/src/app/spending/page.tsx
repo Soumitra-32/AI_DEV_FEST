@@ -43,7 +43,7 @@ export default function SpendingPage() {
         {/* Header */}
         <header className="border-b border-rule pb-4 space-y-2">
           <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            {tr("spending.summary")} • {tr("stamp.computed")}
+            {tr("spending.headerTag")} • {tr("stamp.computed")}
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("spending.title")}

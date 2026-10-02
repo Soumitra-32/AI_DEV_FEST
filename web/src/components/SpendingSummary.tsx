@@ -22,7 +22,9 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
   return (
     <div className="bg-surface border border-rule rounded-ledger p-4 md:p-6 mb-6 space-y-4">
       <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
-        <span className="uppercase">{tr("spending.summary")} ({windowDays} {lang === "bn" ? "দিন" : "days"})</span>
+        <span className="uppercase">
+          {tr("spending.summary")} ({formatInteger(windowDays, lang)} {tr("spending.daysUnit")})
+        </span>
         <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[11px]">
           {tr("stamp.computed")}
         </span>
@@ -35,11 +37,11 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
             <span className="font-medium text-ink">{tr("spending.cashOutCount")}</span>
             <span className="dotted-leader" />
             <span className="font-serif-bn font-bold text-lg text-ink">
-              {formatInteger(feeSwitch.cash_out_count, lang)} {lang === "bn" ? "বার" : "times"}
+              {formatInteger(feeSwitch.cash_out_count, lang)} {tr("spending.times")}
             </span>
           </div>
-          <div className="text-[12px] text-ink-muted -mt-1 pl-1">
-            {lang === "bn" ? "গত ১ মাসের মোট ক্যাশ-আউটের সংখ্যা" : "Total cash-outs in the last 30 days"}
+          <div className="text-[12px] text-ink-muted -mt-1 pl-1 font-hind">
+            {tr("spending.cashOutCountSub")}
           </div>
         </div>
 
@@ -52,8 +54,8 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
               {formatBDT(feeSwitch.cash_out_volume_bdt, lang)}
             </span>
           </div>
-          <div className="text-[12px] text-ink-muted -mt-1 pl-1">
-            {lang === "bn" ? "এজেন্ট পয়েন্ট থেকে উত্তোলিত নগদ টাকা" : "Total cash withdrawn via agent points"}
+          <div className="text-[12px] text-ink-muted -mt-1 pl-1 font-hind">
+            {tr("spending.cashOutVolumeSub")}
           </div>
         </div>
 
@@ -66,8 +68,8 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
               {formatBDT(feeSwitch.fee_paid_bdt, lang)}
             </span>
           </div>
-          <div className="text-[12px] text-ink-muted -mt-1 pl-1">
-            {lang === "bn" ? "ক্যাশ-আউটে কাটা নির্ধারিত ফি (১.৮৫%)" : "Calculated cash-out fee paid"}
+          <div className="text-[12px] text-ink-muted -mt-1 pl-1 font-hind">
+            {tr("spending.feePaidSub")}
           </div>
         </div>
 
@@ -83,7 +85,7 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
             </span>
           </div>
           <div className="text-xs text-ink-muted pt-1 text-right font-mono">
-            {lang === "bn" ? "উপরে একক দাগ • নিচে ডবল দাগ (হিসাব সম্পন্ন)" : "Single rule top • Double rule bottom"}
+            {tr("spending.singleRuleTop")}
           </div>
         </div>
       </div>

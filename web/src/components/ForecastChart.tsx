@@ -14,7 +14,7 @@ import {
 import { useLanguage } from "@/components/LangToggle";
 import type { DayForecast, PressureReason } from "@/lib/api";
 import type { TranslationKey } from "@/lib/i18n";
-import { formatBDT } from "@/lib/i18n";
+import { formatBDT, formatDigits } from "@/lib/i18n";
 
 interface ForecastChartProps {
   days: DayForecast[];
@@ -43,7 +43,7 @@ export default function ForecastChart({ days }: ForecastChartProps) {
   const { lang, tr } = useLanguage();
 
   const points: ChartPoint[] = days.map((day) => ({
-    label: day.date.slice(8, 10),
+    label: formatDigits(day.date.slice(8, 10), lang),
     inflow: day.predicted_inflow_bdt,
     outflow: day.predicted_outflow_bdt,
     balance: day.predicted_balance_bdt,
@@ -152,19 +152,19 @@ export default function ForecastChart({ days }: ForecastChartProps) {
           <div className="flex items-center justify-between text-xs font-mono text-ink-muted">
             <span>{tr("forecast.pressureTitle")}</span>
             <span className="text-brickRed font-bold">
-              {pressureDays.map((d) => d.date.slice(8, 10)).join(" · ")} {lang === "bn" ? "তারিখ" : ""}
+              {pressureDays.map((d) => formatDigits(d.date.slice(8, 10), lang)).join(" · ")} {lang === "bn" ? "তারিখ" : ""}
             </span>
           </div>
 
           <div className="h-10 w-full border border-rule diagonal-hatch-pattern flex items-center justify-center">
             <span className="bg-surface px-2.5 py-0.5 border border-rule text-xs font-mono font-bold text-brickRed">
-              {pressureDays.map((d) => d.date.slice(8, 10)).join(" · ")} [{tr("forecast.pressureBadge")}]
+              {pressureDays.map((d) => formatDigits(d.date.slice(8, 10), lang)).join(" · ")} [{tr("forecast.pressureBadge")}]
             </span>
           </div>
 
           <p className="text-xs text-ink-muted leading-relaxed font-hind">
             {pressureDays
-              .map((d) => `${d.date}: ${tr(REASON_KEY[d.pressure_reason ?? "both"])}`)
+              .map((d) => `${formatDigits(d.date, lang)}: ${tr(REASON_KEY[d.pressure_reason ?? "both"])}`)
               .join(" · ")}
           </p>
         </div>

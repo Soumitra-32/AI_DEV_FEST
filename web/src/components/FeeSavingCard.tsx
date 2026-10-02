@@ -29,9 +29,7 @@ export default function FeeSavingCard({ feeSwitch }: FeeSavingCardProps) {
           </span>
         </div>
         <p className="text-sm text-ink-muted leading-relaxed font-hind">
-          {lang === "bn"
-            ? `এজেন্ট ক্যাশ-আউটের বদলে ${feeSwitch.alternative_channel === "app_transfer" ? "অ্যাপ ট্রান্সফার বা মার্চেন্ট পেমেন্ট" : feeSwitch.alternative_channel} ব্যবহার করলে আপনার বাড়তি ফি বাঁচবে।`
-            : `Switching from agent cash-out to ${feeSwitch.alternative_channel} can avoid transaction fees.`}
+          {tr("spending.feeSwitchDesc")}
         </p>
       </div>
 

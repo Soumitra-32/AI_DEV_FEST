@@ -126,7 +126,7 @@ function StatusCard() {
 }
 
 export default function HomePage() {
-  const { tr } = useLanguage();
+  const { lang, tr } = useLanguage();
   const router = useRouter();
 
   return (
@@ -140,7 +140,7 @@ export default function HomePage() {
               {tr("subTitle")}
             </span>
             <span className="text-xs font-mono text-ink-muted">
-              খতিয়ান সংস্করণ ১.০ • ফ্ল্যাট স্টাইল
+              {tr("subTitleBadge")}
             </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold font-serif-bn text-ink tracking-tight">
@@ -275,8 +275,8 @@ export default function HomePage() {
 
         {/* Footer */}
         <footer className="border-t border-rule pt-6 pb-12 flex flex-col sm:flex-row items-center justify-between text-xs text-ink-muted gap-2 font-mono">
-          <span>{tr("appName")} • খতিয়ান ও হিসাবের খাতা সিস্টেম</span>
-          <span className="font-bold text-ink">ডেমো ডেটা — সব তথ্য কাল্পনিক।</span>
+          <span>{tr("footer.ledgerSystem")}</span>
+          <span className="font-bold text-ink">{tr("footer.demoDisclaimer")}</span>
         </footer>
       </main>
     </>
