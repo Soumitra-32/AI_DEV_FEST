@@ -317,7 +317,7 @@ export function fetchExplain(body: ExplainRequest): Promise<ExplainResponse> {
 }
 
 export function fetchCreditReadiness(language: "bn" | "en" = "bn"): Promise<ConsistencySignalResponse> {
-  return request<ConsistencySignalResponse>(`/signal?language=${language}`, {
+  return request<ConsistencySignalResponse>(`/credit-readiness?language=${language}`, {
     method: "POST",
     body: JSON.stringify({}),
   });
