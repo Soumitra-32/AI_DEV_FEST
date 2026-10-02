@@ -41,3 +41,15 @@ def test_parse_goal_contract(client: TestClient, message: str, goal, months, com
 
 def test_parse_goal_rejects_empty_message(client: TestClient) -> None:
     assert client.post("/parse-goal", json={"message": ""}).status_code == 422
+
+
+def test_metrics_serves_model_scoreboard() -> None:
+    from fastapi.testclient import TestClient
+
+    from backend.app.main import create_app
+
+    response = TestClient(create_app()).get("/metrics")
+    assert response.status_code == 200
+    body = response.json()
+    assert {"forecast", "anomaly", "signal", "fairness", "notes"} <= set(body)
+    assert body["generated_at"]
