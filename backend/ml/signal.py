@@ -207,10 +207,29 @@ def _shap_values(model: Any, scaler: Any, scaled: np.ndarray) -> np.ndarray:
         return scaled * weights + bias
 
 
+def feature_mapping(row: Mapping[Any, float]) -> dict[str, float]:
+    """The model's own inputs from any row-like object, as ``{str: float}``.
+
+    Two jobs. It narrows the key type to ``str`` so callers can hand over a
+    pandas ``Series`` without the declared ``Mapping[str, float]`` being a lie,
+    and it coerces a missing or NaN feature to ``0.0`` -- the same default
+    :func:`build_matrix` applies, so the SHAP values and the model's own input
+    for this user can never disagree about what the number was.
+    """
+    values: dict[str, float] = {}
+    for name in FEATURE_COLUMNS:
+        try:
+            value = float(row.get(name, 0.0)) if name in row else 0.0
+        except (TypeError, ValueError):
+            value = 0.0
+        values[name] = 0.0 if pd.isna(value) else value
+    return values
+
+
 def shap_factors(
     model: Any,
     scaler: Any,
-    row: Mapping[str, float],
+    row: Mapping[Any, float],
     top_k: int = 3,
 ) -> list[dict[str, Any]]:
     """The strongest factors for one user, biggest contribution first.
@@ -219,7 +238,7 @@ def shap_factors(
     much in log-odds. That is what makes the band arguable instead of magic, and
     it is the reason this signal is a model rather than a rule.
     """
-    values = [[float(row.get(name, 0.0) or 0.0) for name in FEATURE_COLUMNS]]
+    values = [list(feature_mapping(row).values())]
     scaled = scaler.transform(build_matrix(pd.DataFrame(values, columns=FEATURE_COLUMNS)))
     contributions = _shap_values(model, scaler, scaled)[0]
 
@@ -259,7 +278,7 @@ def predict(
         probability=probability,
         band=band_for(probability, bands),
         source="model",
-        factors=shap_factors(model, scaler, features.iloc[0].to_dict(), top_k=top_k),
+        factors=shap_factors(model, scaler, features.iloc[0], top_k=top_k),
     )
 
 
