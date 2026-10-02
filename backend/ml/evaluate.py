@@ -7,8 +7,9 @@ for the Phase 8 ``/metrics`` endpoint.
 from __future__ import annotations
 
 import json
+from collections import Counter
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -211,8 +212,25 @@ def cumulative_scores(joined: pd.DataFrame) -> dict[str, Any]:
     return scores
 
 
-def evaluate(featured, daily, splits, artifact_dir=ARTIFACT_DIR, horizon_days=HORIZON_DAYS):
-    """Score LightGBM vs both baselines on the held-out test users."""
+def scored_cells(
+    featured: pd.DataFrame,
+    daily: pd.DataFrame,
+    splits: pd.DataFrame,
+    artifact_dir: str | Path = ARTIFACT_DIR,
+    horizon_days: int = HORIZON_DAYS,
+):
+    """Every held-out ``(user, date, horizon)`` cell, scored for model and rules.
+
+    Returns ``(joined, test_features)``: the model's per-day spread beside both
+    baselines on the same rows, with ``actual_*`` attached, plus the test-user
+    feature frame the scores came from.
+
+    This is the single place the scored cells are built, on purpose.
+    :func:`evaluate` and :mod:`backend.ml.fairness` both call it, so a
+    group-level error can never be measured on different rows than the headline
+    MAE it is compared against. Rebuilding the join inside the fairness pass
+    would be the easiest way to quietly break that, so it is not done.
+    """
     frame = featured.merge(splits, on="user_id", how="inner")
     test_features = frame.loc[frame["split"].eq("test")].reset_index(drop=True)
     if test_features.empty:
@@ -248,12 +266,41 @@ def evaluate(featured, daily, splits, artifact_dir=ARTIFACT_DIR, horizon_days=HO
         base, on=["user_id", "date", "horizon"], how="inner",
         suffixes=("", "_baseline"),
     )
+    return joined, test_features
+
+
+def evaluate(
+    featured: pd.DataFrame,
+    daily: pd.DataFrame,
+    splits: pd.DataFrame,
+    artifact_dir: str | Path = ARTIFACT_DIR,
+    horizon_days: int = HORIZON_DAYS,
+    *,
+    transactions: pd.DataFrame | None = None,
+    cfg: Mapping[str, Any] | None = None,
+    request_log_path: str | Path | None = None,
+):
+    """Score LightGBM vs both baselines, then the plan's impact numbers.
+
+    ``transactions``/``cfg``/``request_log_path`` are optional so the forecast
+    score can be computed on its own; when they are present the returned dict
+    also carries an ``"impact"`` block (fee savings, shortfall days avoided,
+    goal hit-rate and the PII-free request log).
+    """
+    joined, test_features = scored_cells(featured, daily, splits, artifact_dir, horizon_days)
 
     day_level = day_level_scores(joined)
     cumulative = cumulative_scores(joined)
     windows = int(joined[["user_id", "date"]].drop_duplicates().shape[0])
     improvement = {flow: cumulative[flow]["improvement_over_best_pct"] for flow in SCORED_FLOWS}
     net_source = str(joined["net_source"].iloc[0]) if "net_source" in joined else "difference"
+    impact = impact_metrics(
+        daily,
+        splits,
+        transactions=transactions,
+        cfg=cfg,
+        request_log_path=request_log_path,
+    )
     return {
         "horizon_days": horizon_days,
         "n_cells": int(len(joined)),
@@ -273,8 +320,311 @@ def evaluate(featured, daily, splits, artifact_dir=ARTIFACT_DIR, horizon_days=HO
         "target_met": bool(
             all(improvement[flow] >= 15.0 for flow in SCORED_FLOWS)
         ),
+        # the plan's outcome numbers (plan.txt §11): consequences, not accuracy
+        "impact": impact,
     }
 
+
+
+# ---------------------------------------------------------------------------
+# impact measurement (plan.txt §11)
+# ---------------------------------------------------------------------------
+#: The planning horizon the Goal Copilot offers.
+GOAL_HORIZON_MONTHS = 6
+#: The last two months are held out to test a plan built on the months before.
+TEST_WINDOW_MONTHS = 2
+#: An emergency-fund goal is a few months of spending, so the backtest has a
+#: goal shape that does not depend on the answer.
+EMERGENCY_FUND_MONTHS = 3.0
+#: Days of typical outflow the plan insists on keeping (matches the solver).
+SAFETY_BUFFER_DAYS = 3.0
+#: Month-end squeeze window (docs/DATA_ASSUMPTIONS.md §4: last 4 days).
+PRESSURE_WINDOW_START_DAY = 28
+
+
+def _monthly_flows(daily: pd.DataFrame) -> pd.DataFrame:
+    """One row per (user, month) with the flows the impact numbers need."""
+    frame = daily.copy()
+    frame["date"] = pd.to_datetime(frame["date"])
+    frame["month"] = frame["date"].dt.to_period("M").astype(str)
+    return frame.groupby(["user_id", "month"], as_index=False).agg(
+        inflow_bdt=("inflow_bdt", "sum"),
+        outflow_bdt=("outflow_bdt", "sum"),
+        fee_bdt=("fee_bdt", "sum"),
+        net_bdt=("net_bdt", "sum"),
+        shortfall_days=("is_shortfall_day", "sum"),
+    )
+
+
+def _unavailable(reason: str) -> dict[str, Any]:
+    return {"status": "unavailable", "reason": reason}
+
+
+def fee_savings_metrics(
+    transactions: pd.DataFrame | None,
+    cfg: Mapping[str, Any],
+    test_users: Sequence[str],
+) -> dict[str, Any]:
+    """Average fee saving per month if cash-outs moved to the cheapest channel.
+
+    Uses the same :mod:`backend.rules.fee_switch` the Spending Companion shows, so
+    the impact page and the card can never quote different fees. The saving is a
+    *potential* (every cash-out, at the simulated rate card); the assumed
+    adoption range is reported beside it, never folded into the headline.
+    """
+    from backend.rules import fee_switch
+
+    if transactions is None or transactions.empty:
+        return _unavailable("no transactions to price")
+    frame = transactions[transactions["user_id"].isin(list(test_users))]
+    if frame.empty:
+        return _unavailable("no held-out transactions")
+
+    rows: list[dict[str, float]] = []
+    for _, part in frame.groupby("user_id"):
+        stamps = pd.to_datetime(part["timestamp"])
+        span_days = max(int((stamps.max() - stamps.min()).days), 1)
+        months = max(span_days / 30.0, 1.0 / 30.0)
+        suggestion = fee_switch.suggest(part, cfg, window_days=None)
+        rows.append(
+            {
+                "potential": suggestion.potential_saving_bdt / months,
+                "low": suggestion.assumed_saving_low_bdt / months,
+                "high": suggestion.assumed_saving_high_bdt / months,
+            }
+        )
+    count = len(rows)
+    return {
+        "status": "ok",
+        "users": count,
+        "avg_potential_fee_saving_bdt_per_month": round(
+            sum(item["potential"] for item in rows) / count, 2
+        ),
+        "avg_assumed_fee_saving_low_bdt_per_month": round(
+            sum(item["low"] for item in rows) / count, 2
+        ),
+        "avg_assumed_fee_saving_high_bdt_per_month": round(
+            sum(item["high"] for item in rows) / count, 2
+        ),
+        "adoption_range": fee_switch.ADOPTION_RANGE,
+        "note": (
+            "Potential = every cash-out priced at the simulated cash-out rate "
+            "minus the cheapest channel; the adoption range is an assumption, "
+            "not a measured result."
+        ),
+    }
+
+
+def shortfall_metrics(
+    daily: pd.DataFrame,
+    test_users: Sequence[str],
+) -> dict[str, Any]:
+    """Shortfall days avoided: the plan's timing advice versus the raw ledger.
+
+    The plan targets the month-end squeeze (the last four days of the month,
+    where the generator injects pressure). A shortfall on one of those days is
+    what the plan's timing advice addresses, so it is counted as *avoided*; a
+    shortfall elsewhere is residual and treated as not avoidable by timing. This
+    is a stated assumption measured on real rows, not a simulated user.
+    """
+    frame = daily[daily["user_id"].isin(list(test_users))].copy()
+    if frame.empty:
+        return _unavailable("no held-out daily rows")
+    frame["date"] = pd.to_datetime(frame["date"])
+    frame["day_of_month"] = frame["date"].dt.day
+    frame["month"] = frame["date"].dt.to_period("M").astype(str)
+
+    observed_pm = avoided_pm = residual_pm = 0.0
+    counted = 0
+    for _, part in frame.groupby("user_id"):
+        months = max(int(part["month"].nunique()), 1)
+        observed = float(part["is_shortfall_day"].sum())
+        pressure = part["day_of_month"] >= PRESSURE_WINDOW_START_DAY
+        avoided = min(float(part.loc[pressure, "is_shortfall_day"].sum()), observed)
+        observed_pm += observed / months
+        avoided_pm += avoided / months
+        residual_pm += (observed - avoided) / months
+        counted += 1
+    if not counted:
+        return _unavailable("no held-out users")
+    return {
+        "status": "ok",
+        "users": counted,
+        "observed_shortfall_days_per_month": round(observed_pm / counted, 2),
+        "plan_shortfall_days_per_month": round(residual_pm / counted, 2),
+        "avoided_shortfall_days_per_month": round(avoided_pm / counted, 2),
+        "note": (
+            "Avoided counts shortfalls in the month-end squeeze window (day "
+            f">= {PRESSURE_WINDOW_START_DAY}) that the plan's timing advice "
+            "targets; residual shortfalls elsewhere are not counted as avoidable."
+        ),
+    }
+
+
+
+def goal_hit_rate_backtest(
+    daily: pd.DataFrame,
+    test_users: Sequence[str],
+) -> dict[str, Any]:
+    """Plan on months 1..n-2, test on the last two months.
+
+    Two planners are compared on the same realised outcome: the AI plan (which
+    keeps a safety buffer) and the naive "goal / months" plan (which does not).
+    The hit-rate is the share of the plans a planner *recommended* that the user
+    actually kept up with in the held-out months, so a planner that says "yes" to
+    everyone and is often wrong scores worse than one that declines the hopeless
+    cases.
+    """
+    monthly = _monthly_flows(daily)
+    frame = monthly[monthly["user_id"].isin(list(test_users))]
+    if frame.empty:
+        return _unavailable("no held-out months")
+
+    records: list[dict[str, bool]] = []
+    for _, part in frame.groupby("user_id"):
+        part = part.sort_values("month")
+        months = part["month"].tolist()
+        if len(months) < 2:
+            continue
+        split = max(1, len(months) - TEST_WINDOW_MONTHS)
+        if split >= len(months):
+            split = len(months) - 1
+        plan = part.iloc[:split]
+        test = part.iloc[split:]
+        plan_net = float(plan["net_bdt"].mean())
+        plan_out = float(plan["outflow_bdt"].mean())
+        test_net = float(test["net_bdt"].mean())
+        goal = plan_out * EMERGENCY_FUND_MONTHS
+        required = goal / GOAL_HORIZON_MONTHS
+        buffer = plan_out * SAFETY_BUFFER_DAYS / 30.0
+        records.append(
+            {
+                "ai_feasible": required <= max(plan_net - buffer, 0.0),
+                "naive_feasible": required <= max(plan_net, 0.0),
+                "hit": test_net >= required,
+            }
+        )
+    if not records:
+        return _unavailable("fewer than two months of history per user")
+
+    def rate(flag: str) -> dict[str, Any]:
+        recommended = [row for row in records if row[flag]]
+        hits = sum(1 for row in recommended if row["hit"])
+        pct = round(hits / len(recommended) * 100.0, 2) if recommended else None
+        return {"recommended": len(recommended), "hits": hits, "hit_rate_pct": pct}
+
+    ai = rate("ai_feasible")
+    naive = rate("naive_feasible")
+    improvement = (
+        round(ai["hit_rate_pct"] - naive["hit_rate_pct"], 2)
+        if ai["hit_rate_pct"] is not None and naive["hit_rate_pct"] is not None
+        else None
+    )
+    return {
+        "status": "ok",
+        "users": len(records),
+        "goal_horizon_months": GOAL_HORIZON_MONTHS,
+        "ai": ai,
+        "naive": naive,
+        "improvement_pct_points": improvement,
+        "note": (
+            "Plans are built on the earlier months and tested on the last two; "
+            "the naive planner is goal / months with no buffer. Hit-rate is over "
+            "the plans each planner recommended, not over every user."
+        ),
+    }
+
+
+
+def request_log_summary(path: str | Path | None = None) -> dict[str, Any]:
+    """Aggregate the PII-free request log (method/path/status/latency only)."""
+    if path is None:
+        return _unavailable("no request log configured")
+    target = Path(path)
+    if not target.exists():
+        return _unavailable("no request log yet")
+    try:
+        text = target.read_text(encoding="utf-8")
+    except OSError:  # pragma: no cover - unreadable log
+        return _unavailable("request log is unreadable")
+
+    records: list[dict[str, Any]] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            payload = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(payload, dict):
+            records.append(payload)
+    if not records:
+        return _unavailable("request log is empty")
+
+    total = len(records)
+    errors = sum(1 for item in records if int(item.get("status", 0) or 0) >= 400)
+    durations = [
+        float(item["duration_ms"])
+        for item in records
+        if isinstance(item.get("duration_ms"), (int, float))
+    ]
+    counts = Counter(str(item.get("path", "?")) for item in records)
+    return {
+        "status": "ok",
+        "requests": total,
+        "error_rate_pct": round(errors / total * 100.0, 2),
+        "avg_duration_ms": round(sum(durations) / len(durations), 2) if durations else None,
+        "by_path": [
+            {"path": name, "requests": count} for name, count in counts.most_common(10)
+        ],
+        "note": (
+            "Request logs carry method, path, status and latency only — the query "
+            "string, headers, body and user are never logged."
+        ),
+    }
+
+
+def impact_metrics(
+    daily: pd.DataFrame,
+    splits: pd.DataFrame | None = None,
+    *,
+    transactions: pd.DataFrame | None = None,
+    cfg: Mapping[str, Any] | None = None,
+    request_log_path: str | Path | None = None,
+) -> dict[str, Any]:
+    """The plan's four impact numbers, each degrading on its own.
+
+    One missing input must cost only its own block, so every part is computed
+    independently and an error is recorded as ``unavailable`` rather than raised.
+    """
+    test_users: list[str] = []
+    if splits is not None and not splits.empty and "split" in splits.columns:
+        test_users = splits.loc[splits["split"].eq("test"), "user_id"].tolist()
+    if not test_users and daily is not None and not daily.empty:
+        test_users = daily["user_id"].drop_duplicates().tolist()
+
+    block: dict[str, Any] = {}
+    try:
+        if cfg is None:
+            block["fee_savings"] = _unavailable("no dataset config")
+        else:
+            block["fee_savings"] = fee_savings_metrics(transactions, cfg, test_users)
+    except Exception as exc:  # noqa: BLE001 - impact must never break the run
+        block["fee_savings"] = _unavailable(type(exc).__name__)
+
+    try:
+        block["shortfall_days"] = shortfall_metrics(daily, test_users)
+    except Exception as exc:  # noqa: BLE001
+        block["shortfall_days"] = _unavailable(type(exc).__name__)
+
+    try:
+        block["goal_hit_rate"] = goal_hit_rate_backtest(daily, test_users)
+    except Exception as exc:  # noqa: BLE001
+        block["goal_hit_rate"] = _unavailable(type(exc).__name__)
+
+    block["request_logs"] = request_log_summary(request_log_path)
+    return block
 
 
 def write_metrics(metrics: Mapping[str, Any], artifact_dir: str | Path = ARTIFACT_DIR) -> Path:
@@ -283,4 +633,23 @@ def write_metrics(metrics: Mapping[str, Any], artifact_dir: str | Path = ARTIFAC
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(dict(metrics), indent=2), encoding="utf-8")
     return path
+
+
+def read_metrics(artifact_dir: str | Path = ARTIFACT_DIR) -> dict[str, Any]:
+    """The last written evaluation, or ``{}`` when nothing has been trained.
+
+    Never raises and never guesses: a missing, empty or corrupt ``metrics.json``
+    comes back empty so the endpoint can answer "no evaluation yet" instead of
+    turning a missing artifact into a 500. The file is written atomically enough
+    for this purpose by :func:`write_metrics`, which finishes the write before
+    returning.
+    """
+    path = Path(artifact_dir) / METRICS_FILE
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):  # pragma: no cover - truncated or hand-edited
+        return {}
+    return payload if isinstance(payload, dict) else {}
 
