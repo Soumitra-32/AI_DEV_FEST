@@ -19,12 +19,12 @@ npm-debug.log*
 .env.*.local
 !web/.env.local.example
 
-# --- Generated data & model artifacts ---
+# --- Generated data & packages ---
 backend/data/*.db
 backend/data/*.sqlite*
-backend/ml/artifacts/*
-!backend/ml/artifacts/.gitkeep
-metrics.json
+backend/packages/
+backend/ml/artifacts/*.jsonl
+
 
 # --- Editors / OS / misc ---
 # Workspace settings and recommended extensions are shared on purpose: they pin

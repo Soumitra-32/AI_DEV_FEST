@@ -1,0 +1,51 @@
+{
+  "model_name": "logistic_regression_consistency",
+  "features": [
+    "income_mean_bdt",
+    "income_cv",
+    "income_days_per_month",
+    "spend_mean_bdt",
+    "spend_cv",
+    "cash_out_count_per_month",
+    "cash_out_volume_per_month_bdt",
+    "cash_out_share_of_outflow",
+    "fee_per_month_bdt",
+    "fee_share_of_income",
+    "balance_mean_bdt",
+    "balance_min_bdt",
+    "balance_volatility",
+    "shortfall_days_per_month",
+    "month_end_spend_ratio",
+    "weekend_spend_ratio"
+  ],
+  "bands": [
+    [
+      0.4,
+      "Building"
+    ],
+    [
+      0.6,
+      "Steady"
+    ]
+  ],
+  "trained_rows": 350,
+  "positive_rate": 0.4314,
+  "coefficients": {
+    "income_mean_bdt": -0.695328,
+    "income_cv": -0.49516,
+    "income_days_per_month": -0.105821,
+    "spend_mean_bdt": -0.692627,
+    "spend_cv": -0.129898,
+    "cash_out_count_per_month": 0.21922,
+    "cash_out_volume_per_month_bdt": 0.401618,
+    "cash_out_share_of_outflow": 0.89565,
+    "fee_per_month_bdt": 0.401442,
+    "fee_share_of_income": -0.009992,
+    "balance_mean_bdt": 0.11693,
+    "balance_min_bdt": 0.031336,
+    "balance_volatility": 0.259681,
+    "shortfall_days_per_month": -0.384989,
+    "month_end_spend_ratio": -0.168701,
+    "weekend_spend_ratio": 0.002489
+  }
+}

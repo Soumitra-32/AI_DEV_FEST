@@ -1,0 +1,20 @@
+{
+  "model_name": "isolation_forest_behavior",
+  "features": [
+    "log_amount",
+    "amount_zscore",
+    "amount_over_user_mean",
+    "hours_from_typical_hour",
+    "is_off_hours",
+    "minutes_since_prev",
+    "is_rapid_repeat"
+  ],
+  "contamination": 0.02,
+  "params": {
+    "n_estimators": 300,
+    "max_samples": "auto",
+    "random_state": 7
+  },
+  "n_train_transactions": 122466,
+  "offset": -0.6267287664620302
+}
