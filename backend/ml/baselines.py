@@ -117,3 +117,73 @@ def mae_by_method(predictions: pd.DataFrame) -> dict[str, float]:
     tidy["abs_err"] = (tidy["actual"] - tidy["predicted"]).abs()
     return {method: float(tidy.loc[tidy["method"].eq(method), "abs_err"].mean()) for method in BASELINE_NAMES}
 
+
+# ---------------------------------------------------------------------------
+# anomaly baseline: the fixed threshold IsolationForest has to beat
+# ---------------------------------------------------------------------------
+#: The plan's rule baseline for anomalies is literally "amount > X": one absolute
+#: cutoff applied to every user (``backend/ml/anomaly.py`` is the model).
+ANOMALY_BASELINE_NAME = "fixed_threshold"
+
+#: X is this many times the *population's* mean outflow — a single number for
+#: everyone.
+DEFAULT_THRESHOLD_MULTIPLIER = 4.0
+
+
+def fixed_threshold_magnitude(
+    transactions: pd.DataFrame,
+    multiplier: float = DEFAULT_THRESHOLD_MULTIPLIER,
+    outflow_only: bool = True,
+) -> float:
+    """The single amount threshold the rule uses, from the population mean.
+
+    ``outflow_only`` ignores income rows, so a salary day cannot inflate the
+    threshold and hide the very expenses the rule is meant to catch.
+    """
+    if transactions is None or transactions.empty or "amount_bdt" not in transactions.columns:
+        return 0.0
+    frame = transactions
+    if outflow_only and "type" in frame.columns:
+        frame = frame.loc[~frame["type"].eq("income")]
+    if frame.empty:
+        return 0.0
+    return float(frame["amount_bdt"].astype(float).mean()) * float(multiplier)
+
+
+def fixed_threshold_scores(
+    transactions: pd.DataFrame,
+    threshold: float | None = None,
+    multiplier: float = DEFAULT_THRESHOLD_MULTIPLIER,
+    outflow_only: bool = True,
+) -> pd.Series:
+    """``amount / threshold`` per row: the rule's ranking, higher = odder.
+
+    Keeping a *score* (not only a boolean) lets the rule be scored with the same
+    precision/recall machinery as the model, so the comparison is like for like.
+    """
+    if transactions is None or transactions.empty:
+        return pd.Series(dtype=float)
+    cutoff = float(threshold) if threshold is not None else fixed_threshold_magnitude(
+        transactions, multiplier, outflow_only
+    )
+    amount = transactions["amount_bdt"].astype(float)
+    if cutoff <= 0:
+        return pd.Series(0.0, index=transactions.index, dtype=float)
+    return (amount / cutoff).astype(float)
+
+
+def fixed_threshold_flags(
+    transactions: pd.DataFrame,
+    threshold: float | None = None,
+    multiplier: float = DEFAULT_THRESHOLD_MULTIPLIER,
+    outflow_only: bool = True,
+) -> pd.Series:
+    """Boolean Series: rows the absolute rule calls anomalous (index-aligned)."""
+    if transactions is None or transactions.empty:
+        return pd.Series(dtype=bool)
+    cutoff = float(threshold) if threshold is not None else fixed_threshold_magnitude(
+        transactions, multiplier, outflow_only
+    )
+    amount = transactions["amount_bdt"].astype(float)
+    return (amount > cutoff).astype(bool)
+
