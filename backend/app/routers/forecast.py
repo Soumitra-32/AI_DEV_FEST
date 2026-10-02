@@ -56,6 +56,7 @@ def get_forecast(
         horizon_days=body.horizon_days,
         generated_at=datetime.now(timezone.utc),
         generated_from=payload["generated_from"],
+        net_source=payload.get("net_source", "model"),
         days=days,
         pressure_days=payload["pressure_days"],
         metrics=payload["metrics"],

@@ -42,9 +42,10 @@ def _metrics_block(artifact_dir: str | Path) -> Optional[dict[str, Any]]:
             forecast_evaluate.baselines.BASELINE_NAMES,
             key=lambda name: outflow[name]["mae"],
         )
+        net = payload["cumulative"].get("net")
     except (KeyError, ValueError, OSError):
         return None
-    return {
+    block = {
         "model_name": "lightgbm_14d_mean",
         "mae_bdt": outflow["model"]["mae"],
         "rmse_bdt": outflow["model"]["rmse"],
@@ -52,6 +53,17 @@ def _metrics_block(artifact_dir: str | Path) -> Optional[dict[str, Any]]:
         "baseline_mae_bdt": outflow[baseline]["mae"],
         "improvement_pct": outflow["improvement_over_best_pct"],
     }
+    if net:
+        # net is the number the plan is solved from, so its own accuracy is
+        # reported beside the flow metrics rather than being left implicit
+        block["net_mae_bdt"] = net["model"]["mae"]
+        block["net_baseline_name"] = min(
+            forecast_evaluate.baselines.BASELINE_NAMES,
+            key=lambda name: net[name]["mae"],
+        )
+        block["net_improvement_pct"] = net["improvement_over_best_pct"]
+        block["net_source"] = payload.get("net_source", "difference")
+    return block
 
 
 def _month_scale(transactions: pd.DataFrame) -> dict[str, float]:
@@ -112,9 +124,13 @@ def build_forecast(
         source = "model"
     except Exception:
         tail = daily.sort_values("date").tail(7)
+        mean_in = float(tail["inflow_bdt"].mean() or 0.0)
+        mean_out = float(tail["outflow_bdt"].mean() or 0.0)
         mean_flows = pd.DataFrame({
-            "mean_inflow": [float(tail["inflow_bdt"].mean() or 0.0)],
-            "mean_outflow": [float(tail["outflow_bdt"].mean() or 0.0)],
+            "mean_inflow": [mean_in],
+            "mean_outflow": [mean_out],
+            "mean_net": [mean_in - mean_out],
+            "net_source": ["difference"],
         })
         source = "rule"
     spread = forecast_evaluate.spread_predictions(
@@ -135,7 +151,7 @@ def build_forecast(
         preview = [
             {
                 "date": (start + timedelta(days=int(row["horizon"]))).date().isoformat(),
-                "predicted_net_bdt": round(max(float(row["predicted_inflow"]), 0.0) - max(float(row["predicted_outflow"]), 0.0), 2),
+                "predicted_net_bdt": round(float(row["predicted_net"]), 2),
             }
             for _, row in spread.iterrows()
         ]
@@ -145,7 +161,10 @@ def build_forecast(
         day_date = (start + timedelta(days=int(row["horizon"]))).date()
         inflow = max(float(row["predicted_inflow"]), 0.0)
         outflow = max(float(row["predicted_outflow"]), 0.0)
-        net = inflow - outflow
+        # net comes from the net model (or the spread flows when it is absent),
+        # NOT from inflow - outflow: the solver reads net, so this is the
+        # quantity that has to be the well-measured one
+        net = float(row["predicted_net"])
         running += net
         reason = pressure_by_date.get(day_date.isoformat())
         days.append({
@@ -159,8 +178,9 @@ def build_forecast(
         })
     pressure_dates = sorted(pressure_by_date)
     n_pressure = len(pressure_dates)
-    window_net = float(spread["predicted_inflow"].sum() - spread["predicted_outflow"].sum())
+    window_net = float(spread["predicted_net"].sum())
     monthly_net = window_net * 30.0 / max(horizon_days, 1)
+    net_source = str(spread["net_source"].iloc[0]) if "net_source" in spread else "difference"
 
     range_start = (start + timedelta(days=1)).date().isoformat()
     range_end = (start + timedelta(days=horizon_days)).date().isoformat()
@@ -186,6 +206,7 @@ def build_forecast(
         "safety_buffer_bdt": round(buffer_bdt, 2),
         "opening_balance_bdt": round(opening, 2),
         "generated_from": start.date().isoformat(),
+        "net_source": net_source,
         "metrics": _metrics_block(artifacts),
         "provenance": {"prediction": prediction, "assumption": assumption,
                        "explanation": explanation, "source": source},

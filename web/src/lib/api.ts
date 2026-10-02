@@ -66,6 +66,11 @@ export interface ForecastMetrics {
   baseline_name: string;
   baseline_mae_bdt: number;
   improvement_pct: number;
+  /** net is the number the savings plan is solved from, so it is measured too */
+  net_mae_bdt?: number;
+  net_baseline_name?: string;
+  net_improvement_pct?: number;
+  net_source?: "model" | "difference";
 }
 
 export interface ForecastResponse {
@@ -73,6 +78,7 @@ export interface ForecastResponse {
   horizon_days: number;
   generated_at: string;
   generated_from: string | null;
+  net_source: "model" | "difference";
   days: DayForecast[];
   pressure_days: string[];
   metrics: ForecastMetrics | null;
@@ -120,6 +126,36 @@ export interface SavingsPlanResponse {
   provenance: Provenance;
 }
 
+/** POST /chat-explain — the Bangla-first assistant's answer in both languages. */
+export interface ExplainRequest {
+  message: string;
+  language?: "bn" | "en";
+  /** Optional client hint; the server always re-classifies and ignores it. */
+  intent?: ExplainIntent | null;
+}
+
+export type ExplainIntent =
+  | "explain_transactions"
+  | "forecast"
+  | "savings_plan"
+  | "fees"
+  | "consistency"
+  | "tips"
+  | "unknown";
+
+export interface ExplainResponse {
+  intent: ExplainIntent;
+  answer_bn: string;
+  answer_en: string;
+  bullets_bn: string[];
+  bullets_en: string[];
+  /** "llm" when the model wrote it, "template" when the fallback answered. */
+  source: "rule" | "model" | "template" | "llm";
+  /** True when the guardrail replaced a generated answer. */
+  blocked: boolean;
+  provenance: Provenance | null;
+}
+
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -163,5 +199,18 @@ export function fetchSavingsPlan(body: SavingsPlanRequest): Promise<SavingsPlanR
   return request<SavingsPlanResponse>("/savings-plan", {
     method: "POST",
     body: JSON.stringify(body),
+  });
+}
+
+/** POST /chat-explain — ask one question in Bangla or English. */
+export function fetchExplain(
+  body: ExplainRequest,
+): Promise<ExplainResponse> {
+  return request<ExplainResponse>("/chat-explain", {
+    method: "POST",
+    body: JSON.stringify({
+      message: body.message,
+      language: body.language ?? "bn",
+    }),
   });
 }

@@ -6,6 +6,15 @@ feature matrix from ``backend.ml.dataset``. Each regressor predicts the
 across the horizon with each day's calendar shape (weekday/month-end), so the
 API always returns 14 per-day rows.
 
+A **third regressor predicts net directly**, and the served per-day net comes
+from it rather than from ``inflow - outflow``. That is not redundancy: inflow
+and outflow are each predicted to within ~5% of their own level, but the two
+errors are independent, so they do not cancel when subtracted and the implied
+net is several times worse than either flow. The savings solver consumes net
+and nothing else, so net is the quantity that has to be modelled and measured
+in its own right. ``evaluate.py`` scores it against the same baselines and
+``metrics.json`` reports it beside the flow metrics so the gap cannot hide.
+
 Why the average, not 14 separate models: daily flows are noisy (a wage day
 next to six quiet days), while the 14-day total is what the savings solver
 actually consumes. One robust average plus a calendar spread beats fourteen
@@ -32,6 +41,7 @@ from .dataset import FORECAST_FEATURE_COLUMNS, HORIZON_DAYS
 ARTIFACT_DIR = Path(__file__).resolve().parent / "artifacts"
 INFLOW_MODEL = "forecast_inflow.txt"
 OUTFLOW_MODEL = "forecast_outflow.txt"
+NET_MODEL = "forecast_net.txt"
 META_FILE = "forecast_meta.json"
 
 #: The prior each booster corrects. The model is trained on the *residual*
@@ -44,10 +54,18 @@ META_FILE = "forecast_meta.json"
 #: ৳6k/month difference decides whether his plan is feasible. Boosting on the
 #: residual keeps the user's own level as the floor and lets the model add only
 #: what it can actually explain (calendar shape, month-to-date budget state).
+#:
+#: ``net`` is anchored the same way, on ``roll_28_net``. Net is the one flow the
+#: savings solver reads, so it gets its own model and its own anchor rather than
+#: being inherited as a difference of two other models.
 ANCHOR_COLUMNS: dict[str, str] = {
     "inflow": "roll_28_inflow",
     "outflow": "roll_28_outflow",
+    "net": "roll_28_net",
 }
+
+#: The flows the API serves and ``metrics.json`` scores.
+FLOWS = ("inflow", "outflow", "net")
 
 PARAMS: dict[str, Any] = {
     "objective": "regression",
@@ -71,13 +89,19 @@ EARLY_STOPPING = 100
 
 @dataclass(frozen=True)
 class HorizonTargets:
-    """14-day mean inflow/outflow per feature date (one row per date)."""
+    """14-day mean inflow/outflow/net per feature date (one row per date)."""
 
     frame: pd.DataFrame
 
 
 def horizon_targets(daily: pd.DataFrame, horizon_days: int = HORIZON_DAYS) -> HorizonTargets:
-    """Mean daily inflow/outflow over the next ``horizon_days`` days."""
+    """Mean daily inflow/outflow/net over the next ``horizon_days`` days.
+
+    ``target_net`` is the mean of the realised daily net over the same window,
+    *not* ``target_inflow - target_outflow``: the sum of each day's net is the
+    sum of its two flows, so the two agree on totals but the net series has
+    cancellation built in and is far less noisy to learn.
+    """
     frame = daily.copy()
     frame["date"] = pd.to_datetime(frame["date"])
     frame = frame.sort_values(["user_id", "date"], kind="stable").reset_index(drop=True)
@@ -90,6 +114,18 @@ def horizon_targets(daily: pd.DataFrame, horizon_days: int = HORIZON_DAYS) -> Ho
     frame = frame.dropna(subset=inflow_cols + outflow_cols).reset_index(drop=True)
     frame["target_inflow"] = frame[inflow_cols].mean(axis=1)
     frame["target_outflow"] = frame[outflow_cols].mean(axis=1)
+    # Subtracted by *position*, not by name: the inflow and lookahead frames
+    # carry disjoint column names (_fwd_in_1 vs _fwd_out_1), so a plain
+    # frame[cols_a] - frame[cols_b] aligns on the union of names and yields an
+    # all-NaN column. That trains a booster on nothing while still "succeeding",
+    # which is exactly the silent failure the guard below exists to catch.
+    frame["target_net"] = (
+        frame[inflow_cols].to_numpy(dtype=float)
+        - frame[outflow_cols].to_numpy(dtype=float)
+    ).mean(axis=1)
+    targets = frame[["target_inflow", "target_outflow", "target_net"]]
+    if targets.isna().any().any():
+        raise ValueError("horizon_targets produced NaN targets; refusing to train on them")
     return HorizonTargets(frame=frame)
 
 
@@ -135,11 +171,13 @@ def train(
 
     inflow_model, inflow_mae, inflow_bias = _fit("inflow")
     outflow_model, outflow_mae, outflow_bias = _fit("outflow")
+    net_model, net_mae, net_bias = _fit("net")
 
     directory = Path(artifact_dir)
     directory.mkdir(parents=True, exist_ok=True)
     inflow_model.save_model(str(directory / INFLOW_MODEL))
     outflow_model.save_model(str(directory / OUTFLOW_MODEL))
+    net_model.save_model(str(directory / NET_MODEL))
     meta = {
         "features": list(FORECAST_FEATURE_COLUMNS),
         "anchor_columns": dict(ANCHOR_COLUMNS),
@@ -147,52 +185,92 @@ def train(
         "params": options,
         "bias_inflow": inflow_bias,
         "bias_outflow": outflow_bias,
+        "bias_net": net_bias,
         "val_mae_inflow": inflow_mae,
         "val_mae_outflow": outflow_mae,
+        "val_mae_net": net_mae,
     }
     (directory / META_FILE).write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return {
         "artifact_dir": str(directory),
         "val_mae_inflow": inflow_mae,
         "val_mae_outflow": outflow_mae,
+        "val_mae_net": net_mae,
         "bias_inflow": inflow_bias,
         "bias_outflow": outflow_bias,
+        "bias_net": net_bias,
     }
 
 
-def load(artifact_dir: str | Path = ARTIFACT_DIR) -> tuple[lgb.Booster, lgb.Booster, dict]:
-    """Load the trained boosters and their metadata."""
+def load(artifact_dir: str | Path = ARTIFACT_DIR) -> dict[str, lgb.Booster]:
+    """Load the trained boosters, keyed by flow, plus their metadata under ``_meta``.
+
+    Artifacts written before the net model existed have no ``forecast_net.txt``;
+    that is tolerated so an older artifact directory still serves a forecast
+    (with net falling back to the difference of the two flow models) instead of
+    failing the request.
+    """
     directory = Path(artifact_dir)
-    inflow = lgb.Booster(model_file=str(directory / INFLOW_MODEL))
-    outflow = lgb.Booster(model_file=str(directory / OUTFLOW_MODEL))
+    boosters: dict[str, lgb.Booster] = {}
+    for flow, filename in (("inflow", INFLOW_MODEL), ("outflow", OUTFLOW_MODEL), ("net", NET_MODEL)):
+        path = directory / filename
+        if path.exists():
+            boosters[flow] = lgb.Booster(model_file=str(path))
     meta = json.loads((directory / META_FILE).read_text(encoding="utf-8"))
-    return inflow, outflow, meta
+    boosters["_meta"] = meta  # type: ignore[assignment]
+    return boosters
 
 
 def predict_mean(
     features: pd.DataFrame,
     artifact_dir: str | Path = ARTIFACT_DIR,
 ) -> pd.DataFrame:
-    """Predict the 14-day mean daily inflow/outflow for each feature row.
+    """Predict the 14-day mean daily inflow/outflow/net for each feature row.
 
     Each booster predicts a *residual* from the user's own trailing 4-week mean,
     so the served prediction is ``anchor + residual + validation bias``. The
     level can therefore never be shrunk toward the population mean, and
-    predictions are clipped at zero because a negative daily flow is not a thing.
+    predictions are clipped at zero because a negative daily flow is not a
+    thing.
+
+    ``mean_net`` comes from the net booster, not from ``mean_inflow -
+    mean_outflow``. The two flows are each accurate but their errors are
+    independent, so their difference accumulates both; the solver reads net, so
+    net gets its own prediction. Without a net artifact the difference is used
+    and ``net_source`` says so, which keeps the gap visible instead of silent.
     """
-    inflow, outflow, meta = load(artifact_dir)
+    boosters = load(artifact_dir)
+    meta = boosters["_meta"]
     matrix = features[FORECAST_FEATURE_COLUMNS]
     anchors = meta.get("anchor_columns", ANCHOR_COLUMNS)
-    mean_inflow = (
-        features[anchors["inflow"]].to_numpy(dtype=float)
-        + inflow.predict(matrix) + float(meta.get("bias_inflow", 0.0))
-    )
-    mean_outflow = (
-        features[anchors["outflow"]].to_numpy(dtype=float)
-        + outflow.predict(matrix) + float(meta.get("bias_outflow", 0.0))
-    )
+
+    def _level(flow: str) -> np.ndarray:
+        booster = boosters.get(flow)
+        anchor = features[anchors[flow]].to_numpy(dtype=float)
+        if booster is None:
+            return anchor
+        return anchor + booster.predict(matrix) + float(meta.get(f"bias_{flow}", 0.0))
+
+    mean_inflow = _level("inflow")
+    mean_outflow = _level("outflow")
+    net_source = "model"
+    if "net" in boosters:
+        mean_net = _level("net")
+        # a trained booster can still emit NaN (an all-NaN training label
+        # produces a one-tree model that predicts 0 with a NaN bias). Falling
+        # back keeps the request correct, and the reported source makes the
+        # downgrade visible instead of silently serving a broken number.
+        if not np.isfinite(mean_net).all():
+            mean_net = mean_inflow - mean_outflow
+            net_source = "difference"
+    else:
+        mean_net = mean_inflow - mean_outflow
+        net_source = "difference"
     return pd.DataFrame({
         "mean_inflow": np.clip(mean_inflow, 0.0, None),
         "mean_outflow": np.clip(mean_outflow, 0.0, None),
+        # net is deliberately NOT clipped: a day can legitimately lose money
+        "mean_net": mean_net,
+        "net_source": net_source,
     })
 

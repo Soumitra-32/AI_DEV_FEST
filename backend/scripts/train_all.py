@@ -37,6 +37,7 @@ def main(argv=None) -> int:
     metrics["val"] = {
         "mae_inflow": round(info["val_mae_inflow"], 2),
         "mae_outflow": round(info["val_mae_outflow"], 2),
+        "mae_net": round(info["val_mae_net"], 2),
     }
     path = evaluate.write_metrics(metrics, artifacts)
     print(json.dumps(metrics, indent=2))

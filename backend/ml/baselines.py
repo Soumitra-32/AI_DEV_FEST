@@ -66,10 +66,15 @@ def predict(
         actual_outflow = grouped["outflow_bdt"].shift(-horizon)
         part["actual_inflow"] = actual_inflow.to_numpy()
         part["actual_outflow"] = actual_outflow.to_numpy()
+        # each baseline's net, so the net can be scored on the same footing as
+        # the model's own net rather than only as a difference of two columns
+        part["actual_net"] = (actual_inflow - actual_outflow).to_numpy()
         part["seasonal_naive_inflow"] = frame["signal_seasonal_inflow"].to_numpy()
         part["seasonal_naive_outflow"] = frame["signal_seasonal_outflow"].to_numpy()
         part["trailing_average_inflow"] = frame["signal_trailing_inflow"].to_numpy()
         part["trailing_average_outflow"] = frame["signal_trailing_outflow"].to_numpy()
+        for method in BASELINE_NAMES:
+            part[f"{method}_net"] = (part[f"{method}_inflow"] - part[f"{method}_outflow"]).to_numpy()
         rows.append(part)
     out = pd.concat(rows, ignore_index=True)
     signal_columns = [

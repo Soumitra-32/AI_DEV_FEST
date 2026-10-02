@@ -7,6 +7,7 @@ no-artifacts fallback) and the savings plan built from that forecast.
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -59,6 +60,27 @@ def test_horizon_target_is_the_mean_of_the_next_two_weeks(small_db) -> None:
     assert len(targets) == len(one) - 3
 
 
+def test_horizon_targets_are_never_nan(small_db) -> None:
+    """Guards the silent failure that produced an all-NaN net target.
+
+    Inflow and outflow lookaheads carry disjoint column names, so subtracting
+    the two frames by name aligns on the union and yields all-NaN. The training
+    run then "succeeds" with a one-tree model and a NaN bias. Every target must
+    be finite, and ``horizon_targets`` raises rather than returning one that is
+    not.
+    """
+    frame = dataset.make_frame(small_db)
+    targets = forecast.horizon_targets(frame.features, horizon_days=7).frame
+    for column in ("target_inflow", "target_outflow", "target_net"):
+        values = targets[column].to_numpy(dtype=float)
+        assert np.isfinite(values).all(), f"{column} contains non-finite values"
+    # net is the mean of each window's realised (inflow - outflow)
+    first = targets.iloc[0]
+    assert first["target_net"] == pytest.approx(
+        first["target_inflow"] - first["target_outflow"]
+    )
+
+
 def test_spread_keeps_the_horizon_total(small_db) -> None:
     frame = dataset.make_frame(small_db)
     user = frame.features["user_id"].iloc[0]
@@ -74,6 +96,45 @@ def test_spread_keeps_the_horizon_total(small_db) -> None:
     assert (spread["predicted_inflow"] >= 0).all()
 
 
+def test_spread_uses_the_net_model_and_keeps_its_total(small_db) -> None:
+    """The served days must sum to the net model's 14-day total, not the
+    difference of the two spread flows. When those disagree, net is the one the
+    solver reads and therefore the one that must survive."""
+    frame = dataset.make_frame(small_db)
+    user = frame.features["user_id"].iloc[0]
+    daily = frame.daily.loc[frame.daily["user_id"].eq(user)]
+    start = pd.to_datetime(
+        frame.features.loc[frame.features["user_id"].eq(user), "date"].max()
+    )
+    dates = pd.DataFrame({"user_id": [user], "date": [start]})
+    means = pd.DataFrame({
+        "mean_inflow": [1000.0], "mean_outflow": [800.0], "mean_net": [500.0],
+    })
+    spread = evaluate.spread_predictions(dates, means, daily, horizon_days=14)
+    assert (spread["net_source"] == "model").all()
+    assert spread["predicted_net"].sum() == pytest.approx(500.0 * 14, rel=1e-6)
+    # the flow difference is 200/day, so the two genuinely disagree here
+    implied = (spread["predicted_inflow"] - spread["predicted_outflow"]).sum()
+    assert spread["predicted_net"].sum() != pytest.approx(implied, rel=1e-6)
+
+
+def test_spread_falls_back_and_says_so_when_the_net_model_is_unusable(small_db) -> None:
+    """A non-finite net must degrade to the flow difference, visibly."""
+    frame = dataset.make_frame(small_db)
+    user = frame.features["user_id"].iloc[0]
+    daily = frame.daily.loc[frame.daily["user_id"].eq(user)]
+    start = pd.to_datetime(
+        frame.features.loc[frame.features["user_id"].eq(user), "date"].max()
+    )
+    dates = pd.DataFrame({"user_id": [user], "date": [start]})
+    means = pd.DataFrame({
+        "mean_inflow": [1000.0], "mean_outflow": [800.0], "mean_net": [float("nan")],
+    })
+    spread = evaluate.spread_predictions(dates, means, daily, horizon_days=14)
+    assert (spread["net_source"] == "difference").all()
+    assert spread["predicted_net"].notna().all()
+
+
 def test_score_blocks_report_the_model_next_to_both_baselines() -> None:
     joined = pd.DataFrame({
         "user_id": ["u1", "u1", "u2", "u2"],
@@ -83,12 +144,16 @@ def test_score_blocks_report_the_model_next_to_both_baselines() -> None:
         "horizon": [1, 2, 1, 2],
         "actual_inflow": [100.0, 200.0, 300.0, 400.0],
         "actual_outflow": [50.0, 60.0, 70.0, 80.0],
+        "actual_net": [50.0, 140.0, 230.0, 320.0],
         "predicted_inflow": [110.0, 190.0, 290.0, 410.0],
         "predicted_outflow": [55.0, 65.0, 65.0, 75.0],
+        "predicted_net": [52.0, 138.0, 232.0, 322.0],
         "seasonal_naive_inflow": [0.0, 0.0, 0.0, 0.0],
         "seasonal_naive_outflow": [0.0, 0.0, 0.0, 0.0],
+        "seasonal_naive_net": [0.0, 0.0, 0.0, 0.0],
         "trailing_average_inflow": [500.0, 500.0, 500.0, 500.0],
         "trailing_average_outflow": [500.0, 500.0, 500.0, 500.0],
+        "trailing_average_net": [0.0, 0.0, 0.0, 0.0],
     })
     day_level = evaluate.day_level_scores(joined)
     assert day_level["inflow"]["model"]["mae"] == pytest.approx(10.0)
@@ -98,6 +163,11 @@ def test_score_blocks_report_the_model_next_to_both_baselines() -> None:
     cumulative = evaluate.cumulative_scores(joined)
     # per (user, date) the model sums to 300 vs actual 300 -> only rounding left
     assert cumulative["inflow"]["model"]["mae"] == pytest.approx(0.0, abs=1e-9)
+
+    # net is scored on its own column, so its accuracy is never inferred
+    # from the two flow metrics
+    assert "net" in day_level and "net" in cumulative
+    assert day_level["net"]["model"]["mae"] == pytest.approx(2.0)
 
 
 def test_test_split_users_are_never_the_demo_user(small_db) -> None:
@@ -130,12 +200,13 @@ def test_forecast_returns_fourteen_days_and_a_verdict(small_db, empty_artifacts:
     for day in payload["days"]:
         assert day["predicted_inflow_bdt"] >= 0
         assert day["predicted_outflow_bdt"] >= 0
-        assert day["predicted_net_bdt"] == pytest.approx(
-            day["predicted_inflow_bdt"] - day["predicted_outflow_bdt"], abs=0.02
-        )
+        # net is always finite, and the day rows sum to the window total
+        assert np.isfinite(day["predicted_net_bdt"])
         assert isinstance(day["is_pressure_day"], bool)
     # no artifacts -> the trailing-average rule serves the request, and says so
     assert payload["provenance"]["source"] == "rule"
+    # with no net model the net is the flow difference, and provenance says so
+    assert payload["net_source"] == "difference"
     assert payload["provenance"]["assumption"]
     assert payload["metrics"] is None
     assert set(payload["pressure_days"]) <= {day["date"] for day in payload["days"]}
@@ -147,7 +218,6 @@ def test_forecast_monthly_net_matches_the_daily_rows(small_db, empty_artifacts: 
     )
     window_net = sum(day["predicted_net_bdt"] for day in payload["days"])
     assert payload["monthly_net"] == pytest.approx(window_net * 30 / 14, rel=1e-6)
-
 
 def test_forecast_can_switch_pressure_days_off(small_db, empty_artifacts: str) -> None:
     payload = forecast_service.build_forecast(

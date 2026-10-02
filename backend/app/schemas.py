@@ -138,6 +138,13 @@ class ForecastResponse(BaseModel):
     generated_from: Optional[date] = Field(
         default=None, description="Last day of real history the forecast was made from"
     )
+    net_source: Literal["model", "difference"] = Field(
+        default="model",
+        description=(
+            "Whether predicted net came from the dedicated net model or from "
+            "inflow minus outflow; 'difference' is the weaker number"
+        ),
+    )
     days: List[DayForecast] = Field(default_factory=list)
     pressure_days: List[date] = Field(default_factory=list)
     drivers: List[Driver] = Field(default_factory=list)
