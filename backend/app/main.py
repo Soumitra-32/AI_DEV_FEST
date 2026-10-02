@@ -2,9 +2,10 @@
 
 Phase 2 wires the shell: CORS for the Next.js app, settings-driven feature flags
 and the health/identity routers. Phase 3 added the forecast and savings-plan
-routers, and Phase 4 the explanation layer (``/chat-explain``); the anomaly,
-signal and metrics routers arrive in later phases against the same contracts
-already frozen in :mod:`backend.app.schemas`.
+routers, Phase 4 the explanation layer (``/chat-explain``), Phase 5 the Spending
+Companion (``/anomalies``) and Phase 7 the consistency band (``/signal``). The
+metrics router arrives in Phase 8 against the contracts already frozen in
+:mod:`backend.app.schemas`.
 """
 from __future__ import annotations
 
@@ -14,7 +15,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import Settings, get_settings
-from .routers import anomalies, chat_explain, forecast, health, savings_plan
+from .routers import (
+    anomalies,
+    chat_explain,
+    credit_readiness,
+    forecast,
+    health,
+    savings_plan,
+)
 
 
 def create_app(settings: Optional[Settings] = None) -> FastAPI:
@@ -40,6 +48,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     app.include_router(savings_plan.router)
     app.include_router(chat_explain.router)
     app.include_router(anomalies.router)
+    app.include_router(credit_readiness.router)
 
     @app.get("/", include_in_schema=False)
     def root() -> Dict[str, str]:

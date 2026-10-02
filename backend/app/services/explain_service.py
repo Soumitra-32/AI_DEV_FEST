@@ -25,9 +25,10 @@ import pandas as pd
 
 from backend.data import features as user_features
 from backend.data import generator
+from backend.genai import rag
 from backend.ml import explain as ml_explain
 
-from . import forecast_service, plan_service
+from . import forecast_service, plan_service, signal_service
 
 logger = logging.getLogger("shonchoy.explain_service")
 
@@ -184,106 +185,41 @@ def plan_context(
 
 
 def consistency_context(user_id: str, db_path: str | Path | None = None) -> dict[str, Any]:
-    """Provisional consistency context from the feature pipeline.
+    """The consistency band, from the trained model when one exists.
 
-    Phase 5 replaces this with the trained model's band and SHAP factors. Until
-    then it is a *behavioural* summary and says so, which keeps the "not a score,
-    not a decision" wording honest instead of dressing a rule up as a model.
+    Delegates to :mod:`backend.app.services.signal_service` so the chat answer
+    and the ``/signal`` card can never disagree: same band, same factors, same
+    "not a decision" wording. ``{}`` when the user is unknown, which
+    :func:`build_context` treats as a missing section rather than an error.
     """
-    path = db_path if db_path is not None else user_features.default_db_path()
     try:
-        features = user_features.user_features(
-            generator.load_config(), user_features.load_transactions(path, [user_id])
-        )
-        if features.empty:
-            return {}
-        row = features.iloc[0]
-    except Exception as exc:  # unknown user or an empty slice
+        return signal_service.build_signal(user_id, language="bn", db_path=db_path)
+    except Exception as exc:  # unknown user or a missing artifact
         logger.info("no consistency context for %s: %s", user_id, type(exc).__name__)
         return {}
-    fee_share = float(row["fee_share_of_income"])
-    shortfall = float(row["shortfall_days_per_month"])
-    cash_outs = float(row["cash_out_count_per_month"])
-    factors = [
-        {
-            "feature": "fee_share_of_income",
-            "direction": "weakens" if fee_share > 0.01 else "improves",
-            "magnitude": round(fee_share, 4),
-            "plain_language": (
-                f"আয়ের প্রায় {fee_share * 100:.1f}% ফিতে চলে যায়।"
-                if fee_share > 0.01
-                else "ফিতে যাওয়া টাকার হার খুব কম।"
-            ),
-        },
-        {
-            "feature": "shortfall_days_per_month",
-            "direction": "weakens" if shortfall > 1 else "improves",
-            "magnitude": round(shortfall, 2),
-            "plain_language": (
-                f"মাসে গড়ে {shortfall:.1f} দিন ব্যালেন্স ঘাটতি হয়।"
-                if shortfall > 1
-                else "ব্যালেন্স ঘাটতির দিন খুব কম।"
-            ),
-        },
-        {
-            "feature": "cash_out_count_per_month",
-            "direction": "weakens" if cash_outs >= 4 else "improves",
-            "magnitude": round(cash_outs, 2),
-            "plain_language": (
-                f"মাসে {cash_outs:.0f} বার ক্যাশ-আউট করেন।"
-                if cash_outs >= 4
-                else "ক্যাশ-আউটের সংখ্যা কম।"
-            ),
-        },
-    ]
-    return {
-        "band": "Building",
-        "factors": factors[:3],
-        "improvements": [
-            "মাসে এক-দুইবার ক্যাশ-আউটের বদলে অ্যাপ ট্রান্সফার ব্যবহার করুন",
-            "মাস শেষের ৩-৪ দিনের বড় খরচ আগেই সাজিয়ে নিন",
-        ],
-        "provisional": True,
-        "note": "Behavioural summary only; the trained signal model arrives in phase 5.",
-    }
 
 
 def tips_context(user_id: str, db_path: str | Path | None = None, limit: int = 3) -> list[dict[str, Any]]:
-    """Behaviour-triggered tips, each carrying the trigger that chose it.
+    """Behaviour-triggered tips, retrieved from the curated bank.
 
-    Phase 6 replaces this with the RAG retriever over ``genai/tips.json``; the
-    trigger is shown either way, because "why am I seeing this?" is the point.
+    This is the "retrieval, then LLM phrasing" split: :mod:`backend.genai.rag`
+    picks tips whose trigger the user's own features satisfy, and the LLM can
+    only rephrase those. Every tip carries the trigger that chose it, because
+    "why am I seeing this?" is the point.
+
+    Returns ``[]`` when the bank is missing or nothing fires, so the chat
+    endpoint still answers without tips rather than failing.
     """
-    fees = fees_context(db_path, user_id)
-    cash_outs = int(fees.get("cash_out_count", 0))
-    tips: list[dict[str, Any]] = []
-    if cash_outs >= 3:
-        tips.append({
-            "title": "Send money by app transfer",
-            "title_bn": "অ্যাপ ট্রান্সফারে টাকা পাঠান",
-            "body": (
-                f"You took cash out {cash_outs} times in 30 days, and cash-out is "
-                f"the feeliest channel in the simulated rate card."
-            ),
-            "body_bn": f"৩০ দিনে {cash_outs} বার ক্যাশ-আউট করেছেন, এই ফিরে সবচেয়ে বেশি।",
-            "trigger": f"cash_out_count >= 3 in 30 days (observed {cash_outs})",
-        })
-    if float(fees.get("fee_paid_bdt", 0.0)) > 0:
-        tips.append({
-            "title": "Move the monthly fee into the goal",
-            "title_bn": "মাসিক ফি টাকাটা লক্ষ্যে দিন",
-            "body": "What the fee already costs you is the easiest first saving.",
-            "body_bn": "ফিতে যাওয়া মাসিক টাকাই সবচেয়ে সহজ প্রথম সঞ্চয়।",
-            "trigger": "fee_paid_bdt > 0 in the last 30 days",
-        })
-    tips.append({
-        "title": "Spread the month-end lump",
-        "title_bn": "মাস শেষের বড় খরচ ছড়িয়ে দিন",
-        "body": "Two large cash-outs in the last week are what create the squeeze.",
-        "body_bn": "মাসের শেষ সপ্তাহে দুটি বড় ক্যাশ-আউটই চাপ তৈরি করে।",
-        "trigger": "month-end spending pattern (calendar rule, always shown)",
-    })
-    return tips[: max(int(limit), 1)]
+    path = Path(db_path) if db_path is not None else user_features.default_db_path()
+    try:
+        frame = user_features.user_features(
+            user_features.load_config(), user_features.load_transactions(path)
+        )
+        row = user_features.feature_row(frame, user_id)
+    except Exception as exc:
+        logger.warning("tips retrieval failed for %s: %s", user_id, type(exc).__name__)
+        return []
+    return rag.retrieve(row, limit=limit)
 
 
 def build_context(

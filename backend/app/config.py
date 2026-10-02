@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Shonchoy Copilot API"
-    api_version: str = "0.2.0"
+    api_version: str = "0.7.0"
     port: int = 8000
 
     # --- demo auth: the token decides the user, never the request body ---

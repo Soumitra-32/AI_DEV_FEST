@@ -1,0 +1,186 @@
+{
+  "version": "1.0",
+  "note": "Curated behaviour-triggered tips. rag.py selects from this bank; the LLM only phrases what is chosen, so no tip can be invented.",
+  "tips": [
+    {
+      "id": "cash_out_to_transfer",
+      "title_en": "Send money by app transfer",
+      "title_bn": "অ্যাপ ট্রান্সফারে টাকা পাঠান",
+      "body_en": "Cash-out is the most expensive channel on the rate card. The same money moved by app transfer keeps a measurable part of it.",
+      "body_bn": "ক্যাশ-আউট এই ফিরে সবচেয়ে বেশি। একই টাকা অ্যাপ ট্রান্সফারে গেলে একটা মাপযোগ্য অংশ আপনারই থাকে।",
+      "trigger": {"feature": "cash_out_count_per_month", "op": ">=", "value": 3},
+      "intents": ["fees", "tips"],
+      "priority": 90
+    },
+    {
+      "id": "fee_into_goal",
+      "title_en": "Move the monthly fee into your goal",
+      "title_bn": "মাসিক ফি টাকাটা লক্ষ্যে দিন",
+      "body_en": "What the fee already costs you is the easiest first saving: no new habit, only a different channel.",
+      "body_bn": "ফিতে যাওয়া মাসিক টাকাই সবচেয়ে সহজ প্রথম সঞ্চয়: নতুন অভ্যাস লাগে না, শুধু অন্য চ্যানেল।",
+      "trigger": {"feature": "fee_share_of_income", "op": ">", "value": 0.005},
+      "intents": ["fees", "tips"],
+      "priority": 85
+    },
+    {
+      "id": "month_end_lump",
+      "title_en": "Spread the month-end lump",
+      "title_bn": "মাস শেষের বড় খরচ ছড়িয়ে দিন",
+      "body_en": "Two large payments in the same week are what create the squeeze. Spacing them costs nothing to try.",
+      "body_bn": "একই সপ্তাহে দুটি বড় খরচই চাপ তৈরি করে। ছড়িয়ে দিলে কিছুই করতে হয় না।",
+      "trigger": {"feature": "month_end_spend_ratio", "op": ">", "value": 1.4},
+      "intents": ["tips", "forecast"],
+      "priority": 80
+    },
+    {
+      "id": "cash_buffer_first",
+      "title_en": "Keep one month of outflow in cash",
+      "title_bn": "এক মাসের খরচের সমান নগদ রাখুন",
+      "body_en": "A balance covering a month of spending absorbs the shocks this ledger is full of.",
+      "body_bn": "এক মাসের খরচ ধরে একটা ব্যালেন্স এই ডেটার ধাক্কা সামলে দেয়।",
+      "trigger": {"feature": "balance_min_bdt", "op": "<", "value": 2000},
+      "intents": ["tips", "consistency"],
+      "priority": 95
+    },
+    {
+      "id": "shortfall_days",
+      "title_en": "Watch the days you run out",
+      "title_bn": "টাকা শেষ হয়ে যাওয়ার দিনগুলো খেয়াল করুন",
+      "body_en": "Days with no money are the real cost. One mid-month top-up usually removes most of them.",
+      "body_bn": "টাকা না থাকার দিনগুলোই আসল খরচ। মাসের মাঝে একবার টপ-আপ দিলেই বেশিরভাগ তা সারে।",
+      "trigger": {"feature": "shortfall_days_per_month", "op": ">=", "value": 2},
+      "intents": ["tips", "consistency"],
+      "priority": 92
+    },
+    {
+      "id": "income_regularity",
+      "title_en": "More income days, less wobble",
+      "title_bn": "আয়ের দিন বাড়লে চড়চড় কমবে",
+      "body_en": "Being paid twice a month instead of once mostly removes the end-of-month dip.",
+      "body_bn": "মাসে একবারের বদলে দুবার আয় হলে মাস শেষের নামা অনেকটাই কমে যায়।",
+      "trigger": {"feature": "income_days_per_month", "op": "<", "value": 2},
+      "intents": ["tips", "consistency"],
+      "priority": 88
+    },
+    {
+      "id": "volatile_income",
+      "title_en": "Smooth out an irregular income",
+      "title_bn": "অনিয়মিত আয়কে স্থিতিশীল করুন",
+      "body_en": "When income swings month to month, the answer is a buffer, not a smaller goal.",
+      "body_bn": "মাসে মাসে আয় ওঠানামা করলে লক্ষ্য ছোট করা নয়, বাফার বাড়ানোই কৌশল।",
+      "trigger": {"feature": "income_cv", "op": ">", "value": 0.4},
+      "intents": ["tips", "forecast"],
+      "priority": 86
+    },
+    {
+      "id": "weekend_spend",
+      "title_en": "Look at the weekend pattern",
+      "title_bn": "সপ্তাহ শেষের খরচের দিকে তাকান",
+      "body_en": "If spending always spikes at the weekend, the fix is a plan for that weekend, not the month.",
+      "body_bn": "সপ্তাহ শেষে খরচ বাড়া থাকলে মাসের নয়, ওই সপ্তাহের জন্য পরিকল্পনা দরকার।",
+      "trigger": {"feature": "weekend_spend_ratio", "op": ">", "value": 1.2},
+      "intents": ["tips"],
+      "priority": 70
+    },
+    {
+      "id": "big_payment_check",
+      "title_en": "Check the biggest payment of the month",
+      "title_bn": "মাসের সবচেয়ে বড় পেমেন্টটা দেখুন",
+      "body_en": "One large payment is usually worth checking against your plan before it leaves.",
+      "body_bn": "একটা বড় পেমেন্ট সাধারণত বেরিয়ে যাওয়ার আগে পরিকল্পনার সাথে মিলিয়ে দেখার যায়।",
+      "trigger": {"feature": "spend_cv", "op": ">", "value": 1.0},
+      "intents": ["tips"],
+      "priority": 72
+    },
+    {
+      "id": "spend_spread",
+      "title_en": "Similar amounts, different days",
+      "title_bn": "একই পরিমাণ, আলাদা দিনে",
+      "body_en": "Spreading similar payments across the week changes little in total and a lot in timing.",
+      "body_bn": "একই পরিমাণ সপ্তাহে ছড়িয়ে দিলে মোট খরচ কমে না, শুধু সময়টা বদলায়।",
+      "trigger": {"feature": "balance_volatility", "op": ">", "value": 1.0},
+      "intents": ["tips", "forecast"],
+      "priority": 74
+    },
+    {
+      "id": "odd_hour_payments",
+      "title_en": "Payments at unusual hours",
+      "title_bn": "অস্বাভাবিক সময়ের পেমেন্ট",
+      "body_en": "Late-night payments rarely belong to a plan you made in the morning.",
+      "body_bn": "গভীর রাতের পেমেন্ট সকালে করা পরিকল্পনার অংশ হয় খুব কমই।",
+      "trigger": {"feature": "cash_out_volume_per_month_bdt", "op": ">", "value": 5000},
+      "intents": ["tips"],
+      "priority": 68
+    },
+    {
+      "id": "save_the_dip",
+      "title_en": "Save the month-end dip",
+      "title_bn": "মাস শেষের চাপটা সঞ্চয়ে বদলান",
+      "body_en": "The dip at month end is the cheapest saving you will ever find.",
+      "body_bn": "মাস শেষের নামাটাই আপনার সবচেয়ে সস্তা সঞ্চয়।",
+      "trigger": {"feature": "month_end_spend_ratio", "op": ">", "value": 1.2},
+      "intents": ["savings_plan", "tips"],
+      "priority": 82
+    },
+    {
+      "id": "small_goal_first",
+      "title_en": "Start with a goal you can miss",
+      "title_bn": "এমন লক্ষ্য দিয়ে শুরু করুন যা বাদ পড়তে পারে",
+      "body_en": "A goal small enough to miss teaches the habit the next goal depends on.",
+      "body_bn": "এমন ছোট লক্ষ্য যা বাদ পড়তে পারে, সেটিই পরের লক্ষ্যের ভিত্তি অভ্যাসটি গড়ে।",
+      "trigger": {"feature": "months_observed", "op": ">=", "value": 1},
+      "intents": ["savings_plan", "tips"],
+      "priority": 60
+    },
+    {
+      "id": "fee_share_heavy",
+      "title_en": "Fees are eating a real share",
+      "title_bn": "ফি আপনার আয়ের ভালো অংশ খেয়ে যাচ্ছে",
+      "body_en": "Above a few percent of income, fees are large enough to be worth arguing with.",
+      "body_bn": "আয়ের কয়েক শতাংশের বেশি ফি হলে তা সত্যিই কমানোর দায়িত্বে আসে।",
+      "trigger": {"feature": "fee_share_of_income", "op": ">", "value": 0.02},
+      "intents": ["fees", "tips"],
+      "priority": 94
+    },
+    {
+      "id": "balance_thin",
+      "title_en": "Your balance runs thin",
+      "title_bn": "আপনার ব্যালেন্স পাতলা থাকে",
+      "body_en": "A balance that dips near zero means one bad week becomes a bad month.",
+      "body_bn": "শূন্যের কাছাকাছি নামলে খারাপ একটা সপ্তাহ খারাপ এক মাস হয়ে যায়।",
+      "trigger": {"feature": "balance_mean_bdt", "op": "<", "value": 3000},
+      "intents": ["consistency", "tips"],
+      "priority": 90
+    },
+    {
+      "id": "stable_ground",
+      "title_en": "You are on steadier ground",
+      "title_bn": "আপনি আরও স্থিতিশীল জায়গায়",
+      "body_en": "Income arrives regularly and the balance holds: this is the moment to set a bigger goal.",
+      "body_bn": "আয় নিয়মিত আসে আর ব্যালেন্স ঠিক থাকে: এখনই বড় লক্ষ্য ঠিক করার সময়।",
+      "trigger": {"feature": "income_days_per_month", "op": ">=", "value": 3},
+      "intents": ["consistency", "tips"],
+      "priority": 76
+    },
+    {
+      "id": "explain_your_ledger",
+      "title_en": "Ask what each fee was for",
+      "title_bn": "প্রতিটি ফি কী জন্য ছিল জিজ্ঞেস করুন",
+      "body_en": "Most people cannot name the fees they paid last month. Reading them is the first step.",
+      "body_bn": "গত মাসে কোন ফিতে কত দিয়েছেন, তা বেশিরভাগ মানুষ বলতে পারেন না।",
+      "trigger": {"feature": "fee_per_month_bdt", "op": ">", "value": 0},
+      "intents": ["fees", "explain_transactions"],
+      "priority": 78
+    },
+    {
+      "id": "compare_channels",
+      "title_en": "Compare the channels once",
+      "title_bn": "একবার চ্যানেলগুলো তুলনা করুন",
+      "body_en": "Knowing which channel is cheapest is worth more than any single saved fee.",
+      "body_bn": "কোন চ্যানেল সবচেয়ে সস্তা, তা জানা একটি ফি বাঁচানোর চেয়েও বেশি মূল্যবান।",
+      "trigger": {"feature": "cash_out_share_of_outflow", "op": ">", "value": 0.3},
+      "intents": ["fees", "tips"],
+      "priority": 84
+    }
+  ]
+}
