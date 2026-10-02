@@ -60,7 +60,11 @@ def get_connection(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"dataset not found at {path}; run backend/scripts/generate_data.py",
         )
-    connection = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)
+    # check_same_thread=False: FastAPI runs sync dependencies in a threadpool,
+    # so the finally-close below may resume on a different thread than the
+    # connect above. Each request owns its connection (never shared between
+    # threads), and it is read-only, so this is safe.
+    connection = sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True, check_same_thread=False)
     connection.row_factory = sqlite3.Row
     try:
         yield connection
