@@ -229,7 +229,7 @@ def consistency_context(user_id: str, db_path: str | Path | None = None) -> dict
     """The consistency band, from the trained model when one exists.
 
     Delegates to :mod:`backend.app.services.signal_service` so the chat answer
-    and the ``/signal`` card can never disagree: same band, same factors, same
+    and the ``/credit-readiness`` card can never disagree: same band, same factors, same
     "not a decision" wording. ``{}`` when the user is unknown, which
     :func:`build_context` treats as a missing section rather than an error.
     """

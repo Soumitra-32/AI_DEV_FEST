@@ -188,23 +188,43 @@ def load_meta(artifact_dir: str | Path = ARTIFACT_DIR) -> dict[str, Any]:
         return {}
 
 
-def _shap_values(model: Any, scaler: Any, scaled: np.ndarray) -> np.ndarray:
-    """SHAP values for a linear model.
+def _shap(model: Any, scaler: Any, scaled: np.ndarray) -> tuple[np.ndarray, float]:
+    """Exact SHAP values and the base log-odds, for a linear model.
 
     ``shap.LinearExplainer`` is exact here, so each value is that feature's real
-    contribution to the log-odds. If the optional dependency is missing the
-    closed form ``x*w + b`` gives the same number, so the card degrades rather
-    than disappears.
+    contribution to the log-odds. When the optional dependency is missing the
+    closed form is used instead, and it is the *linear* one:
+    ``phi_i = (x_i - mean_i) * w_i`` against the scaler's training mean, with
+    ``base = intercept + mean @ w``. Note that ``x*w + b`` would be wrong here --
+    that is the model's output, not a set of per-feature contributions, and it
+    would fold the intercept into every feature.
+
+    The base value matters as much as the contributions: it is the log-odds the
+    model would output for an average user, so
+    ``base + sum(contributions)`` reconstructs this user's log-odds exactly and
+    the band can be checked by hand.
     """
     try:
         import shap  # noqa: PLC0415 - optional dependency, imported lazily
 
-        explainer = shap.LinearExplainer(model, shap.kmeans(scaled, min(10, len(scaled))))
-        return np.asarray(explainer.shap_values(scaled), dtype=float).reshape(len(scaled), -1)
+        background = shap.kmeans(scaled, min(10, len(scaled)))
+        explainer = shap.LinearExplainer(model, background)
+        values = np.asarray(explainer.shap_values(scaled), dtype=float).reshape(len(scaled), -1)
+        base = float(np.asarray(explainer.expected_value).reshape(-1)[0])
+        return values, base
     except Exception:  # pragma: no cover - only reached without shap
         weights = np.asarray(model.coef_).reshape(-1)
-        bias = float(np.asarray(model.intercept_).reshape(-1)[0])
-        return scaled * weights + bias
+        reference = np.asarray(
+            getattr(scaler, "mean_", np.zeros(scaled.shape[1])), dtype=float
+        ).reshape(-1)
+        centered = scaled - reference.reshape(1, -1)
+        base = float(np.asarray(model.intercept_).reshape(-1)[0]) + float(reference @ weights)
+        return centered * weights.reshape(1, -1), base
+
+
+#: Advertised in the response so a reader knows whether the numbers came from the
+#: exact explainer or its closed-form fallback.
+SHAP_METHOD = "shap.LinearExplainer"
 
 
 #: Anything this module will accept as "one user's numbers". ``pd.Series`` is
@@ -233,6 +253,49 @@ def feature_mapping(row: RowLike) -> dict[str, float]:
     return values
 
 
+def shap_explanation(
+    model: Any,
+    scaler: Any,
+    row: RowLike,
+    bands: Sequence[tuple[float, str]] = DEFAULT_BANDS,
+) -> dict[str, Any]:
+    """The full ranked explanation for one user: base value and every contribution.
+
+    Deliberately complete rather than top-3. :func:`shap_factors` keeps the three
+    biggest for the card, but an audit needs the whole list to check that the
+    contributions actually add up to the log-odds that chose the band.
+    """
+    values = [list(feature_mapping(row).values())]
+    scaled = scaler.transform(build_matrix(pd.DataFrame(values, columns=FEATURE_COLUMNS)))
+    contributions, base = _shap(model, scaler, scaled)
+    log_odds = float(base + contributions[0].sum())
+
+    ranked = sorted(
+        zip(FEATURE_COLUMNS, contributions[0]), key=lambda kv: abs(float(kv[1])), reverse=True
+    )
+    features: list[dict[str, Any]] = []
+    for rank, (name, value) in enumerate(ranked, start=1):
+        higher_is_stable = name in HIGHER_IS_STABLE
+        # "Improves" means "moves towards stable", not "a bigger number is nicer",
+        # so the direction has to be read per feature.
+        improving = value > 0 if higher_is_stable else value < 0
+        features.append(
+            {
+                "feature": name,
+                "contribution": round(float(value), 4),
+                "direction": "improves" if improving else "weakens",
+                "rank": rank,
+            }
+        )
+    return {
+        "method": SHAP_METHOD,
+        "base_value": round(float(base), 4),
+        "log_odds": round(log_odds, 4),
+        "band_cutoffs": {name: float(cutoff) for cutoff, name in bands},
+        "features": features,
+    }
+
+
 def shap_factors(
     model: Any,
     scaler: Any,
@@ -243,27 +306,20 @@ def shap_factors(
 
     Each factor says which way the feature pushes this user and by roughly how
     much in log-odds. That is what makes the band arguable instead of magic, and
-    it is the reason this signal is a model rather than a rule.
+    it is the reason this signal is a model rather than a rule. The signed values
+    behind these magnitudes are in :func:`shap_explanation`.
     """
-    values = [list(feature_mapping(row).values())]
-    scaled = scaler.transform(build_matrix(pd.DataFrame(values, columns=FEATURE_COLUMNS)))
-    contributions = _shap_values(model, scaler, scaled)[0]
+    explanation = shap_explanation(model, scaler, row)
+    return [
+        {
+            "feature": item["feature"],
+            "direction": item["direction"],
+            "magnitude": round(abs(float(item["contribution"])), 4),
+        }
+        for item in explanation["features"][: max(int(top_k), 1)]
+    ]
 
-    ranked = sorted(zip(FEATURE_COLUMNS, contributions), key=lambda kv: abs(kv[1]), reverse=True)
-    factors: list[dict[str, Any]] = []
-    for name, value in ranked[: max(int(top_k), 1)]:
-        higher_is_stable = name in HIGHER_IS_STABLE
-        # "Improves" means "moves towards stable", not "a bigger number is nicer",
-        # so the direction has to be read per feature.
-        improving = value > 0 if higher_is_stable else value < 0
-        factors.append(
-            {
-                "feature": name,
-                "direction": "improves" if improving else "weakens",
-                "magnitude": round(abs(float(value)), 4),
-            }
-        )
-    return factors
+
 def predict(
     features: pd.DataFrame,
     artifact_dir: str | Path = ARTIFACT_DIR,
@@ -286,6 +342,33 @@ def predict(
         band=band_for(probability, bands),
         source="model",
         factors=shap_factors(model, scaler, features.iloc[0], top_k=top_k),
+    )
+
+
+def predict_bands(
+    features: pd.DataFrame,
+    artifact_dir: str | Path = ARTIFACT_DIR,
+) -> Optional[pd.DataFrame]:
+    """Band and probability for *every* row at once, or ``None`` without the artifact.
+
+    :func:`predict` answers for one user because that is all the card needs, and
+    it spends a SHAP explainer on the single row it returns. The fairness pass
+    needs the band of every held-out user and no explanations, so this scores the
+    whole cohort in one transform. Same model, same bands, same cut-offs -- the
+    two paths cannot disagree about which band a user is in.
+    """
+    loaded = load(artifact_dir)
+    if loaded is None or features is None or features.empty:
+        return None
+    model, scaler = loaded
+    bands = _bands_from_meta(load_meta(artifact_dir))
+    probabilities = model.predict_proba(scaler.transform(build_matrix(features)))[:, 1]
+    return pd.DataFrame(
+        {
+            "probability": [float(value) for value in probabilities],
+            "band": [band_for(value, bands) for value in probabilities],
+        },
+        index=features.index,
     )
 
 
@@ -336,6 +419,56 @@ def rule_band(row: Mapping[str, float]) -> tuple[str, list[dict[str, Any]]]:
     return band, factors
 
 
+def shap_importance(
+    features: pd.DataFrame,
+    artifact_dir: str | Path = ARTIFACT_DIR,
+    top_k: Optional[int] = None,
+) -> Optional[dict[str, Any]]:
+    """Cohort-level SHAP importance: mean |contribution| per feature, ranked.
+
+    The per-user :func:`shap_explanation` answers "why this band"; this answers
+    "which habits does the band actually move on, across everyone", which is what
+    the ``/metrics`` page plots. Mean absolute contribution is the right summary
+    for that question: it measures how much a feature moves the log-odds in
+    either direction, averaged over the cohort, with the sign reported
+    separately so a feature that consistently weakens is not hidden by its size.
+
+    ``None`` without the artifact, matching every other entry point here.
+    """
+    loaded = load(artifact_dir)
+    if loaded is None or features is None or features.empty:
+        return None
+    model, scaler = loaded
+    scaled = scaler.transform(build_matrix(features))
+    contributions, base = _shap(model, scaler, scaled)
+    mean_abs = np.abs(contributions).mean(axis=0)
+    mean_signed = contributions.mean(axis=0)
+
+    order = np.argsort(-mean_abs)
+    limit = len(FEATURE_COLUMNS) if top_k is None else max(int(top_k), 1)
+    ranked = [
+        {
+            "feature": FEATURE_COLUMNS[index],
+            "mean_abs_contribution": round(float(mean_abs[index]), 4),
+            "mean_contribution": round(float(mean_signed[index]), 4),
+            "direction": (
+                "improves"
+                if (mean_signed[index] > 0) == (FEATURE_COLUMNS[index] in HIGHER_IS_STABLE)
+                else "weakens"
+            ),
+            "rank": rank,
+        }
+        for rank, index in enumerate(order[:limit], start=1)
+    ]
+    return {
+        "method": SHAP_METHOD,
+        "base_value": round(float(base), 4),
+        "rows": int(len(features)),
+        "total_mean_abs": round(float(mean_abs.sum()), 4),
+        "features": ranked,
+    }
+
+
 def evaluate(
     features: pd.DataFrame,
     labels: pd.DataFrame,
@@ -369,9 +502,13 @@ def evaluate(
     scores = model.predict_proba(scaler.transform(build_matrix(test_rows)))[:, 1]
 
     noise = np.random.default_rng(seed).random(len(truth))
+    importance = shap_importance(test_rows, artifact_dir)
     return {
         "auc": round(float(roc_auc_score(truth, scores)), 4),
         "baseline_auc": round(float(roc_auc_score(truth, noise)), 4),
         "rows": int(len(test_rows)),
         "positive_rate": round(float(truth.mean()), 4),
+        # Cohort SHAP importance, so "which habit moves the band most" is a
+        # measured table rather than a story told about the top-3 cards.
+        "shap_importance": importance,
     }

@@ -1,16 +1,21 @@
 """Consistency signal service (Phase 7): the band card, end to end.
 
-Shapes :mod:`backend.ml.signal` into the frozen ``/signal`` contract. The route
-stays thin, like every router here: auth -> feature flag -> service -> schema.
+Shapes :mod:`backend.ml.signal` into the frozen ``/credit-readiness`` contract.
+The route stays thin, like every router here: auth -> feature flag -> service ->
+schema.
 
 What this service is careful about:
 
 * **It returns a band.** The model's probability is used to pick the band and is
   reported as ``auc`` metadata, but no number that could be read as a score is
   ever put in the response body.
+* **It shows its working.** ``shap`` carries the exact signed contribution of
+  every feature, plus the base log-odds, so ``base + sum(contributions)``
+  reconstructs the number that chose the band. ``factors`` is the same data cut to
+  the top three and turned into fixed sentences -- one derivation, two audiences.
 * **It degrades, loudly.** With no trained artifact the answer comes from
-  :func:`backend.ml.signal.rule_band` and ``provenance.source`` says ``rule``,
-  so the card cannot imply a model ran when none did.
+  :func:`backend.ml.signal.rule_band`, ``provenance.source`` says ``rule``, and
+  ``shap`` is ``None`` because a rule has no SHAP values.
 * **It never decides anything about lending.** ``not_a_decision`` is pinned true
   by the schema and the banner is part of the payload, not a styling detail.
 """
@@ -21,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from backend.data import features as user_features
+from backend.ml import evaluate as forecast_evaluate
 from backend.ml import signal as ml_signal
 
 logger = logging.getLogger("shonchoy.signal_service")
@@ -128,6 +134,8 @@ def _factors(raw: list[dict[str, Any]], row: dict[str, float], language: str) ->
         }
         for factor in raw[:3]
     ]
+
+
 def _improvements(band: str, language: str = "bn") -> list[str]:
     """What to do next, chosen by band. Fixed text, never model-generated."""
     table: dict[str, dict[str, list[str]]] = {
@@ -188,15 +196,35 @@ def build_signal(
     directory = artifact_dir if artifact_dir is not None else ml_signal.ARTIFACT_DIR
     prediction = ml_signal.predict(rows, directory)
 
+    shap = None
     if prediction is None:
         band, raw_factors = ml_signal.rule_band(row)
         source = "rule"
     else:
         band, raw_factors = prediction.band, prediction.factors
         source = "model"
+        # The exact contributions, not just the three summarised above. Computed
+        # only on the model path: a rule has no SHAP values, and reporting an
+        # empty list there would read as "nothing moved this user" rather than
+        # "nothing was explained", so the field stays null instead.
+        loaded = ml_signal.load(directory)
+        if loaded is not None:
+            model, scaler = loaded
+            shap = ml_signal.shap_explanation(
+                model, scaler, row, bands=ml_signal.DEFAULT_BANDS
+            )
 
     meta = ml_signal.load_meta(directory)
+    # ``signal_meta.json`` is written by ``train()``, which fits on the train split
+    # and therefore never sees an AUC -- that needs held-out labels. The measured
+    # value lives in the evaluation ``train_all.py`` wrote, so read it from there
+    # and fall back to the sidecar for a run whose metrics.json predates it. The
+    # number served is always the one the offline run measured, never a guess.
     auc = meta.get("auc")
+    if auc is None:
+        auc = (
+            forecast_evaluate.read_metrics(directory).get("signal") or {}
+        ).get("auc")
 
     return {
         "user_id": user_id,
@@ -205,6 +233,7 @@ def build_signal(
         "improvements": _improvements(band, language),
         "not_a_decision": True,
         "auc": float(auc) if isinstance(auc, (int, float)) else None,
+        "shap": shap,
         "provenance": {
             "prediction": (
                 "Your recent behaviour sits in the "

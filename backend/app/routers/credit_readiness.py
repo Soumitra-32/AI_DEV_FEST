@@ -1,9 +1,18 @@
-"""Consistency-signal endpoint (Phase 7): ``POST /signal``.
+"""Consistency-signal endpoint (Phase 7): ``POST /credit-readiness``.
 
 Thin by design -- auth -> feature flag -> service -> frozen schema -- like every
 other router here. The band is produced by :mod:`backend.app.services.signal_service`
 from the trained model in :mod:`backend.ml.signal`, and the "this is not a loan
 decision" banner travels in the payload rather than being left to the frontend.
+
+The path is ``/credit-readiness``, not ``/signal``: the frontend's
+``fetchCreditReadiness()`` in ``web/src/lib/api.ts`` posts here, and the router
+was the side of the contract that was wrong. The module keeps the name
+``credit_readiness`` for the same reason. There is no ``/signal`` alias -- one
+route with two paths is how two implementations of the same card drift apart.
+
+``language`` stays a query parameter because the frontend posts an empty body
+(``{}``); a request body here would make the shape it already sends invalid.
 
 The ``user_id`` comes from the demo token, never from the body, so one user cannot
 ask about another's signal.
@@ -20,17 +29,17 @@ from ..deps import CurrentUser
 from ..schemas import ConsistencySignalResponse
 from ..services import signal_service
 
-router = APIRouter(tags=["signal"])
+router = APIRouter(tags=["credit-readiness"])
 
 _response_adapter = TypeAdapter(ConsistencySignalResponse)
 
 
 @router.post(
-    "/signal",
+    "/credit-readiness",
     response_model=ConsistencySignalResponse,
     summary="Consistency band for this user, with its strongest factors",
 )
-def get_signal(
+def get_credit_readiness(
     user_id: CurrentUser,
     settings: Annotated[Settings, Depends(get_settings)],
     language: str = "bn",

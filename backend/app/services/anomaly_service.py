@@ -3,8 +3,10 @@
 Shapes two already-tested pieces into the frozen ``/anomalies`` contract:
 
 * :mod:`backend.ml.anomaly` ranks each recent payment by how unusual it is *for
-  this user* (and falls back to the fixed-threshold rule when the artifact is
-  missing, saying so in ``provenance.source``);
+  this user*. When no forest has been trained the fixed-threshold rule answers
+  instead — never a 500, but never silently either: the fallback is logged as a
+  warning and the ``provenance.assumption`` text changes to describe the rule
+  that actually ran (``provenance.source`` is ``"rule"``);
 * :mod:`backend.rules.fee_switch` computes what the cash-out channel cost and what
   the same money would cost by app transfer.
 
@@ -77,6 +79,62 @@ def _item(row: pd.Series) -> dict[str, Any]:
     }
 
 
+def _rank(window: pd.DataFrame, features: pd.DataFrame, directory: str | Path) -> ml_anomaly.AnomalyScores:
+    """Score the window with the trained forest, degrading to the rule loudly.
+
+    The rule fallback is deliberate — a missing artifact must not 500 the card —
+    but it must not be *silent*: the rule is a single absolute taka cutoff, so
+    ranking by it is a materially different (and much blunter) claim than ranking
+    by per-user behaviour. The warning is the operator's signal that the trained
+    artifact is missing from the deployment, and :func:`_provenance` tells the
+    user which engine answered.
+    """
+    scores = ml_anomaly.predict(features, directory)
+    if scores is not None:
+        return scores
+    logger.warning(
+        "no IsolationForest artifact in %s; ranking %d transactions with the "
+        "fixed-threshold rule instead. Run `make train`.",
+        directory,
+        len(window),
+    )
+    return ml_anomaly.rule_scores(window)
+
+
+def _provenance(scores: ml_anomaly.AnomalyScores, items: int, days: int) -> dict[str, Any]:
+    """The Prediction / Assumption / Explanation block, truthful about the source.
+
+    The assumption text has to match the engine: claiming "not a fixed taka
+    amount" while the fixed-threshold rule is what actually ran would be the
+    worst kind of wrong, because it would describe a method the numbers did not
+    come from.
+    """
+    if scores.source == "model":
+        assumption = (
+            "Unusual means far from your own recent pattern — the amount, the hour, "
+            "and the gap since your previous payment — not a fixed taka amount. "
+            "The fee figures use the simulated rate card."
+        )
+    else:
+        assumption = (
+            "The trained model is not available, so this uses a simple fallback: "
+            "a payment is called unusual when it is several times the average "
+            "payment of all users together. That misses anything small in taka "
+            "but large for you, and also flags routine big payments from heavy "
+            "spenders. The fee figures use the simulated rate card."
+        )
+    return {
+        "prediction": (
+            f"The {items} least typical payments of your last {days} days, "
+            "ranked against your own history."
+            if items
+            else f"No payment of your last {days} days stands out against your own history."
+        ),
+        "assumption": assumption,
+        "source": scores.source,
+    }
+
+
 def build_anomalies(
     user_id: str,
     window_days: int = DEFAULT_WINDOW_DAYS,
@@ -102,10 +160,7 @@ def build_anomalies(
 
     features = ml_anomaly.build_features(window)
     directory = artifact_dir if artifact_dir is not None else ml_anomaly.ARTIFACT_DIR
-    scores = ml_anomaly.predict(features, directory)
-    if scores is None:
-        # No trained forest: the rule baseline answers, and provenance says so.
-        scores = ml_anomaly.rule_scores(window)
+    scores = _rank(window, features, directory)
 
     ranked = window.join(features[ml_anomaly.FEATURE_COLUMNS])
     ranked["anomaly_score"] = scores.frame["anomaly_score"].to_numpy()
@@ -130,6 +185,9 @@ def build_anomalies(
     if not items:
         explanation = "Nothing in this window stands out against your own recent pattern. " + explanation
 
+    provenance = _provenance(scores, len(items), days)
+    provenance["explanation"] = explanation
+
     return {
         "user_id": user_id,
         "window_days": days,
@@ -137,21 +195,7 @@ def build_anomalies(
         "fee_switch": fee_payload,
         "flagged_count": flagged,
         "source": scores.source,
-        "provenance": {
-            "prediction": (
-                f"The {len(items)} least typical payments of your last {days} days, "
-                "ranked against your own history."
-                if items
-                else f"No payment of your last {days} days stands out against your own history."
-            ),
-            "assumption": (
-                "Unusual means far from your own recent pattern — the amount, the hour, "
-                "and the gap since your previous payment — not a fixed taka amount. "
-                "The fee figures use the simulated rate card."
-            ),
-            "explanation": explanation,
-            "source": scores.source,
-        },
+        "provenance": provenance,
     }
 
 
