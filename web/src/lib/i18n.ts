@@ -169,6 +169,10 @@ const en = {
   "voice.speak": "Voice",
   "voice.listening": "Listening…",
   "voice.unsupported": "Voice input is not supported in this browser. Please type instead.",
+  "voice.denied": "Microphone blocked. Allow mic access in the browser address bar, then try again.",
+  "voice.nomic": "No microphone found. Check your device mic, then try again.",
+  "voice.offline": "Voice needs internet (recognition runs online). Reconnect, then try again.",
+  "voice.nospeech": "Didn't hear anything. Speak closer to the mic and try again.",
   "voice.placeholder": "e.g., I want to save ৳30,000 in 6 months",
   "voice.suggestedTitle": "Suggested Queries:",
 
@@ -387,6 +391,10 @@ const bn: Dictionary = {
   "voice.speak": "বলুন",
   "voice.listening": "শোনা হচ্ছে…",
   "voice.unsupported": "এই ব্রাউজারে ভয়েস সমর্থিত নয়। দয়া করে লিখুন।",
+  "voice.denied": "মাইক্রোফোন বন্ধ আছে। ব্রাউজারের ঠিকানা বারে মাইকের অনুমতি দিন, তারপর আবার চেষ্টা করুন।",
+  "voice.nomic": "কোনো মাইক্রোফোন পাওয়া যায়নি। ডিভাইসের মাইক পরীক্ষা করে আবার চেষ্টা করুন।",
+  "voice.offline": "ভয়েসের জন্য ইন্টারনেট লাগে। সংযোগ ফিরিয়ে এনে আবার চেষ্টা করুন।",
+  "voice.nospeech": "কিছু শোনা যায়নি। মাইকের কাছে থেকে বলুন এবং আবার চেষ্টা করুন।",
   "voice.placeholder": "যেমন: ৬ মাসে ৳৩০,০০০ জমাতে চাই",
   "voice.suggestedTitle": "প্রস্তাবিত জিজ্ঞাসা:",
 

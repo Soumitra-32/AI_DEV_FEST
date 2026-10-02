@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Mic, MicOff } from "lucide-react";
 import { useLanguage } from "@/components/LangToggle";
 
@@ -21,20 +21,39 @@ export default function VoiceInput({
   const [text, setText] = useState(initialValue);
   const [listening, setListening] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // The live instance must survive re-renders: without this ref there is no
+  // handle to stop it, so the "stop" button can never actually stop the mic.
+  const recognitionRef = useRef<any>(null);
+
+  // Never leave the mic open when the component unmounts.
+  useEffect(() => {
+    return () => {
+      try {
+        recognitionRef.current?.abort();
+      } catch {
+        /* already stopped */
+      }
+      recognitionRef.current = null;
+    };
+  }, []);
 
   const toggleListening = useCallback(() => {
     setErrorMsg(null);
+    // Second click while live: stop the REAL instance (onend flips the UI).
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        setListening(false);
+      }
+      return;
+    }
     const SpeechRecognition =
       (window as unknown as { SpeechRecognition?: any }).SpeechRecognition ||
       (window as unknown as { webkitSpeechRecognition?: any }).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       setErrorMsg(tr("voice.unsupported"));
-      return;
-    }
-
-    if (listening) {
-      setListening(false);
       return;
     }
 
@@ -45,10 +64,28 @@ export default function VoiceInput({
       recognition.interimResults = false;
 
       recognition.onstart = () => setListening(true);
-      recognition.onend = () => setListening(false);
-      recognition.onerror = () => {
+      recognition.onend = () => {
         setListening(false);
-        setErrorMsg(tr("voice.unsupported"));
+        recognitionRef.current = null;
+      };
+      recognition.onerror = (event: any) => {
+        setListening(false);
+        recognitionRef.current = null;
+        // Tell the truth about WHAT failed: every error used to show
+        // "unsupported", which sent users to change browsers for what was
+        // actually a blocked mic or lost network.
+        const code = event?.error as string | undefined;
+        if (code === "not-allowed" || code === "service-not-allowed") {
+          setErrorMsg(tr("voice.denied"));
+        } else if (code === "audio-capture") {
+          setErrorMsg(tr("voice.nomic"));
+        } else if (code === "network") {
+          setErrorMsg(tr("voice.offline"));
+        } else if (code === "no-speech") {
+          setErrorMsg(tr("voice.nospeech"));
+        } else {
+          setErrorMsg(tr("voice.unsupported"));
+        }
       };
 
       recognition.onresult = (event: any) => {
@@ -60,12 +97,14 @@ export default function VoiceInput({
         }
       };
 
+      recognitionRef.current = recognition;
       recognition.start();
     } catch {
       setListening(false);
+      recognitionRef.current = null;
       setErrorMsg(tr("voice.unsupported"));
     }
-  }, [lang, listening, onResult, onSubmitText, tr]);
+  }, [lang, onResult, onSubmitText, tr]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
