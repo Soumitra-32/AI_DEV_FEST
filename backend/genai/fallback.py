@@ -509,6 +509,22 @@ def parse_goal(message: str) -> GoalRequest:
         candidate = float(parsed)
         if candidate > 0 and (goal is None or candidate > goal):
             goal = candidate
+    if goal is None:
+        # Word multipliers: "৫০ হাজার" (50×1000), "2 লাখ" (2×100000).
+        # Digits are already ASCII here; month words never match these units,
+        # so "১২ মাসে" cannot leak into the goal.
+        for match in re.finditer(
+            r"([\d,]+(?:\.\d+)?)\s*(হাজার|লাখ|লক্ষ|lakh|lac|thousand)",
+            normalised,
+        ):
+            parsed = guardrails.parse_number(match.group(1))
+            if parsed is None:
+                continue
+            unit = match.group(2)
+            multiplier = 100000 if unit in ("লাখ", "লক্ষ", "lakh", "lac") else 1000
+            candidate = float(parsed) * multiplier
+            if candidate > 0 and (goal is None or candidate > goal):
+                goal = candidate
     if goal is None and _GOAL_HINT.search(normalised):
         # No taka sign: only trust a bare number when a goal word is present,
         # so "6 months" is never read as a 6 taka goal.
