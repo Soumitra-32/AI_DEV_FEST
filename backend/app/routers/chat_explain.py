@@ -4,7 +4,9 @@ Thin by design, same shape as the other routers: auth -> rate limit -> classify
 -> context -> verbalize -> frozen schema. Every interesting decision lives in a
 module that can be tested without HTTP:
 
-* ``rules.guardrails`` decides the intent and owns the banned-output filter;
+* ``genai.intent`` classifies the message -- LLM first, keyword rules as the
+  fallback -- and ``rules.guardrails`` owns the whitelist it must land inside
+  plus the banned-output filter;
 * ``services.explain_service`` builds the structured context from the tested
   services (never from the request body);
 * ``genai.explain`` runs the model, checks its output, and falls back to
@@ -14,9 +16,9 @@ Security properties this router is responsible for:
 
 * the ``user_id`` comes from the token, never from the body, so one user cannot
   ask about another's transactions;
-* the client's ``intent`` hint is **ignored** — the server always re-classifies,
-  because trusting a client-supplied intent is how a prompt-injection attempt
-  would get to choose its own context;
+* the client's ``intent`` hint is **ignored** -- the server always classifies for
+  itself, because trusting a client-supplied intent is how a prompt-injection
+  attempt would get to choose its own context;
 * the message is length-bounded by the schema and rate-limited per token;
 * nothing user-written is logged.
 """
@@ -29,7 +31,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from backend.genai import explain as genai_explain
 from backend.genai import fallback
-from backend.rules import guardrails
+from backend.genai import intent as genai_intent
 
 from ..config import Settings, get_settings
 from ..deps import CurrentUser
@@ -100,8 +102,15 @@ def chat_explain(
     _check_rate_limit(user_id)
     language = body.language
 
-    # The server always re-classifies; ``body.intent`` is a UI hint only.
-    intent = guardrails.classify_intent(body.message)
+    # The server always classifies; ``body.intent`` is a UI hint only. The LLM
+    # classifier (use 3) runs first when it is enabled, and both the model and the
+    # keyword classifier are re-checked against the whitelist here.
+    decision = genai_intent.understand(
+        body.message,
+        settings=settings,
+        language=language,
+    )
+    intent = decision.intent
 
     if intent == "unknown":
         # Off-intent or injection-shaped: safe template, no context loaded and
@@ -120,15 +129,16 @@ def chat_explain(
 
     goal_bdt: float | None = None
     months: int | None = None
+    goal = decision.goal
     if intent == "savings_plan":
-        goal = fallback.parse_goal(body.message)
         if not goal.is_complete:
             # Ask for the missing half instead of inventing a horizon: the
-            # solver must never run on a guessed number.
+            # solver must never run on a guessed number. ``intent`` is echoed back
+            # rather than hardcoded, so a follow-up keeps the user's own question.
             bn = fallback.missing_goal_prompt(goal, "bn")
             en = fallback.missing_goal_prompt(goal, "en")
             return ExplainResponse(
-                intent="savings_plan",
+                intent=intent,
                 answer_bn=bn.answer,
                 answer_en=en.answer,
                 bullets_bn=list(bn.bullets),
@@ -143,6 +153,11 @@ def chat_explain(
                 ),
             )
         goal_bdt, months = goal.goal_bdt, goal.months
+    elif intent == "tradeoffs":
+        # "What are my options?" asks about options we already produced, so it
+        # uses the demo goal rather than demanding one the user never named.
+        goal_bdt = goal.goal_bdt
+        months = goal.months
 
     context = explain_service.build_context(
         user_id,

@@ -27,6 +27,9 @@ Intent = Literal[
     "fees",
     "consistency",
     "tips",
+    "health_coach",
+    "anomalies",
+    "tradeoffs",
     "unknown",
 ]
 Dimension = Literal["persona", "district", "income_band"]

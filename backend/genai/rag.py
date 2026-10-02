@@ -15,13 +15,28 @@ Retrieval is deliberately boring and deterministic:
   the most urgent behaviour leads.
 
 No network, no model, no database: only the JSON file and one feature row.
+
+:func:`phrase_tip` is the deliberate exception, and it is a *phrasing* step, not a
+retrieval step: retrieval stays deterministic and offline, and the model may only
+rewrite a tip that was already chosen. Its output is checked against the same
+guardrails as every other generated answer and falls back to the curated text.
 """
 from __future__ import annotations
 
 import json
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional, Sequence
+
+from pydantic import BaseModel, ConfigDict, ValidationError
+
+from backend.rules import guardrails
+
+from . import client as llm_client
+from . import prompts
+
+logger = logging.getLogger("shonchoy.rag")
 
 TIPS_FILE = Path(__file__).resolve().parent / "tips.json"
 
@@ -173,3 +188,110 @@ def bank_ids(bank: Optional[Iterable[Mapping[str, Any]]] = None) -> list[str]:
     """Every tip id in the bank (the tests assert nothing outside it is ever shown)."""
     tips = list(bank) if bank is not None else list(load_bank())
     return [str(tip["id"]) for tip in tips if tip.get("id")]
+
+
+# ---------------------------------------------------------------------------
+# use 5: the LLM phrasing half -- retrieval above, wording here
+# ---------------------------------------------------------------------------
+#: Everything needed to phrase one tip and to check what came back. The check
+#: runs against the *original* tip and the user's own facts, which is what makes
+#: "the model may only rephrase, never invent" mechanically true rather than a
+#: request in a prompt.
+PhraseContext = Mapping[str, Any]
+
+
+class PhrasedTip(BaseModel):
+    """The exact shape the phraser must return."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    body_bn: str
+    body_en: str
+    why_bn: str = ""
+
+
+def _parse(raw: str) -> PhrasedTip:
+    """Parse the model's JSON, tolerating a fenced code block."""
+    text = str(raw or "").strip()
+    if text.startswith("```"):
+        text = text.split("```")[1] if "```" in text[3:] else text[3:]
+        text = text.removeprefix("json").strip()
+    return PhrasedTip.model_validate(json.loads(text))
+
+
+def _allowed_numbers(*sources: Any) -> set[str]:
+    """Numbers the phraser is allowed to repeat: the tip's own plus the facts."""
+    allowed: set[str] = set()
+    for source in sources:
+        collected = guardrails.numbers_in(json.dumps(source, ensure_ascii=False, default=str))
+        allowed.update(str(value) for value in collected if value is not None)
+    return allowed
+
+
+def phrase_tip(
+    tip: Mapping[str, Any],
+    facts: PhraseContext,
+    settings: Any = None,
+    client: Any = None,
+) -> dict[str, Any]:
+    """Rewrite one already-retrieved tip in simple Bangla, for this user.
+
+    The curated tip is returned **unchanged** unless the model's wording passes
+    every check: it must parse into the strict shape, must survive the
+    banned-output filter, and may only repeat numbers that were already in the
+    tip or in the user's own facts. A failure of any of those returns the human
+    wording with ``phrased_by="template"``, so the demo never shows a worse
+    sentence than the one we shipped.
+
+    The id is copied from the input and never taken from the model, so the
+    "only these tips exist" guarantee survives the LLM call.
+    """
+    payload = {key: tip.get(key) for key in ("title_bn", "body_bn", "trigger")}
+    base = {
+        "id": str(tip.get("id", "")),
+        "body_bn": str(tip.get("body_bn") or tip.get("body") or ""),
+        "body_en": str(tip.get("body") or ""),
+        "why_bn": str(tip.get("trigger") or ""),
+        "phrased_by": "template",
+    }
+    if client is None and not llm_client.enabled(settings):
+        return base
+    try:
+        raw, provider = llm_client.complete(
+            prompts.build_tip_messages(tip, facts),
+            settings=settings,
+            request_kwargs=prompts.request_kwargs(temperature=0.3, max_tokens=400),
+            client=client,
+        )
+    except Exception as exc:
+        logger.warning("tip phrasing fell back to the curated text: %s", type(exc).__name__)
+        return base
+
+    try:
+        reply = _parse(raw)
+    except (ValueError, ValidationError) as exc:
+        logger.warning("tip phrasing rejected: %s", type(exc).__name__)
+        return base
+
+    parts = [reply.body_bn, reply.body_en, reply.why_bn]
+    if not guardrails.screen_all(parts).clean:
+        logger.warning("tip phrasing tripped the banned-output filter; using the curated text")
+        return base
+    allowed = _allowed_numbers(payload, facts)
+    for part in parts:
+        stray = [
+            value
+            for value in guardrails.numbers_in(part)
+            if value is not None and str(value) not in allowed
+        ]
+        if stray:
+            logger.warning("tip phrasing invented %s; using the curated text", stray[:3])
+            return base
+
+    return {
+        "id": str(tip.get("id", "")),
+        "body_bn": reply.body_bn.strip(),
+        "body_en": reply.body_en.strip(),
+        "why_bn": reply.why_bn.strip(),
+        "phrased_by": f"llm:{provider}",
+    }

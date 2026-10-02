@@ -27,8 +27,9 @@ from backend.data import features as user_features
 from backend.data import generator
 from backend.genai import rag
 from backend.ml import explain as ml_explain
+from backend.rules import health_score
 
-from . import forecast_service, plan_service, signal_service
+from . import anomaly_service, forecast_service, plan_service, signal_service
 
 logger = logging.getLogger("shonchoy.explain_service")
 
@@ -63,10 +64,49 @@ def _recent_transactions(db_path: str | Path | None, user_id: str, days: int = W
     return frame.loc[frame["timestamp"].ge(cutoff)].reset_index(drop=True)
 
 
+def _cashout_pattern(spent: pd.DataFrame, cash_outs: pd.DataFrame) -> dict[str, Any]:
+    """Where and when this user's cash-outs actually cluster (use 4).
+
+    This is what turns "I don't understand these transactions" into a *story*:
+    "most of your cash-outs happen in the last week of the month" is a fact we
+    computed here, and the LLM only phrases it. The window position is measured
+    from each transaction's own date, and every count is reported next to the
+    sample size so the template can say "of the N you did" rather than implying
+    a certainty a 30-day window cannot support.
+    """
+    if cash_outs.empty:
+        return {"cash_out_count": 0, "month_end_cash_out_share_pct": 0.0, "peak_weekday": None}
+    stamps = pd.to_datetime(cash_outs["timestamp"])
+    days = stamps.dt.day.to_numpy()
+    # Day 21+ is the last third of a 30/31-day month.
+    late = int((days >= 21).sum())
+    weekdays = stamps.dt.dayofweek.to_numpy()
+    names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    counts = pd.Series(weekdays).value_counts()
+    # ``argsort`` rather than ``counts.index[0]``: the mode of a value-counts
+    # index is untyped to a checker, and this keeps the peak an int.
+    peak = names[int(counts.to_numpy()[int(counts.to_numpy().argmax())])] if len(counts) else None
+    channel_counts = cash_outs["channel"].astype(str).value_counts().head(2)
+    return {
+        "cash_out_count": int(len(cash_outs)),
+        "cash_out_total_bdt": round(float(cash_outs["amount_bdt"].sum()), 2),
+        "month_end_cash_out_share_pct": round(late / len(cash_outs) * 100, 1),
+        "peak_weekday": peak,
+        "top_channels": [
+            {"label": str(label), "count": int(value)} for label, value in channel_counts.items()
+        ],
+    }
+
+
 def transactions_context(
     db_path: str | Path | None, user_id: str, days: int = WINDOW_DAYS
 ) -> dict[str, Any]:
-    """Aggregated activity summary: totals, shortfall events, top categories."""
+    """Aggregated activity summary: totals, shortfall events, top categories.
+
+    Also carries :func:`_cashout_pattern`, so the transaction story ("most of
+    your cash-outs land in the last week of the month") is grounded in a
+    measured share rather than generated.
+    """
     frame = _recent_transactions(db_path, user_id, days)
     if frame.empty:
         return {}
@@ -88,6 +128,7 @@ def transactions_context(
             {"label": str(row["category"]), "amount_bdt": round(float(row["amount_bdt"]), 2)}
             for _, row in top.iterrows()
         ],
+        "pattern": _cashout_pattern(spent, spent.loc[spent["channel"].eq("cash_out")]),
     }
 
 
@@ -222,6 +263,63 @@ def tips_context(user_id: str, db_path: str | Path | None = None, limit: int = 3
     return rag.retrieve(row, limit=limit)
 
 
+def health_context(
+    user_id: str, db_path: str | Path | None = None
+) -> dict[str, Any]:
+    """The health-score card, as the LLM and the template may see it.
+
+    Reads :mod:`backend.rules.health_score` -- pure Python over the label-free
+    features -- and ships only the components, the band and the three habit
+    metrics named in the plan (cash dependency %, savings rate, fee burden).
+    The raw score is *not* phrased as a grade; it is a coaching reading of
+    behaviour, never a lending decision, so the banner travels with it.
+    """
+    path = db_path if db_path is not None else user_features.default_db_path()
+    try:
+        frame = user_features.user_features(
+            user_features.load_config(), user_features.load_transactions(path)
+        )
+        row = user_features.feature_row(frame, user_id)
+        graded = health_score.score_features(frame, user_id)
+    except Exception as exc:  # unknown user or no transactions
+        logger.info("no health context for %s: %s", user_id, type(exc).__name__)
+        return {}
+    components = [item.as_dict() for item in graded.components]
+    return {
+        "band": graded.band,
+        "score": int(graded.score),
+        "score_max": int(graded.score_max),
+        "components": components,
+        "habits": {
+            "cash_dependency_pct": round(float(row.get("cash_out_share_of_outflow", 0.0)) * 100, 1),
+            "fee_burden_pct": round(float(row.get("fee_share_of_income", 0.0)) * 100, 1),
+            "income_regularity_days": float(row.get("income_days_per_month", 0.0)),
+            "shortfall_days_per_month": float(row.get("shortfall_days_per_month", 0.0)),
+        },
+        "is_not_a_credit_score": True,
+    }
+
+
+def anomalies_context(
+    user_id: str,
+    db_path: str | Path | None = None,
+    artifact_dir: str | Path | None = None,
+    window_days: int = 30,
+) -> dict[str, Any]:
+    """The Spending Companion card: what was flagged, and what switching saves.
+
+    Delegates to :mod:`backend.app.services.anomaly_service` so the chat answer
+    and the ``/anomalies`` card can never disagree about the same payments.
+    """
+    try:
+        return anomaly_service.build_anomalies(
+            user_id, window_days=window_days, db_path=db_path, artifact_dir=artifact_dir
+        )
+    except Exception as exc:  # unknown user, or no transactions
+        logger.info("no anomalies context for %s: %s", user_id, type(exc).__name__)
+        return {}
+
+
 def build_context(
     user_id: str,
     intent: str,
@@ -260,6 +358,22 @@ def build_context(
             context["signal"] = consistency_context(user_id, db_path=db_path)
         elif intent == "tips":
             context["tips"] = tips_context(user_id, db_path=db_path)
+        elif intent == "health_coach":
+            context["health"] = health_context(user_id, db_path=db_path)
+        elif intent == "anomalies":
+            context["anomalies"] = anomalies_context(
+                user_id, db_path=db_path, artifact_dir=artifact_dir
+            )
+        elif intent == "tradeoffs":
+            # Trade-off wording describes options the solver already produced, so
+            # it reuses the plan section rather than solving anything new.
+            context["plan"] = plan_context(
+                user_id,
+                goal_bdt=float(goal_bdt if goal_bdt else DEFAULT_GOAL_BDT),
+                months=int(months if months else DEFAULT_GOAL_MONTHS),
+                db_path=db_path,
+                artifact_dir=artifact_dir,
+            )
     except Exception as exc:
         logger.warning(
             "context section %r failed for %s: %s", intent, user_id, type(exc).__name__

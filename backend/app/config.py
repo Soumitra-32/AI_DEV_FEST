@@ -42,10 +42,25 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     # --- LLM (Phase 4; the template fallback works without a key) ---
+    # One primary key plus two backups. They are tried in this order and the
+    # first one that answers wins, so a revoked or rate-limited primary key does
+    # not take the demo down. Each backup may override the base URL and model,
+    # which lets a backup be a different provider entirely rather than just a
+    # second key for the same one. See backend/genai/client.py.
     llm_api_key: str = ""
     llm_base_url: str = "https://api.openai.com/v1"
     llm_model: str = "gpt-4o-mini"
     llm_timeout_seconds: float = 20.0
+    llm_backup_api_key_1: str = ""
+    llm_backup_base_url_1: str = ""
+    llm_backup_model_1: str = ""
+    llm_backup_api_key_2: str = ""
+    llm_backup_base_url_2: str = ""
+    llm_backup_model_2: str = ""
+
+    # Switch the LLM intent classifier (use 3) off to fall back to keyword
+    # classification only, without turning the whole explanation layer off.
+    feature_llm_intent: bool = True
 
     # --- feature flags: switch a module off without a redeploy ---
     feature_forecast: bool = True
@@ -70,7 +85,21 @@ class Settings(BaseSettings):
     @property
     def llm_enabled(self) -> bool:
         """The LLM is only used when the flag is on *and* a key is configured."""
-        return bool(self.feature_llm and self.llm_api_key)
+        from backend.genai import client as llm_client
+
+        return bool(llm_client.enabled(self))
+
+    @property
+    def llm_intent_enabled(self) -> bool:
+        """The LLM intent classifier is separately switchable (use 3)."""
+        return bool(self.feature_llm and self.feature_llm_intent and self.llm_api_key)
+
+    @property
+    def llm_provider_count(self) -> int:
+        """How many keys are configured (1 primary + up to 2 backups)."""
+        from backend.genai import client as llm_client
+
+        return len(llm_client.providers_from_settings(self))
 
     def feature_flags(self) -> Dict[str, bool]:
         """Every switch the frontend is allowed to know about."""

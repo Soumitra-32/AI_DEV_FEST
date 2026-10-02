@@ -296,8 +296,29 @@ def _transactions(context: Mapping[str, Any], language: str) -> TemplateAnswer:
     top_text = ", ".join(
         f"{item.get('label')} {taka(item.get('amount_bdt', 0.0), language)}" for item in top[:3]
     )
-    tail_en = f" The largest categories were: {top_text}." if top_text else ""
-    tail_bn = f" সবচেয়ে বেশি খরচ: {top_text}।" if top_text else ""
+    # The story sentence (use 4): a measured share, never an impression.
+    pattern = _get(summary, "pattern", default={}) or {}
+    cash_out_count = int(_get(pattern, "cash_out_count", default=0))
+    month_end = float(_get(pattern, "month_end_cash_out_share_pct", default=0.0))
+    peak = _get(pattern, "peak_weekday")
+    if cash_out_count and month_end >= 50.0:
+        story_en = (
+            f" Of your {cash_out_count} cash-outs, {month_end:g}% happened in the last third "
+            "of the month."
+        )
+        story_bn = (
+            f" আপনার {cash_out_count} টি ক্যাশ-আউটের {month_end:g}% মাসের শেষ তৃতীয়াংশে হয়েছে।"
+        )
+    elif cash_out_count:
+        story_en = f" You took out cash {cash_out_count} times in this window."
+        story_bn = f" এই সময়সীমায় আপনি {cash_out_count} বার ক্যাশ নিয়েছেন।"
+    else:
+        story_en, story_bn = " No cash-outs in this window.", " এই সময়সীমায় ক্যাশ-আউট নেই।"
+    if peak:
+        story_en += f" Most fall on a {peak}."
+        story_bn += f" বেশিরভাগ হয় {peak}।"
+    tail_en = f" The largest categories were: {top_text}.{story_en}" if top_text else story_en
+    tail_bn = f" সবচেয়ে বেশি খরচ: {top_text}।{story_bn}" if top_text else story_bn
     if language == "bn":
         answer = (
             f"শেষ ৩০ দিনে {count} টি লেনদেন হয়েছে। মোট আয় {taka(inflow, language)}, মোট খরচ "
@@ -320,6 +341,74 @@ def _transactions(context: Mapping[str, Any], language: str) -> TemplateAnswer:
         BANNER_EN,
     ]
     return TemplateAnswer(answer=answer, bullets=bullets)
+
+
+def _health_coach(context: Mapping[str, Any], language: str) -> TemplateAnswer:
+    """A friendly habits summary built from the health-score components."""
+    health = _get(context, "health", default={})
+    if not health:
+        return _empty("health_coach", language)
+    band = str(_get(health, "band", default="Building"))
+    components = _get(health, "components", default=[]) or []
+    earned = [item for item in components if float(item.get("share", 0.0)) >= 0.7]
+    weak = [item for item in components if float(item.get("share", 0.0)) <= 0.3]
+    helpers = [str(item.get("detail_bn") or item.get("detail_en")) for item in earned[:2]]
+    costs = [str(item.get("detail_bn") or item.get("detail_en")) for item in weak[:2]]
+    if language == "bn":
+        answer = (
+            f"আপনার আর্থিক অভ্যাসের অবস্থা এখন “{band}”। নিচে যেসব অভ্যাস আপনাকে এগিয়ে "
+            "নিচ্ছে, আর কোনটিতে সবচেয়ে বেশি টাকা চলে যাচ্ছে।"
+        )
+        bullets = [*helpers, *[f"এখানে সবচেয়ে বেশি লাভ: {item}" for item in costs], BANNER_BN]
+        return TemplateAnswer(answer=answer, bullets=bullets[:5])
+    answer = (
+        f"Your money habits are currently “{band}”. Below are the habits helping you, "
+        "and the one costing you the most."
+    )
+    bullets = [*helpers, *[f"Worth the most attention: {item}" for item in costs], BANNER_EN]
+    return TemplateAnswer(answer=answer, bullets=bullets[:5])
+
+
+def _anomalies(context: Mapping[str, Any], language: str) -> TemplateAnswer:
+    """Explain the flagged payments: unusual for this user, never an accusation."""
+    anomalies = _get(context, "anomalies", default={})
+    if not anomalies:
+        return _empty("anomalies", language)
+    items = _get(anomalies, "items", default=[]) or []
+    saving = _get(anomalies, "potential_saving_bdt", default=0.0)
+    count = int(_get(anomalies, "flagged_count", default=len(items)))
+    reasons = [str(item.get("reason")) for item in items[:3] if item.get("reason")]
+    if language == "bn":
+        answer = (
+            f"আপনার সাম্প্রতিক {count} টি পেমেন্ট আপনার নিজের স্বাভাবিকের তুলনায় অস্বাভাবিক। "
+            "এটি কোনো প্রতারণার প্রমাণ নয় — শুধু আপনার নিজের ইতিহাসের সাথে মিলিয়ে দেখা।"
+        )
+        bullets = [*reasons, f"ক্যাশ-আউট বদলালে সম্ভাব্য সাশ্রয়: {taka(saving, language)}", BANNER_BN]
+        return TemplateAnswer(answer=answer, bullets=bullets[:5])
+    answer = (
+        f"{count} of your recent payments look unusual against your own usual pattern. "
+        "This is not evidence of fraud — it is your own history compared with itself."
+    )
+    bullets = [*reasons, f"Possible saving by switching channel: {taka(saving, language)}", BANNER_EN]
+    return TemplateAnswer(answer=answer, bullets=bullets[:5])
+
+
+def _tradeoffs(context: Mapping[str, Any], language: str) -> TemplateAnswer:
+    """Describe the solver's options and what each one costs."""
+    plan = _get(context, "plan", default={}) or _get(context, "tradeoffs", default={})
+    options = _get(plan, "trade_offs", default=[]) or _get(plan, "tradeoffs", default=[]) or []
+    if not options:
+        return _empty("tradeoffs", language)
+    inaction = _get(plan, "do_nothing", default={}) or {}
+    cost = _get(inaction, "estimated_cost_bdt", default=0.0)
+    descriptions = [str(item.get("description")) for item in options[:3] if item.get("description")]
+    if language == "bn":
+        answer = "সমাধানটি ইতিমধ্যে হিসাব করা হয়েছে। নিচে প্রতিটি বিকল্প এবং তার খরচ:"
+        bullets = [*descriptions, f"কিছু না করলে আনুমানিক খরচ: {taka(cost, language)}", BANNER_BN]
+        return TemplateAnswer(answer=answer, bullets=bullets[:5])
+    answer = "These options were already worked out for you. Here is each one and its cost:"
+    bullets = [*descriptions, f"Doing nothing costs about: {taka(cost, language)}", BANNER_EN]
+    return TemplateAnswer(answer=answer, bullets=bullets[:5])
 
 
 def _empty(intent: str, language: str) -> TemplateAnswer:
@@ -351,6 +440,9 @@ RENDERERS = {
     "consistency": _consistency,
     "tips": _tips,
     "explain_transactions": _transactions,
+    "health_coach": _health_coach,
+    "anomalies": _anomalies,
+    "tradeoffs": _tradeoffs,
 }
 
 

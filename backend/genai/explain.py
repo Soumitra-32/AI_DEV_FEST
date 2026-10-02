@@ -27,6 +27,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 from backend.rules import guardrails
 
+from . import client as llm_client
 from . import fallback, prompts
 
 logger = logging.getLogger("shonchoy.explain")
@@ -132,20 +133,19 @@ def is_acceptable(reply: Verbalization, context: Mapping[str, Any] | None) -> tu
 
 
 def _client(settings: Any) -> Any:
-    """Build an OpenAI-compatible client, or ``None`` when not configured."""
-    if settings is None or not getattr(settings, "llm_enabled", False):
+    """Deprecated single-client shim, kept so old call sites still import.
+
+    Prefer :func:`backend.genai.client.complete`, which fails over across the
+    primary key and both backups.
+    """
+    if settings is None or not llm_client.enabled(settings):
         return None
+    pool = llm_client.providers_from_settings(settings)
     try:
-        from openai import OpenAI  # noqa: PLC0415 - optional dependency
+        return llm_client._build(pool[0], float(getattr(settings, "llm_timeout_seconds", 20.0)))
     except Exception:  # pragma: no cover - openai not installed
         logger.info("openai package missing; using the template fallback")
         return None
-    return OpenAI(
-        api_key=settings.llm_api_key,
-        base_url=settings.llm_base_url,
-        timeout=settings.llm_timeout_seconds,
-        max_retries=1,
-    )
 
 
 def _ask_model(
@@ -155,14 +155,14 @@ def _ask_model(
     context: Mapping[str, Any] | None,
     language: str,
     user_text: str | None,
-) -> str:
-    """One chat completion, returning the raw assistant text."""
-    completion = client.chat.completions.create(
-        model=getattr(settings, "llm_model", "gpt-4o-mini"),
-        messages=prompts.build_messages(intent, context, language, user_text),
-        **prompts.request_kwargs(),
+) -> tuple[str, str]:
+    """One chat completion through the failover pool, returning text + provider."""
+    return llm_client.complete(
+        prompts.build_messages(intent, context, language, user_text),
+        settings=settings,
+        request_kwargs=prompts.request_kwargs(),
+        client=client,
     )
-    return completion.choices[0].message.content or ""
 
 
 def verbalize(
@@ -183,13 +183,12 @@ def verbalize(
         return refusal_outcome(language)
 
     template = _template_outcome(intent, context, "not_attempted")
-    active = client if client is not None else _client(settings)
-    if active is None:
+    if client is None and not llm_client.enabled(settings):
         return template
 
     try:
-        raw = _ask_model(active, settings, intent, context, language, user_text)
-    except Exception as exc:  # network, auth, timeout, provider error
+        raw, provider = _ask_model(client, settings, intent, context, language, user_text)
+    except Exception as exc:  # network, auth, timeout, or every provider failed
         logger.warning("llm call failed, using templates: %s", type(exc).__name__)
         return _template_outcome(intent, context, f"llm_error:{type(exc).__name__}")
 

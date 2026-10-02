@@ -32,6 +32,9 @@ Intent = Literal[
     "fees",
     "consistency",
     "tips",
+    "health_coach",
+    "anomalies",
+    "tradeoffs",
     "unknown",
 ]
 
@@ -44,13 +47,19 @@ ALLOWED_INTENTS: Tuple[str, ...] = (
     "fees",
     "consistency",
     "tips",
+    "health_coach",
+    "anomalies",
+    "tradeoffs",
     "unknown",
 )
 
 #: Tie-break order when two intents score equally (specific before general).
 _INTENT_PRIORITY: Tuple[str, ...] = (
     "savings_plan",
+    "tradeoffs",
     "fees",
+    "anomalies",
+    "health_coach",
     "forecast",
     "consistency",
     "tips",
@@ -86,6 +95,21 @@ INTENT_KEYWORDS: dict[str, Tuple[str, ...]] = {
         "লেনদেন", "ট্রানজেকশন", "কী হয়েছে", "কি হয়েছে", "কেন হয়েছে", "খরচের",
         "হিসাব", "ব্যাখ্যা", "transaction", "transactions", "history", "what is this",
         "what happened", "why did", "explain",
+    ),
+    "health_coach": (
+        "অভ্যাস", "আর্থিক স্বাস্থ্য", "স্বাস্থ্য", "কোয়ালিটি", "অবস্থা কেমন",
+        "কেমন আছি", "মান আমার", "habit", "habits", "health", "health score",
+        "financial health", "how am i doing", "my habits", "coach me",
+    ),
+    "anomalies": (
+        "অস্বাভাবিক", "অদ্ভুত", "আপাত আপাত", "এই লেনদেনটা", "এত বেশি কেন",
+        "unusual", "odd", "weird", "strange", "why so much", "big transaction",
+        "suspicious", "anomaly", "anomalies",
+    ),
+    "tradeoffs": (
+        "বিকল্প", "কোনটা ভালো", "সুবিধা", "তুলনা", "কমবে না", "কী করলে",
+        "option", "options", "alternative", "trade off", "tradeoff", "compare",
+        "instead", "which is better",
     ),
 }
 
