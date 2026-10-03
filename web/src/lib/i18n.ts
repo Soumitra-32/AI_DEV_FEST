@@ -11,7 +11,7 @@ export const DEFAULT_LANG: Lang = "bn";
 
 export const LANGUAGES: ReadonlyArray<{ code: Lang; label: string }> = [
   { code: "bn", label: "বাংলা" },
-  { code: "en", label: "EN" },
+  { code: "en", label: "English" },
 ];
 
 const en = {
@@ -32,9 +32,9 @@ const en = {
 
   "lang.switchTo": "Switch language",
 
-  "stamp.computed": "System Computed",
-  "stamp.easyExplain": "Plain Language",
-  "stamp.verified": "Rule Verified",
+  "stamp.computed": "Calculated",
+  "stamp.easyExplain": "In plain words",
+  "stamp.verified": "✓ Checked",
 
   "status.title": "Connection and dataset status",
   "status.checking": "Checking the API…",
@@ -59,45 +59,45 @@ const en = {
   "identity.cohort": "Cohort",
   "identity.demoUser": "Demo Profile",
 
-  "common.prediction": "Prediction",
-  "common.assumption": "Assumption",
-  "common.explanation": "Explanation",
+  "common.prediction": "What we think will happen",
+  "common.assumption": "What we're assuming",
+  "common.explanation": "Why we're saying this",
   "common.calculationTrace": "Calculation Trace",
   "common.howCalculated": "How we calculated this",
   "common.source": "Source",
   "common.doNothing": "What happens if I do nothing?",
-  "common.doNothingCost": "Estimated cost of doing nothing",
-  "common.doNothingConfirm": "I understand",
-  "common.doNothingDismiss": "Close",
-  "common.doNothingChosen": "You chose to do nothing. No automated change was made.",
+  "common.doNothingCost": "Doing nothing costs about",
+  "common.doNothingConfirm": "Okay, I understand",
+  "common.doNothingDismiss": "I'll decide later",
+  "common.doNothingChosen": "Noted — nothing was changed.",
   "common.doNothingHint":
-    "Every suggestion is yours to accept or ignore. Nothing happens without your explicit consent.",
+    "Every suggestion is yours to take or leave. Nothing happens without you.",
   "common.doNothingOutcome":
-    "After 6 months, savings will remain ৳0. That is entirely your decision.",
+    "If you save nothing for 6 months, you will have ৳0 saved.",
   "common.doNothingOutcomeN":
-    "After {months} months, savings will remain ৳0. That is entirely your decision.",
+    "If you save nothing for {months} months, you will have ৳0 saved.",
   "common.doNothingOutcome1":
-    "After 1 month, savings will remain ৳0. That is entirely your decision.",
+    "If you save nothing for 1 month, you will have ৳0 saved.",
   "common.doNothingDisclaimer":
-    "No coercion, no penalties. The app never executes transactions or makes lending decisions without you.",
+    "No pressure, no penalty. The app never moves your money.",
 
-  "banner.title": "Clarification & Safeguard Commitment",
+  "banner.title": "Please note",
   "banner.notADecision":
-    "This is an educational guide, not a credit or lending decision. upay and lenders make no automated decisions from this. No money moves without your explicit consent.",
+    "This is only information, not a decision about you.",
   "banner.notADecision.home":
-    "This is an educational financial guide, not a credit or transaction decision. No money moves without your explicit consent.",
+    "This is only information. No money moves without you.",
   "banner.notADecision.forecast":
-    "This forecast is not a financial guarantee or commitment — it is projected from historical transaction patterns.",
+    "This is a guess about the future, not a promise.",
   "banner.notADecision.plan":
-    "This plan is purely an arithmetic projection — there is no obligation to save or invest.",
+    "This is a plan, not a guarantee you'll reach it.",
   "banner.notADecision.spending":
-    "This summary is strictly analytical — no transaction has been modified, held, or reversed.",
+    "This is only a summary of your spending. Nothing was changed.",
   "banner.notADecision.tips":
-    "These tips provide general informational guidance and do not constitute professional financial advice.",
+    "This is general information, not advice for your case.",
   "banner.notADecision.signal":
-    "This consistency signal is not a credit score or loan approval — it is an educational consistency assessment only.",
+    "This is not a loan decision. Only a lender can decide.",
   "banner.notADecision.metrics":
-    "These metrics measure offline model performance and calibration — they do not represent commercial guarantees.",
+    "These numbers show how the app is doing. They promise nothing.",
 
   "assumption.forecast":
     "Assumes the past 60 days of inflow/outflow transaction patterns and baseline living expenses continue.",
@@ -210,19 +210,19 @@ const en = {
   "spending.banglaQrAntiMisuseTitle": "Payment & Settlement Systems Act, 2024 Notice",
   "spending.banglaQrAntiMisuseText": "Bangla QR is strictly for genuine purchases. Artificial transaction splitting near ৳2,000 or disguised cash-out through merchants is prohibited and subject to regulatory penalties.",
 
-  "voice.label": "Enter Financial Goal or Query",
-  "voice.speak": "Voice",
+  "voice.label": "Write your money goal",
+  "voice.speak": "Speak",
   "voice.listening": "Listening…",
-  "voice.unsupported": "Voice input is not supported in this browser. Please type instead.",
-  "voice.denied": "Microphone blocked. Allow mic access in the browser address bar, then try again.",
-  "voice.nomic": "No microphone found. Check your device mic, then try again.",
-  "voice.offline": "Voice needs internet (recognition runs online). Reconnect, then try again.",
-  "voice.nospeech": "Didn't hear anything. Speak closer to the mic and try again.",
+  "voice.unsupported": "Voice does not work on this phone. Please type instead.",
+  "voice.denied": "Please allow the mic, then try again.",
+  "voice.nomic": "No mic found. Please type instead.",
+  "voice.offline": "Voice needs internet. Please connect and try again.",
+  "voice.nospeech": "We could not hear you. Please come closer and speak again.",
   "voice.heard": "I heard:",
   "voice.confirm": "Calculate",
   "voice.retry": "Speak again",
   "voice.needBoth": "Enter both the amount and the months, then calculate.",
-  "voice.placeholder": "e.g., I want to save ৳30,000 in 6 months",
+  "voice.placeholder": "For example: I want to save ৳30,000 in 6 months",
   "voice.suggestedTitle": "Suggested Queries:",
 
   "tips.headerTag": "Personalized Coaching",
@@ -334,9 +334,9 @@ const bn: Dictionary = {
 
   "lang.switchTo": "ভাষা নির্বাচন",
 
-  "stamp.computed": "সিস্টেম গণনা",
-  "stamp.easyExplain": "সহজ ব্যাখ্যা",
-  "stamp.verified": "যাচাইকৃত",
+  "stamp.computed": "স্বয়ংক্রিয় হিসাব",
+  "stamp.easyExplain": "সহজ ভাষায়",
+  "stamp.verified": "✓ যাচাই করা",
 
   "status.title": "সংযোগ ও ডেটাসেটের স্থিতি",
   "status.checking": "API পরীক্ষা করা হচ্ছে…",
@@ -361,45 +361,45 @@ const bn: Dictionary = {
   "identity.cohort": "দল",
   "identity.demoUser": "ডেমো প্রোফাইল",
 
-  "common.prediction": "পূর্বাভাস",
-  "common.assumption": "ধারনা",
-  "common.explanation": "সহজ ব্যাখ্যা",
+  "common.prediction": "আমরা যা আন্দাজ করছি",
+  "common.assumption": "কী ধরে নিচ্ছি",
+  "common.explanation": "কেন এমন বলছি",
   "common.calculationTrace": "হিসাবের বিবরণ",
   "common.howCalculated": "এই হিসাবটি যেভাবে করা হয়েছে",
   "common.source": "উৎস",
   "common.doNothing": "কিছু না করলে কী হবে?",
-  "common.doNothingCost": "কিছু না করলে সম্ভাব্য খরচ",
-  "common.doNothingConfirm": "হ্যাঁ, বুঝেছি",
-  "common.doNothingDismiss": "বন্ধ করুন",
-  "common.doNothingChosen": "আপনি কিছু না করাই বেছে নিয়েছেন। কোনো স্বয়ংক্রিয় পরিবর্তন হয়নি।",
+  "common.doNothingCost": "কিছু না করলে খরচ হবে প্রায়",
+  "common.doNothingConfirm": "ঠিক আছে, বুঝেছি",
+  "common.doNothingDismiss": "পরে দেখব",
+  "common.doNothingChosen": "ঠিক আছে — কিছুই বদলানো হয়নি।",
   "common.doNothingHint":
-    "প্রতিটি পরামর্শ গ্রহণ বা প্রত্যাখ্যান করা সম্পূর্ণ আপনার এখতিয়ার। আপনার স্পষ্ট অনুমতি ব্যতিরেকে কোনো সিদ্ধান্ত নেওয়া হয় না।",
+    "প্রতিটি পরামর্শ মানা বা না-মানা আপনার হাতে। আপনি না বললে কিছুই হবে না।",
   "common.doNothingOutcome":
-    "৬ মাস পরে সঞ্চয় ৳০ থাকবে। এটাও আপনার নিজস্ব সিদ্ধান্ত।",
+    "৬ মাস কিছু না জমালে, জমানো থাকবে ৳০।",
   "common.doNothingOutcomeN":
-    "{months} মাস পরে সঞ্চয় ৳০ থাকবে। এটাও আপনার নিজস্ব সিদ্ধান্ত।",
+    "{months} মাস কিছু না জমালে, জমানো থাকবে ৳০।",
   "common.doNothingOutcome1":
-    "১ মাস পরে সঞ্চয় ৳০ থাকবে। এটাও আপনার নিজস্ব সিদ্ধান্ত।",
+    "১ মাস কিছু না জমালে, জমানো থাকবে ৳০।",
   "common.doNothingDisclaimer":
-    "কোনো জোরজবরদস্তি বা বাড়তি দায়বদ্ধতা নেই। অ্যাপ আপনার অনুমতি ছাড়া কোনো লেনদেন করবে না।",
+    "কোনো চাপ নেই, জরিমানা নেই। অ্যাপ কখনো আপনার টাকা নাড়বে না।",
 
-  "banner.title": "স্পষ্টকরণ ও সুরক্ষা অঙ্গীকার",
+  "banner.title": "মনে রাখুন",
   "banner.notADecision":
-    "এটি শুধু শিক্ষামূলক ইঙ্গিত, কোনো ঋণ বা আর্থিক সিদ্ধান্ত নয়। আপনার অনুমতি ছাড়া কোনো টাকা সরানো হবে না।",
+    "এটি শুধু তথ্য — আপনার বিষয়ে কোনো সিদ্ধান্ত নয়।",
   "banner.notADecision.home":
-    "এটি একটি শিক্ষামূলক আর্থিক সহায়িকা, কোনো ঋণ বা লেনদেনের সিদ্ধান্ত নয়। আপনার স্পষ্ট সম্মতি ছাড়া কোনো অর্থ স্থানান্তর হয় না।",
+    "এটি শুধু তথ্য। আপনি না বললে কোনো টাকা নড়বে না।",
   "banner.notADecision.forecast":
-    "এই পূর্বাভাস কোনো আর্থিক প্রতিশ্রুতি বা নিশ্চয়তা নয় — অতীত তথ্যের উপর ভিত্তি করে তৈরি।",
+    "এটি ভবিষ্যতের আন্দাজ, প্রতিশ্রুতি নয়।",
   "banner.notADecision.plan":
-    "এই পরিকল্পনা একটি হিসাব মাত্র — সঞ্চয় বা বিনিয়োগের কোনো বাধ্যবাধকতা নেই।",
+    "এটি একটি পরিকল্পনা — লক্ষ্যে পৌঁছানোর নিশ্চয়তা নয়।",
   "banner.notADecision.spending":
-    "এই তথ্য শুধুমাত্র বিশ্লেষণের জন্য — কোনো লেনদেন বাতিল বা পরিবর্তন করা হয়নি।",
+    "এটি শুধু আপনার খরচের হিসাব। কিছু বদলানো হয়নি।",
   "banner.notADecision.tips":
-    "এই পরামর্শ সাধারণ তথ্যের জন্য — কোনো পেশাদার আর্থিক উপদেষ্টার বিকল্প নয়।",
+    "এটি সাধারণ তথ্য — আপনার জন্য ব্যক্তিগত পরামর্শ নয়।",
   "banner.notADecision.signal":
-    "এই ধারাবাহিকতা সংকেত কোনো ক্রেডিট স্কোর বা লোন অনুমোদন নয় — এটি শুধুমাত্র অভ্যন্তরীণ বিশ্লেষণের জন্য।",
+    "এটি ঋণের সিদ্ধান্ত নয়। ঋণ দেবে কি না, তা শুধু ঋণদাতা ঠিক করতে পারে।",
   "banner.notADecision.metrics":
-    "এই মেট্রিক্স মডেলের কর্মক্ষমতা মূল্যায়নের জন্য — এটি কোনো বাণিজ্যিক প্রতিশ্রুতি নয়।",
+    "এই সংখ্যাগুলো অ্যাপ কেমন করছে তা দেখায়। এগুলো কোনো প্রতিশ্রুতি নয়।",
 
   "assumption.forecast":
     "ধরে নেওয়া হয়েছে বিগত ৬০ দিনের লেনদেনের ধারা বজায় থাকবে এবং নিয়মিত খরচ অপরিবর্তিত থাকবে।",
@@ -512,14 +512,14 @@ const bn: Dictionary = {
   "spending.banglaQrAntiMisuseTitle": "পেমেন্ট অ্যান্ড সেটেলমেন্ট সিস্টেমস আইন, ২০২৪ সতর্কতা",
   "spending.banglaQrAntiMisuseText": "বাংলা কিউআর শুধুমাত্র প্রকৃত কেনাকাটার জন্য। ২,০০০ টাকার প্রণোদনা অপব্যবহার করতে কৃত্রিমভাবে লেনদেন ভাঙা বা মার্চেন্টের মাধ্যমে নগদ ক্যাশ-আউট আইনত দণ্ডনীয়।",
 
-  "voice.label": "হিসাবের লক্ষ্য বা অনুসন্ধান লিখুন",
+  "voice.label": "আপনার টাকার লক্ষ্য লিখুন",
   "voice.speak": "বলুন",
   "voice.listening": "শোনা হচ্ছে…",
-  "voice.unsupported": "এই ব্রাউজারে ভয়েস সমর্থিত নয়। দয়া করে লিখুন।",
-  "voice.denied": "মাইক্রোফোন বন্ধ আছে। ব্রাউজারের ঠিকানা বারে মাইকের অনুমতি দিন, তারপর আবার চেষ্টা করুন।",
-  "voice.nomic": "কোনো মাইক্রোফোন পাওয়া যায়নি। ডিভাইসের মাইক পরীক্ষা করে আবার চেষ্টা করুন।",
-  "voice.offline": "ভয়েসের জন্য ইন্টারনেট লাগে। সংযোগ ফিরিয়ে এনে আবার চেষ্টা করুন।",
-  "voice.nospeech": "কিছু শোনা যায়নি। মাইকের কাছে থেকে বলুন এবং আবার চেষ্টা করুন।",
+  "voice.unsupported": "এই ফোনে কথা বলে লেখা যায় না। দয়া করে টাইপ করুন।",
+  "voice.denied": "মাইকের অনুমতি দিন, তারপর আবার চেষ্টা করুন।",
+  "voice.nomic": "মাইক পাওয়া যায়নি। দয়া করে টাইপ করুন।",
+  "voice.offline": "কথা বলে লিখতে ইন্টারনেট লাগে। সংযোগ দিয়ে আবার চেষ্টা করুন।",
+  "voice.nospeech": "শোনা যায়নি। কাছে এসে আবার বলুন।",
   "voice.heard": "আমি শুনেছি:",
   "voice.confirm": "হিসাব করুন",
   "voice.retry": "আবার বলুন",
