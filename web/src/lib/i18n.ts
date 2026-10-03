@@ -26,7 +26,7 @@ const en = {
   "nav.plan": "Savings",
   "nav.spending": "Expenditure",
   "nav.tips": "Suggestions",
-  "nav.signal": "Transactions",
+  "nav.signal": "Consistency",
   "nav.metrics": "Metrics",
   "nav.more": "More",
 
@@ -334,7 +334,7 @@ const bn: Dictionary = {
   "nav.plan": "সঞ্চয়",
   "nav.spending": "খরচ",
   "nav.tips": "পরামর্শ",
-  "nav.signal": "লেনদেন",
+  "nav.signal": "ধারাবাহিকতা",
   "nav.metrics": "মেট্রিক্স",
   "nav.more": "আরও",
 

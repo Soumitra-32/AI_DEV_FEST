@@ -15,7 +15,25 @@ export default function TopBar() {
     { href: "/plan", label: tr("nav.plan"), icon: "savings" },
     { href: "/spending", label: tr("nav.spending"), icon: "receipt_long" },
     { href: "/tips", label: tr("nav.tips"), icon: "lightbulb" },
-    { href: "/signal", label: tr("nav.signal"), icon: "swap_horiz" },
+    {
+      href: "/signal",
+      label: tr("nav.signal"),
+      customIcon: (
+        <svg
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M17 3v6h6M7 21v-6H1" />
+          <path d="M21 9l-7.5-7.5M3 15l7.5 7.5" />
+        </svg>
+      ),
+    },
     { href: "/metrics", label: tr("nav.metrics"), icon: "bar_chart" },
   ];
 
@@ -61,11 +79,17 @@ export default function TopBar() {
                     : "border-t-2 border-transparent text-[#6A6355] hover:text-[#1E1B16] hover:border-[#D8CFBB]"
                 }`}
               >
-                <MaterialIcon
-                  name={item.icon}
-                  size={19}
-                  className={isActive ? "text-[#0054A6]" : "text-[#6A6355]"}
-                />
+                {item.customIcon ? (
+                  <span className={`inline-flex items-center shrink-0 ${isActive ? "text-[#0054A6]" : "text-[#6A6355]"}`}>
+                    {item.customIcon}
+                  </span>
+                ) : (
+                  <MaterialIcon
+                    name={item.icon || "info"}
+                    size={19}
+                    className={isActive ? "text-[#0054A6]" : "text-[#6A6355]"}
+                  />
+                )}
                 <span>{item.label}</span>
               </Link>
             );
