@@ -16,20 +16,31 @@ export default function ForecastPage() {
   const [data, setData] = useState<ForecastResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // Window preset: latest history, or pinned over month-end days 28–31
+  // (the demo story) via the server-side as_of parameter.
+  const [preset, setPreset] = useState<"latest" | "monthend">("latest");
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    fetchForecast({ horizon_days: 14 })
-      .then((res) => {
-        setData(res);
-        setLoading(false);
+  const load = useCallback(
+    (which: "latest" | "monthend" = "latest") => {
+      setLoading(true);
+      setError(null);
+      setPreset(which);
+      fetchForecast({
+        horizon_days: 14,
+        // 06-27 → window Jun 28–Jul 11: covers month-end days 28–31.
+        ...(which === "monthend" ? { as_of: "2025-06-27" } : {}),
       })
-      .catch(() => {
-        setError(tr("error.title"));
-        setLoading(false);
-      });
-  }, [tr]);
+        .then((res) => {
+          setData(res);
+          setLoading(false);
+        })
+        .catch(() => {
+          setError(tr("error.title"));
+          setLoading(false);
+        });
+    },
+    [tr],
+  );
 
   useEffect(() => {
     load();
@@ -56,7 +67,7 @@ export default function ForecastPage() {
         {error && (
           <div className="bg-surface border border-brickRed rounded-ledger p-5 space-y-3">
             <p className="font-mono text-sm text-brickRed">{error}</p>
-            <button type="button" onClick={load} className="primary text-xs">
+            <button type="button" onClick={() => load(preset)} className="primary text-xs">
               {tr("error.retry")}
             </button>
           </div>
@@ -72,14 +83,48 @@ export default function ForecastPage() {
 
         {data && (
           <>
+            {/* Window preset + net-source badge */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => load("latest")}
+                disabled={loading}
+                className={`px-3 py-1.5 rounded-stamp border text-xs font-hind ${
+                  preset === "latest"
+                    ? "border-primaryGreen text-primaryGreen font-bold"
+                    : "border-rule text-ink-muted"
+                }`}
+              >
+                {tr("forecast.latestPreset")}
+              </button>
+              <button
+                type="button"
+                onClick={() => load("monthend")}
+                disabled={loading}
+                className={`px-3 py-1.5 rounded-stamp border text-xs font-hind ${
+                  preset === "monthend"
+                    ? "border-primaryGreen text-primaryGreen font-bold"
+                    : "border-rule text-ink-muted"
+                }`}
+              >
+                {tr("forecast.monthEndPreset")}
+              </button>
+            </div>
             {/* Chart Container */}
             <div className="bg-surface border border-rule rounded-ledger p-4 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-rule pb-2">
                 <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
                   {tr("forecast.title")}
                 </h2>
-                <span className="text-xs font-mono text-ink-muted uppercase">
+                <span className="text-xs font-mono text-ink-muted uppercase flex items-center gap-2">
                   {tr("stamp.computed")}
+                  <span className="border border-ink-muted rounded-stamp px-1.5 py-0.5 normal-case">
+                    {data.net_source === "anchor"
+                      ? tr("forecast.netSourceAnchor")
+                      : data.net_source === "difference"
+                        ? tr("forecast.netSourceDifference")
+                        : tr("forecast.netSourceModel")}
+                  </span>
                 </span>
               </div>
               <ForecastChart days={data.days} />
