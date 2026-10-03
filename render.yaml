@@ -12,7 +12,9 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.0
       - key: DEMO_AUTH_TOKEN
-        value: e97f8bfd87cf85d2e47985d7ff1babdc71d17b304918a243
+        # Never commit a real token: set the value in the Render dashboard
+        # (Environment) and mirror it in Vercel as NEXT_PUBLIC_DEMO_TOKEN.
+        value: change-me-set-in-render-dashboard
       - key: CORS_ORIGINS
         value: "http://localhost:3000,http://127.0.0.1:3000,https://shonchoy-copilot.vercel.app"
       - key: DATABASE_PATH

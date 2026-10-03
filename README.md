@@ -113,7 +113,7 @@ Frontend will be live at `http://localhost:3000`.
 | Variable | Description | Default / Example |
 |---|---|---|
 | `PORT` | API server port | `8000` |
-| `DEMO_AUTH_TOKEN` | Secret token mapped to demo user | `e97f8bfd87cf85d2e47985d7ff1babdc71d17b304918a243` |
+| `DEMO_AUTH_TOKEN` | Secret token mapped to demo user | Set in Render dashboard; mirror in Vercel as `NEXT_PUBLIC_DEMO_TOKEN` |
 | `CORS_ORIGINS` | Comma-separated allowed CORS origins | `http://localhost:3000,http://127.0.0.1:3000,https://shonchoy-copilot.vercel.app` |
 | `DATABASE_PATH` | Path to SQLite database file | `backend/data/shonchoy.db` |
 | `LLM_API_KEY` | (Optional) Primary OpenAI-compatible key | `""` (defaults to template fallback) |
