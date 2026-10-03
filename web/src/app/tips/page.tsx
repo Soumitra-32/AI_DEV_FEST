@@ -73,38 +73,38 @@ export default function TipsPage() {
               )} করে ক্যাশ-আউট করেন, যার মধ্যে ${formatDigits(
                 String(qrCount),
                 "bn"
-              )}টি ২,০০০ টাকার মধ্যে। ১ অক্টোবর ২০২৬ বাংলাদেশ ব্যাংক সংস্কারের ফলে দোকানে কেনাকাটায় ক্যাশ-আউটের বদলে সরাসরি বাংলা কিউআরে দিলে ০% ফি এবং মাসে আনুমানিক ${formatBDT(
+              )}টি ২,০০০ টাকার মধ্যে। ১ অক্টোবর ২০২৬ থেকে দোকানে কিউআরে দিলে ফি ০%, মাসে আনুমানিক ${formatBDT(
                 potentialSaving,
                 "bn"
-              )} সাশ্রয় হবে।`
+              )} বাঁচবে।`
             : `আপনি মাসে ${formatDigits(
                 String(cashOutCount),
                 "bn"
               )} বার গড়ে ${formatBDT(
                 avgAmount,
                 "bn"
-              )} করে ক্যাশ-আউট করেন। বারবার ক্যাশ-আউট না করে একবার বা দুইবারে প্রয়োজনমতো তুললে বা সরাসরি অ্যাপ ট্রান্সফার করলে প্রতি মাসে আনুমানিক ${formatBDT(
+              )} করে ক্যাশ-আউট করেন। বারবার না তুলে একবার বা দুইবারে তুললে, বা অ্যাপে পাঠালে প্রতি মাসে আনুমানিক ${formatBDT(
                 potentialSaving,
                 "bn"
-              )} ফি সাশ্রয় সম্ভব।`;
+              )} বাঁচতে পারে।`;
           const tip1DescEn = qrCount > 0
-            ? `You cash out ~${cashOutCount} times/month averaging ${formatBDT(
+            ? `You take out cash about ${cashOutCount} times a month, about ${formatBDT(
                 avgAmount,
                 "en"
-              )}. Under Bangladesh Bank's 1 Oct 2026 reform, merchant Bangla QR carries 0% fee (${qrCount} of your transactions are under the ৳2,000 cap), saving ~${formatBDT(
+              )} at a time. Since 1 October 2026, paying shops by QR costs 0% fee (${qrCount} of your payments are under the ৳2,000 limit), saving about ${formatBDT(
                 potentialSaving,
                 "en"
-              )}/month.`
-            : `You currently cash out ~${cashOutCount} times/month averaging ${formatBDT(
+              )} a month.`
+            : `You take out cash about ${cashOutCount} times a month, about ${formatBDT(
                 avgAmount,
                 "en"
-              )}. Consolidating into 1-2 withdrawals or paying via app transfer can save ~${formatBDT(
+              )} at a time. Taking it in 1–2 goes, or paying in the app, can save about ${formatBDT(
                 potentialSaving,
                 "en"
-              )} in monthly fees.`;
+              )} a month.`;
           return {
-            titleBn: qrCount > 0 ? "দোকানে ক্যাশ-আউটের বদলে বাংলা কিউআর" : "ঘন ঘন ছোট ক্যাশ-আউট কমান",
-            titleEn: qrCount > 0 ? "Pay Merchants by Bangla QR (0% Fee)" : "Consolidate Frequent Small Cash-Outs",
+            titleBn: qrCount > 0 ? "দোকানে ক্যাশ-আউটের বদলে বাংলা কিউআর" : "কমবার ক্যাশ-আউট করুন",
+            titleEn: qrCount > 0 ? "Pay shops by QR, skip the fee" : "Take cash out fewer times",
             descBn: tip1DescBn,
             descEn: tip1DescEn,
             tagBn: "বাংলা কিউআর",
@@ -115,17 +115,17 @@ export default function TipsPage() {
       : null;
 
   // Live savings verdict for the worked example goal — never a hardcoded
-  // "fits" claim. Unavailable instead of invented when the API is down.
+  // claim. Unavailable instead of invented when the API is down.
   const planCard = plan
     ? {
-        titleBn: "সঞ্চয়ের বাস্তবসম্মত লক্ষ্য নির্ধারণ",
-        titleEn: "Set a Realistic Surplus-Matched Goal",
+        titleBn: "লক্ষ্য ঠিক আছে কি না দেখুন",
+        titleEn: "Is your goal the right size?",
         descBn: plan.feasible
-          ? `উদাহরণ (৬ মাসে ৳৩০,০০০): উদ্বৃত্ত থেকে বাফার বাদে মাসে ${formatBDT(plan.feasible_monthly_bdt, "bn")} রাখা সম্ভব — লক্ষ্যটি মানানসই।`
-          : `উদাহরণ (৬ মাসে ৳৩০,০০০): বর্তমান পূর্বাভাসে মাসে ${formatBDT(plan.feasible_monthly_bdt, "bn")} রাখা সম্ভব — লক্ষ্য বা সময়সীমা বদলাতে হবে।`,
+          ? `উদাহরণ (৬ মাসে ৳৩০,০০০): হাতে থাকা টাকা থেকে নিরাপদ অংশ বাদে মাসে ${formatBDT(plan.feasible_monthly_bdt, "bn")} রাখা সম্ভব — লক্ষ্যটা ঠিক আছে।`
+          : `উদাহরণ (৬ মাসে ৳৩০,০০০): এখন মাসে ${formatBDT(plan.feasible_monthly_bdt, "bn")} রাখা সম্ভব — লক্ষ্য কমান বা সময় বাড়ান।`,
         descEn: plan.feasible
-          ? `Worked example (৳30,000 in 6 months): about ${formatBDT(plan.feasible_monthly_bdt, "en")}/month is keepable after the buffer — the goal fits.`
-          : `Worked example (৳30,000 in 6 months): only about ${formatBDT(plan.feasible_monthly_bdt, "en")}/month is keepable — adjust the goal or timeline.`,
+          ? `Worked example (৳30,000 in 6 months): about ${formatBDT(plan.feasible_monthly_bdt, "en")} a month can be saved after keeping safety money aside — the goal fits.`
+          : `Worked example (৳30,000 in 6 months): only about ${formatBDT(plan.feasible_monthly_bdt, "en")} a month can be saved — lower the goal or take more time.`,
         tagBn: "সঞ্চয়",
         tagEn: "Savings",
         stampKey: "tips.stampPlan" as const,
@@ -135,12 +135,12 @@ export default function TipsPage() {
   const curatedTips = [
     ...(feeCard ? [feeCard] : []),
     {
-      titleBn: "২৮–৩১ তারিখের জন্য অগ্রিম বাফার রাখুন",
-      titleEn: "Maintain Month-End Cash Buffer for Days 28–31",
+      titleBn: "২৮–৩১ তারিখের জন্য আগে থেকে টাকা রাখুন",
+      titleEn: "Keep some money aside for days 28–31",
       descBn:
-        "মাসের শেষ সপ্তাহে আপনার মাসের বিল ও ক্যাশ খরচের চাপ বেশি থাকে। মাসের ১৫ তারিখ থেকেই দৈনিক ৳৫০ আলাদা রাখলে মাস শেষে টানাটানি পড়বে না।",
+        "মাসের শেষ সপ্তাহে বিল আর নগদ খরচে টান পড়ে। ১৫ তারিখ থেকে রোজ ৳৫০ সরিয়ে রাখলে মাস শেষে টান পড়বে না।",
       descEn:
-        "Outflows spike near month-end due to rent and utility schedules. Retaining a small safety buffer earlier prevents emergency borrowing.",
+        "Bills and cash needs pile up in the last week. Putting ৳50 aside daily from the 15th keeps month-end painless.",
       tagBn: "ক্যাশ-ফ্লো",
       tagEn: "Cash Flow",
       stampKey: "tips.stampForecast" as const,
@@ -186,7 +186,7 @@ export default function TipsPage() {
               </span>
               <Stamp variant="muted">
                 {explainRes.source === "llm"
-                  ? (lang === "bn" ? "এআই সহায়ক" : "AI Assisted")
+                  ? (lang === "bn" ? "এআই লিখেছে" : "Written by AI")
                   : tr("stamp.computed")}
               </Stamp>
             </div>
@@ -259,14 +259,14 @@ export default function TipsPage() {
 
         <DoNothingToggle
           costBdt={feeSwitch?.potential_saving_bdt ?? null}
-          outcome={
+            outcome={
             feeSwitch
               ? (lang === "bn"
-                  ? `পরামর্শ অনুযায়ী ফি সাশ্রয় না করলে মাসে প্রায় ${formatBDT(feeSwitch.potential_saving_bdt, lang)} অপ্রয়োজনীয় খরচ হতে থাকবে।`
-                  : `Ignoring fee-saving recommendations will continue to cost ~${formatBDT(feeSwitch.potential_saving_bdt, lang)}/month in avoidable fees.`)
+                  ? `এই পরামর্শ না মানলে মাসে প্রায় ${formatBDT(feeSwitch.potential_saving_bdt, lang)} অযথা খরচ হতেই থাকবে।`
+                  : `Ignoring these ideas keeps costing about ${formatBDT(feeSwitch.potential_saving_bdt, lang)} a month in avoidable fees.`)
               : (lang === "bn"
-                  ? "কোনো আর্থিক ক্ষতি হিসাব করা যায়নি, তবে সঞ্চয়ের অভ্যাস তৈরি পিছিয়ে যাবে।"
-                  : "No direct monetary loss computed, but financial habit building will be delayed.")
+                  ? "বাড়তি খরচ মাপা যায়নি, তবে সঞ্চয়ের অভ্যাস তৈরি দেরি হবে।"
+                  : "No extra cost counted, but building the saving habit will take longer.")
           }
         />
       </main>

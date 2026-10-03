@@ -8,7 +8,7 @@ import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchCreditReadiness } from "@/lib/api";
 import type { ConsistencySignalResponse } from "@/lib/api";
-import { formatBDT, formatDigits } from "@/lib/i18n";
+import { formatDigits } from "@/lib/i18n";
 
 const BAND_INDEX: Record<string, number> = {
   Building: 0,
@@ -128,13 +128,10 @@ export default function SignalPage() {
                         f.direction === "improves" ? "text-primaryGreen" : "text-brickRed"
                       }`}
                     >
-                      {f.direction === "improves" ? "+ " : "- "}
-                      {formatBDT(f.magnitude, lang)}
+                      {f.direction === "improves" ? "+ " : "− "}
+                      {f.direction === "improves" ? tr("signal.improves") : tr("signal.weakens")}
                     </span>
                   </div>
-                  <p className="text-xs text-ink-muted leading-relaxed font-hind text-left">
-                    {f.direction === "improves" ? tr("signal.improves") : tr("signal.weakens")}
-                  </p>
                 </div>
               ))
             ) : (
@@ -157,10 +154,10 @@ export default function SignalPage() {
 
         <DoNothingToggle
           costBdt={null}
-          outcome={
+            outcome={
             lang === "bn"
-              ? "নিয়মিত ডিজিটাল লেনদেন না করলে ধারাবাহিকতা রেটিং অপরিবর্তিত থাকবে বা কমতে পারে, যা ভবিষ্যতের আর্থিক প্রোফাইলকে দুর্বল রাখবে।"
-              : "Without consistent digital transactions, your consistency rating will stagnate or decrease, keeping future profile building on hold."
+              ? "নিয়মিত মোবাইলে লেনদেন না করলে ধাপ একই থাকবে বা নিচে নামতে পারে।"
+              : "Without regular mobile payments, your level will stay or slip down."
           }
         />
       </main>

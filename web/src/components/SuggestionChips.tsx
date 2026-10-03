@@ -22,8 +22,8 @@ export default function SuggestionChips({ onSelectQuery }: SuggestionChipsProps)
       href: "/plan",
     },
     {
-      labelBn: "আগামী ১৪ দিনের পূর্বাভাস দেখাও",
-      labelEn: "Show 14-day cash forecast",
+      labelBn: "আগামী ১৪ দিন দেখাও",
+      labelEn: "See the next 14 days",
       href: "/forecast",
     },
     {

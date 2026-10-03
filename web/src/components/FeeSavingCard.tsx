@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/components/LangToggle";
-import { formatBDT } from "@/lib/i18n";
+import { formatBDT, formatDigits } from "@/lib/i18n";
 import type { FeeSwitchSuggestion } from "@/lib/api";
 import Stamp from "@/components/Stamp";
 
@@ -32,8 +32,8 @@ export default function FeeSavingCard({ feeSwitch }: FeeSavingCardProps) {
         </p>
         <p className="text-xs text-ink-muted font-hind">
           {lang === "bn"
-            ? `বাস্তবসম্মত রূপান্তর সীমার হিসাব (${feeSwitch.adoption_range || "৩০%–৭০%"}): মাসে আনুমানিক ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.3), lang)} থেকে ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.7), lang)} পর্যন্ত সাশ্রয় সম্ভব।`
-            : `Realistic adoption range (${feeSwitch.adoption_range || "30%–70%"}): estimated saving of ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.3), lang)} to ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.7), lang)}/month.`}
+            ? `কতজন ব্যবহার করতে পারে (${formatDigits(feeSwitch.adoption_range || "৩০%–৭০%", lang)}): মাসে আনুমানিক ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.3), lang)} থেকে ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.7), lang)} পর্যন্ত বাঁচতে পারে।`
+            : `How many may use it (${feeSwitch.adoption_range || "30%–70%"}): you could save ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.3), lang)} to ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.7), lang)} a month.`}
         </p>
       </div>
 
@@ -53,7 +53,8 @@ export default function FeeSavingCard({ feeSwitch }: FeeSavingCardProps) {
         <div className="p-2.5 bg-paper/60 border border-rule space-y-0.5 col-span-2 sm:col-span-1">
           <div className="text-ink-muted">{tr("spending.adoption")}</div>
           <div className="font-bold text-ink text-sm text-right">
-            {feeSwitch.adoption_range}
+            {formatDigits(feeSwitch.adoption_range, lang)}{" "}
+            {lang === "bn" ? "মানুষ" : "of people"}
           </div>
         </div>
       </div>
@@ -65,7 +66,7 @@ export default function FeeSavingCard({ feeSwitch }: FeeSavingCardProps) {
             {tr("spending.banglaQrTitle")}
           </span>
           <Stamp variant="ink">
-            {lang === "bn" ? "০% মার্চেন্ট ফি" : "0% Merchant Fee"}
+            {tr("spending.banglaQrNoFee")}
           </Stamp>
         </div>
         <p className="text-xs text-ink-muted leading-relaxed font-hind">
@@ -76,7 +77,7 @@ export default function FeeSavingCard({ feeSwitch }: FeeSavingCardProps) {
           <div className="p-2.5 bg-paper/40 border border-rule space-y-1 text-xs">
             <div className="font-medium text-ink font-hind">
               {tr("spending.banglaQrEligible")
-                .replace("{count}", String(feeSwitch.bangla_qr_eligible_count))
+                .replace("{count}", formatDigits(String(feeSwitch.bangla_qr_eligible_count), lang))
                 .replace(
                   "{volume}",
                   formatBDT(feeSwitch.bangla_qr_eligible_volume_bdt ?? 0, lang)

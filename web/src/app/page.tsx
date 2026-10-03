@@ -12,7 +12,7 @@ import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchAnomalies, fetchHealth, fetchIdentity, fetchParseGoal } from "@/lib/api";
 import type { HealthResponse, IdentityResponse } from "@/lib/api";
-import { formatBDT, formatInteger } from "@/lib/i18n";
+import { formatBDT, formatDistrict, formatIncomeBand, formatInteger, formatPersona } from "@/lib/i18n";
 
 type Status = "checking" | "ok" | "unreachable";
 
@@ -71,9 +71,6 @@ function StatusCard() {
         <div className="space-y-3 font-hind text-sm">
           <div className="flex items-center gap-2">
             <span className="badge success">{tr("status.apiReachable")}</span>
-            <span className="text-xs font-mono text-ink-muted">
-              {tr("status.serviceVersion")}: {health.version}
-            </span>
             {health.status === "degraded" && (
               <span className="badge warn">{tr("status.degraded")}</span>
             )}
@@ -114,7 +111,7 @@ function StatusCard() {
                 </strong>
               </div>
               <span className="text-ink-muted">
-                {identity.persona} · {identity.district} · {identity.income_band}
+                {formatPersona(identity.persona, lang)} · {formatDistrict(identity.district, lang)} · {formatIncomeBand(identity.income_band, lang)}
               </span>
             </div>
           )}
@@ -366,11 +363,11 @@ export default function HomePage() {
           outcome={
             homeFeeSaving
               ? (lang === "bn"
-                  ? `কোনো পদক্ষেপ না নিলে মাসে প্রায় ${formatBDT(homeFeeSaving, lang)} পর্যন্ত সম্ভাব্য ফি সাশ্রয় হাতছাড়া হতে পারে।`
-                  : `Taking no action may forfeit up to ${formatBDT(homeFeeSaving, lang)}/month in potential fee savings.`)
+                  ? `কিছু না করলে প্রতি মাসে প্রায় ${formatBDT(homeFeeSaving, lang)} বাড়তি ফি দিতে হতে পারে।`
+                  : `If you do nothing, you may pay about ${formatBDT(homeFeeSaving, lang)} extra in fees every month.`)
               : (lang === "bn"
-                  ? "কোনো আর্থিক ক্ষতি হিসাব করা যায়নি, তবে সঞ্চয়ের লক্ষ্য পিছিয়ে যাবে।"
-                  : "No direct penalty computed, but financial savings goals will remain deferred.")
+                  ? "বাড়তি খরচ মাপা যায়নি, তবে সঞ্চয়ের লক্ষ্য পিছিয়ে যাবে।"
+                  : "No extra cost counted, but your saving goal will take longer.")
           }
         />
 

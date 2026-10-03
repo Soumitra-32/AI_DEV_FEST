@@ -37,8 +37,19 @@ export default function MetricsPage() {
     };
   }, []);
 
-  const formatMetricVal = (metric: string, val: number) => {
-    if (metric.includes("bdt")) {
+  // Backend metric ids (mae_bdt, auc, precision…) never print raw.
+  const formatFairnessMetric = (metric: string) => {
+    const m = metric.toLowerCase();
+    if (m.includes("mae")) return tr("metrics.maeLong");
+    if (m.includes("rmse")) return tr("metrics.rmse");
+    if (m.includes("auc")) return tr("metrics.auc");
+    if (m.includes("precision")) return tr("metrics.precision");
+    if (m.includes("recall")) return tr("metrics.recall");
+    if (m === "f1") return tr("metrics.f1");
+    return metric;
+  };
+
+  const formatMetricVal = (metric: string, val: number) => {    if (metric.includes("bdt")) {
       return formatBDT(val, lang);
     }
     if (metric.includes("pct") || metric === "precision" || metric === "recall") {
@@ -317,7 +328,7 @@ export default function MetricsPage() {
                             : formatDigits(row.group, lang)}
                         </td>
                         <td className="py-2 pr-3 font-mono text-ink-muted text-[11px] text-left">
-                          {row.metric}
+                          {formatFairnessMetric(row.metric)}
                         </td>
                         <td className="py-2 pr-3 font-serif-bn font-bold text-ink text-right tabular-nums">
                           {formatMetricVal(row.metric, row.value)}

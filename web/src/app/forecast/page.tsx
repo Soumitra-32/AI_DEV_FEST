@@ -142,12 +142,12 @@ export default function ForecastPage() {
               {data.metrics ? (
                 <div className="text-sm font-hind text-ink flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span>
-                    {formatModelName(data.metrics.model_name, lang)}: MAE{" "}
+                    {formatModelName(data.metrics.model_name, lang)}: {tr("metrics.maeLong")}{" "}
                     <strong className="font-serif-bn tabular-nums">{formatBDT(data.metrics.mae_bdt, lang)}</strong>
                   </span>
                   <span className="text-rule">·</span>
                   <span>
-                    {formatModelName(data.metrics.baseline_name, lang)}: MAE{" "}
+                    {formatModelName(data.metrics.baseline_name, lang)}: {tr("metrics.maeLong")}{" "}
                     <strong className="font-serif-bn tabular-nums">{formatBDT(data.metrics.baseline_mae_bdt, lang)}</strong>
                   </span>
                   <span className="text-rule">·</span>
@@ -216,7 +216,7 @@ export default function ForecastPage() {
                   <tfoot>
                     <tr className="border-t border-rule ledger-double-bottom text-xs font-mono text-ink-muted">
                       <td colSpan={5} className="py-2 text-right">
-                        {formatDigits(String(data.days.length), lang)} {lang === "bn" ? "দিনের হিসাবকৃত খতিয়ান" : "days projected in ledger"}
+                        {formatDigits(String(data.days.length), lang)} {lang === "bn" ? "দিন একটা একটা করে গোনা" : "days counted one by one"}
                       </td>
                     </tr>
                   </tfoot>
@@ -231,7 +231,7 @@ export default function ForecastPage() {
                   <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                     {tr("forecast.driversTitle")}
                   </h3>
-                  <Stamp variant="muted">SHAP</Stamp>
+                  <Stamp variant="muted">{tr("forecast.driversBadge")}</Stamp>
                 </div>
                 <div className="divide-y divide-rule font-hind text-sm">
                   {data.drivers.map((driver, idx) => (
