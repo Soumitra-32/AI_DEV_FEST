@@ -222,8 +222,10 @@ const en = {
   "signal.bandStrong": "Strong",
   "signal.unavailable": "Live signal unavailable right now — no band is shown instead of a guess. Please retry with the API running.",
   "signal.bandRating": "Medium-High Consistency",
+  "signal.bandRatingBuilding": "Low Consistency",
+  "signal.bandRatingStrong": "High Consistency",
   "signal.step1": "1. Building",
-  "signal.step2": "2. Steady ●",
+  "signal.step2": "2. Steady",
   "signal.step3": "3. Strong",
 
   "metrics.headerTag": "Transparency & Model Evaluation",
@@ -480,8 +482,10 @@ const bn: Dictionary = {
   "signal.bandStrong": "Strong (মজবুত)",
   "signal.unavailable": "লাইভ সংকেত এখন পাওয়া যাচ্ছে না — অনুমানের বদলে কোনো ব্যান্ড দেখানো হচ্ছে না। API চালু করে আবার চেষ্টা করুন।",
   "signal.bandRating": "মাঝারি-উচ্চ ধারাবাহিকতা",
+  "signal.bandRatingBuilding": "নিম্ন ধারাবাহিকতা",
+  "signal.bandRatingStrong": "উচ্চ ধারাবাহিকতা",
   "signal.step1": "১. Building",
-  "signal.step2": "২. Steady ●",
+  "signal.step2": "২. Steady",
   "signal.step3": "৩. Strong",
 
   "metrics.headerTag": "স্বচ্ছতা ও মডেল মূল্যায়ন",

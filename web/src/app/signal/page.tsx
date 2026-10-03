@@ -7,6 +7,7 @@ import DoNothingToggle from "@/components/DoNothingToggle";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchCreditReadiness } from "@/lib/api";
 import type { ConsistencySignalResponse } from "@/lib/api";
+import { formatBDT } from "@/lib/i18n";
 
 const BAND_INDEX: Record<string, number> = {
   Building: 0,
@@ -74,7 +75,13 @@ export default function SignalPage() {
                 {live ? tr(bandKey) : "—"}
               </span>
               <span className="badge success">
-                {tr("signal.bandRating")}
+                {live
+                  ? live.band === "Building"
+                    ? tr("signal.bandRatingBuilding")
+                    : live.band === "Strong"
+                      ? tr("signal.bandRatingStrong")
+                      : tr("signal.bandRating")
+                  : tr("signal.bandRating")}
               </span>
             </div>
 
@@ -115,7 +122,7 @@ export default function SignalPage() {
                 <div key={idx} className="py-3 space-y-1">
                   <div className="flex items-baseline justify-between">
                     <span className="font-bold text-sm text-ink">
-                      {f.feature}
+                      {f.plain_language}
                     </span>
                     <span className="dotted-leader" />
                     <span
@@ -124,11 +131,11 @@ export default function SignalPage() {
                       }`}
                     >
                       {f.direction === "improves" ? "+ " : "- "}
-                      {f.magnitude}
+                      {formatBDT(f.magnitude, lang)}
                     </span>
                   </div>
                   <p className="text-xs text-ink-muted leading-relaxed">
-                    {f.plain_language}
+                    {f.direction === "improves" ? tr("signal.improves") : tr("signal.weakens")}
                   </p>
                 </div>
               ))
