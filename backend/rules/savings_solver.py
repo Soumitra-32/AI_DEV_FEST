@@ -104,6 +104,16 @@ def solve(
             f"Waiting longer does not help here: even {months * 2} months leaves "
             "nothing to set aside each month. Free up monthly cash first."
         )
+    elif feasible:
+        # The goal already fits: "reduce to a BIGGER number" would be nonsense,
+        # so both goal-shaping trade-offs say plainly that no change is needed.
+        smaller_description = (
+            f"Keep {months} months and the full {goal_bdt:,.0f} — it already "
+            f"fits in {_round2(feasible_monthly):,.0f}/month of room."
+        )
+        longer_description = (
+            f"The goal already fits in {months} months — no extra time is needed."
+        )
     elif longer_time <= months:
         smaller_description = (
             f"Keep {months} months and aim for {_round2(smaller_goal):,.0f} instead."
@@ -121,12 +131,16 @@ def solve(
 
     # Three trade-offs ride with the verdict; the do-nothing cost lives in
     # ``do_nothing`` below (it is a cost of inaction, not a plan variant).
+    # When the goal already fits, the goal-shaping options point at the goal
+    # itself — never at a bigger number dressed up as a reduction.
+    shaped_goal = _round2(float(goal_bdt)) if feasible else None
+    shaped_months = months if feasible else None
     trade_offs = [
         TradeOff(
             kind="smaller_goal",
             description=smaller_description,
-            goal_bdt=_round2(smaller_goal) if has_room else None,
-            months=months if has_room else None,
+            goal_bdt=shaped_goal if feasible else (_round2(smaller_goal) if has_room else None),
+            months=shaped_months if feasible else (months if has_room else None),
             monthly_bdt=_round2(feasible_monthly),
         ),
         TradeOff(

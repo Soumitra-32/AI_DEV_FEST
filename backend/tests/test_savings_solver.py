@@ -108,7 +108,9 @@ def test_no_room_never_offers_a_zero_goal_or_the_same_timeline() -> None:
 
 
 def test_timeline_trade_off_never_shortens_the_requested_time() -> None:
-    """A feasible 6-month plan must not be "improved" into 5 months."""
+    """A feasible 6-month plan must not be "improved" into 5 months — and the
+    goal-shaping options must point at the goal itself, never at a bigger
+    number dressed up as a reduction."""
     solved = savings_solver.solve(
         goal_bdt=30000, months=6,
         monthly_surplus_bdt=8600, monthly_outflow_bdt=24000,
@@ -119,7 +121,8 @@ def test_timeline_trade_off_never_shortens_the_requested_time() -> None:
     assert longer.months == 6
     assert "no extra time" in longer.description
     assert smaller.months == 6
-    assert smaller.goal_bdt == pytest.approx(6200 * 6)
+    assert smaller.goal_bdt == pytest.approx(30000)
+    assert "already" in smaller.description
 
 
 def test_timeline_trade_off_extends_when_the_goal_is_too_big() -> None:

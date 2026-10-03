@@ -72,6 +72,8 @@ const en = {
     "Every suggestion is yours to accept or ignore. Nothing happens without your explicit consent.",
   "common.doNothingOutcome":
     "After 6 months, savings will remain ৳0. That is entirely your decision.",
+  "common.doNothingOutcomeN":
+    "After {months} months, savings will remain ৳0. That is entirely your decision.",
   "common.doNothingDisclaimer":
     "No coercion, no penalties. The app never executes transactions or makes lending decisions without you.",
 
@@ -320,6 +322,8 @@ const bn: Dictionary = {
     "প্রতিটি পরামর্শ গ্রহণ বা প্রত্যাখ্যান করা সম্পূর্ণ আপনার এখতিয়ার। আপনার স্পষ্ট অনুমতি ব্যতিরেকে কোনো সিদ্ধান্ত নেওয়া হয় না।",
   "common.doNothingOutcome":
     "৬ মাস পরে সঞ্চয় ৳০ থাকবে। এটাও আপনার নিজস্ব সিদ্ধান্ত।",
+  "common.doNothingOutcomeN":
+    "{months} মাস পরে সঞ্চয় ৳০ থাকবে। এটাও আপনার নিজস্ব সিদ্ধান্ত।",
   "common.doNothingDisclaimer":
     "কোনো জোরজবরদস্তি বা বাড়তি দায়বদ্ধতা নেই। অ্যাপ আপনার অনুমতি ছাড়া কোনো লেনদেন করবে না।",
 

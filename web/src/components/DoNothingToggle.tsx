@@ -3,20 +3,27 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useLanguage } from "@/components/LangToggle";
-import { formatBDT } from "@/lib/i18n";
+import { formatBDT, formatInteger } from "@/lib/i18n";
 
 interface DoNothingToggleProps {
   costBdt?: number | null;
+  months?: number | null;
 }
 
 /**
  * Section 7: "কিছু না করলে কী হবে?" (Do Nothing Option)
  * Both Collapsed & Expanded states matching the ledger design system.
  */
-export default function DoNothingToggle({ costBdt }: DoNothingToggleProps) {
+export default function DoNothingToggle({ costBdt, months }: DoNothingToggleProps) {
   const { lang, tr } = useLanguage();
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState(false);
+  // The horizon belongs to the plan being viewed: a 12-month plan must not
+  // say "after 6 months". Pages without a horizon keep the legacy text.
+  const outcome =
+    months != null && Number.isFinite(months) && months >= 1
+      ? tr("common.doNothingOutcomeN").replace("{months}", formatInteger(months, lang))
+      : tr("common.doNothingOutcome");
 
   if (!open) {
     return (
@@ -50,7 +57,7 @@ export default function DoNothingToggle({ costBdt }: DoNothingToggleProps) {
       </div>
 
       <p className="text-sm font-medium text-ink leading-relaxed">
-        {tr("common.doNothingOutcome")}
+        {outcome}
       </p>
 
       {typeof costBdt === "number" && (
