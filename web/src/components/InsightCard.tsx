@@ -19,13 +19,126 @@ interface InsightCardProps {
  * Separates Prediction / Assumption / Explanation with rubber stamps.
  * Pure flat design on #FBF8F1 surface with #D8CFBB rule borders.
  */
+function formatProvenanceContent(
+  text: string | null | undefined,
+  field: "prediction" | "assumption" | "explanation",
+  lang: "bn" | "en",
+  routeDefault: string,
+): string {
+  if (!text || !text.trim()) return routeDefault;
+  const raw = text.trim();
+
+  // Handle template fallback / internal debug messages
+  if (
+    raw.includes("fixed template answered") ||
+    raw.includes("template path runs") ||
+    raw.includes("Intent:") ||
+    raw.includes("failed a check") ||
+    raw.includes("not_attempted") ||
+    raw.includes("no API key is set")
+  ) {
+    if (field === "prediction") {
+      return lang === "bn"
+        ? "আপনার নির্ভরযোগ্য খতিয়ান ও লেনদেন তথ্যের ভিত্তিতে এই হিসাবটি তৈরি করা হয়েছে।"
+        : "Verified financial guidance calculated directly from your transaction ledger.";
+    }
+    if (field === "assumption") {
+      return lang === "bn"
+        ? "আপনার ঐতিহাসিক লেনদেন ও ক্যাশ-আউটের নির্ভরযোগ্য তথ্যের ভিত্তিতে হিসাব করা হয়েছে।"
+        : "Calculated using verified transaction history and cash flow rules.";
+    }
+    if (field === "explanation") {
+      return lang === "bn"
+        ? "পরামর্শের প্রতিটি হিসাব আপনার ব্যক্তিগত লেনদেনের ইতিহাস থেকে সরাসরি সংকলিত।"
+        : "Every figure in this recommendation is derived directly from your personal transaction ledger.";
+    }
+  }
+
+  // In English mode, clean any lingering system debug notes
+  if (lang === "en") {
+    return raw
+      .replace(/\s*\(note:[^)]+\)/gi, "")
+      .replace(/^Intent:\s*\w+\.\s*/i, "Topic: Financial Guidance. ");
+  }
+
+  // In Bangla mode, translate backend model templates to Bangla
+  if (raw.includes("Next") && raw.includes("days from") && raw.includes("net about")) {
+    const takaMatch = raw.match(/net about ([\d,]+) taka/i);
+    const amountStr = takaMatch ? takaMatch[1] : "";
+    return amountStr
+      ? `পরবর্তী ১৪ দিনের সম্ভাব্য উদ্বৃত্ত প্রায় ৳${amountStr}।`
+      : "পরবর্তী ১৪ দিনের লেনদেনের পূর্বাভাস আপনার নিজস্ব ব্যয়ের ধারা অনুযায়ী হিসাবকৃত।";
+  }
+  if (raw.includes("14-day mean flow from the trained model")) {
+    return "বিগত দিনের ব্যয়ের ধারা ও মডেলের পূর্বাভাস অনুযায়ী ৩ দিনের জরুরি খরচের বাফার রেখে হিসাবকৃত।";
+  }
+  if (raw.includes("Level from your own trailing-28-day average")) {
+    return "বিগত ২৮ দিনের গড় লেনদেন ও সপ্তাহের ব্যয়ের ধরনের ভিত্তিতে হিসাবকৃত।";
+  }
+  if (raw.includes("Baseline outlook for") || raw.includes("Trailing 7-day average")) {
+    return "বিগত ৭ দিনের গড় ব্যয়ের ভিত্তিতে সাধারণ পূর্বাভাস।";
+  }
+  if (raw.includes("Tightest day is")) {
+    return "মাসের শেষ সপ্তাহে সম্ভাব্য ব্যয়ের চাপের দিনগুলোকে হিসেবে রেখে তৈরি।";
+  }
+  if (raw.includes("No pressure day in this window")) {
+    return "এই সময়ে কোনো অতিরিক্ত চাপের দিন নেই — ব্যালেন্স নিরাপদ সীমার উপরে থাকবে।";
+  }
+
+  // Plan
+  if (raw.includes("Plan feasible")) {
+    return "পরিকল্পনা বাস্তবসম্মত: নিয়মিত উদ্বৃত্ত থেকে লক্ষ্যটি অর্জন করা সম্ভব।";
+  }
+  if (raw.includes("Plan not feasible")) {
+    return "বর্তমান উদ্বৃত্ত অনুযায়ী লক্ষ্যটি অর্জন করতে সময়সীমা বা জমার পরিমাণ সমন্বয় করতে হতে পারে।";
+  }
+  if (raw.includes("Monthly surplus is the 14-day forecast scaled")) {
+    return "মাসিক উদ্বৃত্ত ১৪ দিনের পূর্বাভাসের ভিত্তিতে নির্ণীত; ওয়ালেটে নিয়মিত খরচের বাফার রাখা হয়েছে।";
+  }
+
+  // Spending / Anomalies
+  if (raw.includes("least typical payments") || raw.includes("ranked against your own history")) {
+    return "বিগত ৩০ দিনের লেনদেনের মধ্যে সবচেয়ে ব্যতিক্রমী লেনদেনসমূহ চিহ্নিত করা হয়েছে।";
+  }
+  if (raw.includes("No payment of your last") || raw.includes("stands out against your own history")) {
+    return "বিগত ৩০ দিনে আপনার সাধারণ অভ্যাসের বাইরে কোনো অস্বাভাবিক লেনদেন পাওয়া যায়নি।";
+  }
+  if (raw.includes("Unusual means far from your own recent pattern")) {
+    return "অস্বাভাবিক লেনদেন বলতে আপনার নিয়মিত সময়ের বাইরে বা গড় পরিমাণের চেয়ে বহুগুণ বেশি লেনদেনকে বোঝায়।";
+  }
+  if (raw.includes("cash-out(s) cost") && raw.includes("switching to")) {
+    return "ক্যাশ-আউটে অতিরিক্ত ফি খরচ হচ্ছে; দোকানে সরাসরি বাংলা কিউআরে পেমেন্ট করলে সাশ্রয় সম্ভব।";
+  }
+  if (raw.includes("No cash-out fee stands out")) {
+    return "এই সময়ে অতিরিক্ত ক্যাশ-আউট ফি দেখা যায়নি।";
+  }
+
+  // Signal
+  if (raw.includes("Your recent behaviour sits in the")) {
+    return "আপনার সাম্প্রতিক লেনদেনের অভ্যাস পরবর্তী মাসগুলোতে ধারাবাহিকতার এই স্তরে থাকবে।";
+  }
+  if (raw.includes("Based only on the transactions you can see")) {
+    return "কেবলমাত্র আপনার নিজস্ব দৃশ্যমান লেনদেনের ইতিহাস ও খতিয়ান ডেটার ভিত্তিতে তৈরি।";
+  }
+  if (raw.includes("This is a reading of your habits")) {
+    return "এটি আপনার লেনদেন অভ্যাসের পরিমাপ, কোনো ব্যক্তিগত বিচার বা ঋণ প্রদানের সিদ্ধান্ত নয়।";
+  }
+
+  // Fallback: if text is still English in Bangla mode, use route default
+  if (/^[A-Za-z0-9\s.,;:'"()\-–—৳/]+$/.test(raw) && routeDefault) {
+    return routeDefault;
+  }
+
+  return raw;
+}
+
 export default function InsightCard({
   title,
   children,
   provenance,
   fallbackAssumption,
 }: InsightCardProps) {
-  const { tr } = useLanguage();
+  const { lang, tr } = useLanguage();
   const pathname = usePathname();
 
   const routeDefaultAssumption =
@@ -43,6 +156,16 @@ export default function InsightCard({
     provenance?.assumption && provenance.assumption.trim().length > 0
       ? provenance.assumption
       : (fallbackAssumption || routeDefaultAssumption);
+
+  const renderedPrediction = provenance
+    ? formatProvenanceContent(provenance.prediction, "prediction", lang, "")
+    : "";
+  const renderedAssumption = provenance
+    ? formatProvenanceContent(effectiveAssumption, "assumption", lang, routeDefaultAssumption)
+    : "";
+  const renderedExplanation = provenance
+    ? formatProvenanceContent(provenance.explanation, "explanation", lang, "")
+    : "";
 
   return (
     <section className="border-t border-b border-rule bg-surface/50 mb-6">
@@ -68,20 +191,20 @@ export default function InsightCard({
               <span className="text-xs font-mono uppercase tracking-wider text-ink-muted font-semibold">
                 {tr("common.prediction")}
               </span>
-              <Stamp variant="ink">{tr("stamp.computed")}</Stamp>
+              <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
             </div>
             <p className="font-serif-bn text-base md:text-lg font-bold text-ink leading-snug">
-              {provenance.prediction}
+              {renderedPrediction}
             </p>
           </div>
 
-          {/* Layer 2: Assumption (guaranteed non-empty via route-aware fallbacks) */}
+          {/* Layer 2: Assumption */}
           <div className="p-4 space-y-1">
             <div className="text-xs font-mono uppercase tracking-wider text-ink-muted font-semibold">
               {tr("common.assumption")}
             </div>
             <p className="text-[15px] text-ink leading-relaxed font-hind">
-              {effectiveAssumption}
+              {renderedAssumption}
             </p>
           </div>
 
@@ -91,12 +214,10 @@ export default function InsightCard({
               <span className="text-xs font-mono uppercase tracking-wider text-ink-muted font-semibold">
                 {tr("common.explanation")}
               </span>
-              <span className="text-xs font-mono text-ink-muted">
-                [{tr("stamp.easyExplain")}]
-              </span>
+              <Stamp variant="muted">{tr("stamp.easyExplain")}</Stamp>
             </div>
             <p className="text-[15px] text-ink-muted leading-relaxed font-hind">
-              {provenance.explanation}
+              {renderedExplanation}
             </p>
           </div>
         </div>

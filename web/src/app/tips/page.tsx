@@ -157,7 +157,7 @@ export default function TipsPage() {
           <div className="text-xs font-mono text-ink-muted uppercase tracking-wider flex items-center gap-2">
             <span>{tr("tips.headerTag")}</span>
             <span>•</span>
-            <Stamp variant="muted">[{tr("stamp.easyExplain")}]</Stamp>
+            <Stamp variant="muted">{tr("stamp.easyExplain")}</Stamp>
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("tips.title")}
@@ -184,7 +184,11 @@ export default function TipsPage() {
               <span className="text-xs font-mono uppercase text-primaryGreen font-bold">
                 {tr("tips.coachAdvice")}
               </span>
-              <Stamp variant="muted">{explainRes.source}</Stamp>
+              <Stamp variant="muted">
+                {explainRes.source === "llm"
+                  ? (lang === "bn" ? "এআই সহায়ক" : "AI Assisted")
+                  : tr("stamp.computed")}
+              </Stamp>
             </div>
 
             <p className="font-serif-bn text-base md:text-lg font-bold text-ink leading-snug">
@@ -202,7 +206,10 @@ export default function TipsPage() {
             )}
 
             {explainRes.provenance && (
-              <InsightCard provenance={explainRes.provenance} />
+              <InsightCard
+                title={tr("common.howCalculated")}
+                provenance={explainRes.provenance}
+              />
             )}
           </div>
         )}

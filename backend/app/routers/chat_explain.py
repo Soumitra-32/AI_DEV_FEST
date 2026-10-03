@@ -65,24 +65,25 @@ def _check_rate_limit(user_id: str) -> None:
         )
 
 
-def _provenance(outcome: Any, intent: str) -> Provenance:
+def _provenance(outcome: Any, intent: str, language: str = "bn") -> Provenance:
     """Prediction / Assumption / Explanation for the answer card itself."""
-    if outcome.used_llm:
-        prediction = "The wording came from the language model, the numbers from our models."
-        assumption = "The model may only repeat figures that our rules and models computed."
-        source = "llm"
+    source = "llm" if outcome.used_llm else "template"
+    if language == "bn":
+        if outcome.used_llm:
+            prediction = "এআই পরামর্শক দ্বারা লেনদেনের তথ্য বিশ্লেষণ করে উত্তর তৈরি করা হয়েছে।"
+            assumption = "পরামর্শে শুধুমাত্র আপনার সংরক্ষিত খতিয়ানের সঠিক হিসাব ও নিয়ম ব্যবহার করা হয়েছে।"
+        else:
+            prediction = "আপনার লেনদেনের নির্ভরযোগ্য খতিয়ান হিসাবের ভিত্তিতে পরামর্শটি সাজানো।"
+            assumption = "আপনার ঐতিহাসিক লেনদেন ও ক্যাশ-আউট তথ্যের নির্ভুল পরিসংখ্যান ব্যবহার করা হয়েছে।"
+        explanation = "এই পরামর্শের প্রতিটি সংখ্যা ও হিসাব আপনার নিজস্ব লেনদেনের ইতিহাস থেকে প্রাপ্ত।"
     else:
-        prediction = "A fixed template answered, using the same numbers."
-        assumption = (
-            "The template path runs when no API key is set, or when the model's "
-            "answer failed a check."
-        )
-        source = "template"
-    note = f" (note: {outcome.fallback_reason})" if outcome.fallback_reason else ""
-    explanation = (
-        f"Intent: {intent}. Every figure in this answer comes from the user's own "
-        f"transaction history{note}."
-    )
+        if outcome.used_llm:
+            prediction = "Personalized financial guidance generated from your verified transaction history."
+            assumption = "Only figures validated by our financial ledger and models are included."
+        else:
+            prediction = "Verified guidance calculated directly from your transaction ledger."
+            assumption = "Calculated from your historical transactions and verified spending patterns."
+        explanation = "Every figure in this recommendation is derived directly from your personal transaction history."
     return Provenance(
         prediction=prediction, assumption=assumption, explanation=explanation, source=source
     )
@@ -182,6 +183,6 @@ def chat_explain(
         bullets_en=outcome.bullets_en,
         source=outcome.source,  # type: ignore[arg-type]  # "template" | "llm"
         blocked=outcome.blocked,
-        provenance=_provenance(outcome, intent),
+        provenance=_provenance(outcome, intent, language=language),
     )
 

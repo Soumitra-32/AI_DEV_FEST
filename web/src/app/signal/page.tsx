@@ -45,7 +45,7 @@ export default function SignalPage() {
           <div className="text-xs font-mono text-ink-muted uppercase tracking-wider flex items-center gap-2">
             <span>{tr("signal.headerTag")}</span>
             <span>•</span>
-            <Stamp variant="muted">[{tr("stamp.easyExplain")}]</Stamp>
+            <Stamp variant="muted">{tr("stamp.easyExplain")}</Stamp>
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("signal.title")}
@@ -111,7 +111,7 @@ export default function SignalPage() {
             <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
               {tr("signal.factors")}
             </h3>
-            <Stamp variant="muted">Logistic Regression</Stamp>
+            <Stamp variant="muted">{tr("signal.logisticRegression")}</Stamp>
           </div>
 
           <div className="divide-y divide-rule/60 font-hind">

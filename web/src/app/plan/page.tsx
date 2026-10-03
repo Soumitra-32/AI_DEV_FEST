@@ -25,6 +25,67 @@ const ACTION_KEY: Record<TradeOffAction, TranslationKey> = {
   do_nothing: "plan.action.do_nothing",
 };
 
+const ACTION_LABEL: Record<TradeOffAction, { bn: string; en: string }> = {
+  reduce: { bn: "খরচ কমানো", en: "Reduce" },
+  delay: { bn: "সময় বাড়ানো", en: "Delay" },
+  switch: { bn: "চ্যানেল বদল", en: "Switch" },
+  do_nothing: { bn: "কিছু না করা", en: "Do Nothing" },
+};
+
+function formatTradeOffDescription(desc: string, lang: "bn" | "en"): string {
+  if (lang === "en" || !desc) return desc;
+  if (desc.includes("already fits") || desc.includes("fits in")) {
+    return desc.includes("no extra time")
+      ? "লক্ষ্যটি বর্তমান মেয়াদেই অর্জন সম্ভব — বাড়তি সময়ের প্রয়োজন নেই।"
+      : "বর্তমান মাসিক উদ্বৃত্তেই পুরো সঞ্চয় লক্ষ্যটি পূরণ করা সম্ভব।";
+  }
+  if (desc.includes("Free up") || desc.includes("spending cut")) {
+    return "মাসে অপ্রয়োজনীয় খরচ (যেমন: অতিরিক্ত ক্যাশ-আউট) কমিয়ে লক্ষ্যটি অর্জন করা সম্ভব।";
+  }
+  if (desc.includes("Keep") && desc.includes("months")) {
+    return desc.includes("aim for")
+      ? "সময় ঠিক রেখে মাসিক উদ্বৃত্তের সাথে সামঞ্জস্য রেখে সঞ্চয়ের লক্ষ্য কিছুটা কমান।"
+      : "লক্ষ্য ও সময়সীমা সমন্বয় করে সঞ্চয় বাস্তবায়ন করুন।";
+  }
+  if (desc.includes("Change nothing and keep paying")) {
+    return "কোনো পরিবর্তন না করলে প্রতি মাসে ক্যাশ-আউট ফি বাবদ অপচয় হতে থাকবে।";
+  }
+  return desc;
+}
+
+function formatArithmeticStep(step: string, lang: "bn" | "en"): string {
+  if (lang === "en" || !step) return step;
+  if (step.includes("required monthly")) {
+    return formatDigits(
+      step.replace("required monthly =", "প্রয়োজনীয় মাসিক সঞ্চয় ="),
+      "bn"
+    );
+  }
+  if (step.includes("safety buffer")) {
+    return formatDigits(
+      step
+        .replace("safety buffer =", "জরুরি খরচের বাফার =")
+        .replace("day(s) of typical outflow =", "দিনের নিয়মিত খরচ ="),
+      "bn"
+    );
+  }
+  if (step.includes("feasible monthly")) {
+    return formatDigits(
+      step
+        .replace("feasible monthly = surplus", "সম্ভাব্য মাসিক সঞ্চয় = উদ্বৃত্ত")
+        .replace("- buffer", "- বাফার"),
+      "bn"
+    );
+  }
+  if (step === "feasible") {
+    return "পরিকল্পনাটি বর্তমান উদ্বৃত্তে বাস্তবসম্মত ও টেকসই।";
+  }
+  if (step.includes("not feasible")) {
+    return "জরুরি বাফার বাদ দিয়ে বর্তমান উদ্বৃত্তে এই সময়ে সম্পন্ন করা সম্ভব নয়।";
+  }
+  return formatDigits(step, "bn");
+}
+
 function PlanContent() {
   const { lang, tr } = useLanguage();
   const searchParams = useSearchParams();
@@ -266,10 +327,12 @@ function PlanContent() {
                         <span className="font-bold text-sm text-ink">
                           {tr(ACTION_KEY[item.action])}
                         </span>
-                        <Stamp variant="muted">{item.action}</Stamp>
+                        <Stamp variant="muted">
+                          {ACTION_LABEL[item.action]?.[lang] ?? item.action}
+                        </Stamp>
                       </div>
                       <p className="text-xs text-ink-muted leading-relaxed">
-                        {item.description}
+                        {formatTradeOffDescription(item.description, lang)}
                       </p>
                     </div>
                   ))}
@@ -287,7 +350,7 @@ function PlanContent() {
                   {plan.arithmetic.map((step, idx) => (
                     <div key={idx} className="flex items-start gap-2">
                       <span>•</span>
-                      <span>{step}</span>
+                      <span>{formatArithmeticStep(step, lang)}</span>
                     </div>
                   ))}
                 </div>

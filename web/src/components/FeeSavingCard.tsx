@@ -64,7 +64,9 @@ export default function FeeSavingCard({ feeSwitch }: FeeSavingCardProps) {
           <span className="font-semibold text-ink font-serif-bn text-sm">
             {tr("spending.banglaQrTitle")}
           </span>
-          <Stamp variant="ink">০% মার্চেন্ট ফি</Stamp>
+          <Stamp variant="ink">
+            {lang === "bn" ? "০% মার্চেন্ট ফি" : "0% Merchant Fee"}
+          </Stamp>
         </div>
         <p className="text-xs text-ink-muted leading-relaxed font-hind">
           {tr("spending.banglaQrDesc")}

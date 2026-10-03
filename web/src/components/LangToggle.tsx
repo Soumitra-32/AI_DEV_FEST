@@ -66,26 +66,25 @@ export default function LangToggle() {
     <div
       role="group"
       aria-label={tr("lang.switchTo")}
-      className="text-xs font-mono text-ink flex items-center gap-2 select-none"
+      className="text-xs font-mono flex items-center gap-1.5 select-none"
     >
       <button
         type="button"
-        className={`bg-transparent border-0 p-0 cursor-pointer text-xs font-mono ${
+        className={`px-2.5 py-1 text-xs font-mono cursor-pointer rounded-none transition-colors ${
           lang === "bn"
-            ? "font-bold text-primaryGreen pb-0.5 border-b-2 border-primaryGreen"
-            : "text-ink-muted hover:text-ink"
+            ? "bg-[#1E1B16] text-[#FBF8F1] border border-[#1E1B16] font-bold"
+            : "bg-transparent text-ink-muted hover:text-ink border border-rule"
         }`}
         onClick={() => setLang("bn")}
       >
         বাংলা
       </button>
-      <span className="text-rule">·</span>
       <button
         type="button"
-        className={`bg-transparent border-0 p-0 cursor-pointer text-xs font-mono ${
+        className={`px-2.5 py-1 text-xs font-mono cursor-pointer rounded-none transition-colors ${
           lang === "en"
-            ? "font-bold text-primaryGreen pb-0.5 border-b-2 border-primaryGreen"
-            : "text-ink-muted hover:text-ink"
+            ? "bg-[#1E1B16] text-[#FBF8F1] border border-[#1E1B16] font-bold"
+            : "bg-transparent text-ink-muted hover:text-ink border border-rule"
         }`}
         onClick={() => setLang("en")}
       >

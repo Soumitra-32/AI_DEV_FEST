@@ -201,7 +201,7 @@ export default function MetricsPage() {
                 <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                   {tr("metrics.signal")}
                 </h3>
-                <Stamp variant="muted">Logistic Regression</Stamp>
+                <Stamp variant="muted">{tr("signal.logisticRegression")}</Stamp>
               </div>
 
               {data.signal.filter((s) => s.metric === "auc").map((sig, idx) => (
@@ -248,7 +248,7 @@ export default function MetricsPage() {
                   <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                     {tr("metrics.impactTitle")}
                   </h3>
-                  <Stamp variant="muted">Outcome</Stamp>
+                  <Stamp variant="muted">{lang === "bn" ? "ফলাফল" : "Outcome"}</Stamp>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
