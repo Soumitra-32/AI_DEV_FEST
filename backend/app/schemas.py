@@ -102,6 +102,11 @@ class IdentityResponse(BaseModel):
 class ForecastRequest(BaseModel):
     horizon_days: int = Field(default=14, ge=1, le=60)
     include_pressure_days: bool = True
+    as_of: Optional[date] = Field(
+        default=None,
+        description="ISO date placing the window: only history on or before "
+        "this date is used, so the outlook can cover month-end days 28-31",
+    )
 
 
 class DayForecast(BaseModel):
@@ -141,11 +146,13 @@ class ForecastResponse(BaseModel):
     generated_from: Optional[date] = Field(
         default=None, description="Last day of real history the forecast was made from"
     )
-    net_source: Literal["model", "difference"] = Field(
+    net_source: Literal["model", "difference", "anchor"] = Field(
         default="model",
         description=(
-            "Whether predicted net came from the dedicated net model or from "
-            "inflow minus outflow; 'difference' is the weaker number"
+            "Whether predicted net came from the dedicated net model, from "
+            "inflow minus outflow, or from the trailing-28-day anchor level "
+            "('anchor': the model disagreed with the user's own flows beyond "
+            "tolerance, so its level was set aside — see the assumption)."
         ),
     )
     days: List[DayForecast] = Field(default_factory=list)

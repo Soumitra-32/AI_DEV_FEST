@@ -9,6 +9,7 @@ Security notes (the plan's guardrails):
 """
 from __future__ import annotations
 
+import hmac
 import sqlite3
 from typing import Annotated, Iterator, Optional
 
@@ -42,7 +43,7 @@ def current_user_id(
             detail="missing demo token",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if token != settings.demo_auth_token:
+    if not hmac.compare_digest(token, settings.demo_auth_token):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="invalid demo token",

@@ -29,7 +29,6 @@ interface ChartPoint {
 }
 
 const REASON_KEY: Record<PressureReason, TranslationKey> = {
-  negative_net: "forecast.reasonNegativeNet",
   below_buffer: "forecast.reasonBelowBuffer",
   both: "forecast.reasonBoth",
 };

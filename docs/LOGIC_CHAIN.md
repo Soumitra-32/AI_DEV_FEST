@@ -42,7 +42,7 @@ POST /chat-explain {"message": "৬ মাসে ৳৩০,০০০ জমা�
 | Number | Computed by |
 |---|---|
 | goal, monthly amount, buffer, do-nothing cost | `rules/savings_solver.py` |
-| 14-day inflow/outflow, pressure days | `app/services/forecast_service.py` (LightGBM, or the trailing-average rule) |
+| 14-day inflow/outflow, pressure days | `app/services/forecast_service.py` (LightGBM, trailing-average rule, or trailing-28-day anchor when the model disagrees with the user's own flows — disclosed in provenance) |
 | "why" behind a forecast day | `ml/explain.top_drivers` (LightGBM SHAP) |
 | cash-out fee and the cheaper channel | `services/explain_service.fees_context`, from `data/features.py` |
 | consistency band and its reasons | `services/explain_service.consistency_context` (behavioural for now; the trained model arrives in phase 5) |

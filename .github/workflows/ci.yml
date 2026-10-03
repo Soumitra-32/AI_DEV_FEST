@@ -9,15 +9,19 @@ on:
 jobs:
   backend-test:
     runs-on: ubuntu-latest
+    env:
+      # No .env in CI: importing backend.app.main runs the boot guard, which
+      # refuses placeholder tokens. Tests use explicit tokens throughout.
+      ALLOW_DEFAULT_TOKEN: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - run: pip install -r backend/requirements.txt
-      # Several tests read the real database path (test_signal, test_rag via
-      # default_db_path), which is gitignored and absent in CI. Generate it
-      # first; the small_db fixture covers the rest.
+      # The GAP-01 acceptance test reads the full generated dataset
+      # (deterministic seeds: identical everywhere), so generate it first;
+      # every other test is hermetic on tmp fixtures.
       - run: python backend/scripts/generate_data.py
       - run: python -m pytest backend/tests -q
 
@@ -78,7 +82,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -f backend/Dockerfile -t shonchoy-api:ci .
-      - run: docker run -d --name shonchoy-ci -p 8000:8000 shonchoy-api:ci
+      # A real token (never the placeholder): also exercises the boot guard,
+      # which must refuse to start on "change-me".
+      - run: docker run -d --name shonchoy-ci -p 8000:8000 -e DEMO_AUTH_TOKEN=ci-docker-token shonchoy-api:ci
       # First boot generates the synthetic DB inside the container, so poll
       # instead of sleeping a fixed 100s; dump logs when it never turns green.
       - run: |

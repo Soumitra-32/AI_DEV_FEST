@@ -125,9 +125,80 @@ function StatusCard() {
   );
 }
 
+function GoalConfirm({
+  text,
+  initialGoal,
+  initialMonths,
+  onCancel,
+}: {
+  text: string;
+  initialGoal: number | null;
+  initialMonths: number | null;
+  onCancel: () => void;
+}) {
+  const { lang, tr } = useLanguage();
+  const router = useRouter();
+  const [goal, setGoal] = useState(initialGoal && initialGoal > 0 ? String(Math.round(initialGoal)) : "");
+  const [months, setMonths] = useState(initialMonths && initialMonths >= 1 ? String(initialMonths) : "");
+  // Never substitute: the plan computes only what the user confirms here.
+  const ready = Number(goal) > 0 && Number(months) >= 1;
+  return (
+    <div className="border border-rule rounded-stamp p-4 space-y-3 bg-paper/60">
+      <p className="text-sm font-hind text-ink">
+        <span className="text-ink-muted">{tr("voice.heard")} </span>
+        <strong>{text}</strong>
+      </p>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="space-y-1 text-sm font-hind text-ink">
+          <span className="text-ink-muted">{tr("plan.goal")}</span>
+          <input
+            type="number"
+            min={1}
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            className="w-full border border-rule rounded-stamp px-2 py-1.5 bg-surface text-ink"
+          />
+        </label>
+        <label className="space-y-1 text-sm font-hind text-ink">
+          <span className="text-ink-muted">{tr("plan.months")}</span>
+          <input
+            type="number"
+            min={1}
+            max={36}
+            value={months}
+            onChange={(e) => setMonths(e.target.value)}
+            className="w-full border border-rule rounded-stamp px-2 py-1.5 bg-surface text-ink"
+          />
+        </label>
+      </div>
+      {!ready && <p className="text-sm font-hind text-ink-muted">{tr("voice.needBoth")}</p>}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={!ready}
+          onClick={() => ready && router.push(`/plan?goal=${Number(goal)}&months=${Number(months)}&prompt=${encodeURIComponent(text)}`)}
+          className="px-4 py-1.5 rounded-stamp bg-primaryGreen text-paper text-sm font-hind disabled:opacity-40"
+        >
+          {tr("voice.confirm")}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-1.5 rounded-stamp border border-rule text-sm font-hind text-ink"
+        >
+          {tr("voice.retry")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const { lang, tr } = useLanguage();
   const router = useRouter();
+  // Parsed goal awaiting user confirmation. Nothing routes to /plan until
+  // the user confirms explicit numbers — no silent 30000/6 defaults (GAP-10).
+  const [pending, setPending] = useState<{ text: string; goal: number | null; months: number | null } | null>(null);
 
   return (
     <>
@@ -155,27 +226,30 @@ export default function HomePage() {
         <section className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
           <VoiceInput
             onSubmitText={(text) => {
-              // Speech carries the numbers: parse them first so the plan page
-              // computes what was SAID, not the hardcoded defaults. Missing
-              // halves keep the defaults; parse failures do too (never block).
+              // Speech carries the numbers: parse them, then ask the user to
+              // confirm. Missing halves stay missing (never guessed) and parse
+              // failures land on the same confirm card with empty fields.
               fetchParseGoal(text)
                 .then((parsed) => {
-                  const goal =
-                    parsed.goal_bdt && parsed.goal_bdt > 0
-                      ? Math.round(parsed.goal_bdt)
-                      : 30000;
-                  const months = parsed.months ?? 6;
-                  router.push(
-                    `/plan?goal=${goal}&months=${months}&prompt=${encodeURIComponent(text)}`,
-                  );
+                  setPending({
+                    text,
+                    goal: parsed.goal_bdt && parsed.goal_bdt > 0 ? parsed.goal_bdt : null,
+                    months: parsed.months ?? null,
+                  });
                 })
                 .catch(() => {
-                  router.push(
-                    `/plan?goal=30000&months=6&prompt=${encodeURIComponent(text)}`,
-                  );
+                  setPending({ text, goal: null, months: null });
                 });
             }}
           />
+          {pending && (
+            <GoalConfirm
+              text={pending.text}
+              initialGoal={pending.goal}
+              initialMonths={pending.months}
+              onCancel={() => setPending(null)}
+            />
+          )}
           <SuggestionChips
             onSelectQuery={(q) => {
               router.push(`/plan?goal=30000&months=6&prompt=${encodeURIComponent(q)}`);

@@ -22,7 +22,7 @@ home page parses spoken Bangla into goal + months (`POST /parse-goal`) and
 routes straight into a computed plan.
 
 Live endpoints: `GET /health`, `GET /me`, `POST /forecast`,
-`POST /savings-plan`, `POST /anomalies`, `POST /signal`,
+`POST /savings-plan`, `POST /anomalies`, `POST /credit-readiness`,
 `POST /chat-explain`, `POST /parse-goal`.
 
 ## 3. Data (synthetic, privacy by design)
@@ -44,18 +44,27 @@ Headline = 14-day totals (what the savings solver consumes):
 
 | Flow | Model MAE | Seasonal-naive MAE | Trailing-avg MAE | Improvement vs best |
 |---|---|---|---|---|
-| Inflow | 2,719.94 | 14,165.31 | 10,310.43 | **+73.6%** |
-| Outflow | 2,570.94 | 10,833.90 | 5,704.55 | **+54.9%** |
-| Net | 8,012.77 | 19,879.10 | 13,291.05 | **+39.7%** |
+| Inflow | 2,661.54 | 14,165.31 | 10,310.43 | **+74.2%** |
+| Outflow | 2,613.33 | 10,833.90 | 5,704.55 | **+54.2%** |
+| Net | 7,972.55 | 19,879.10 | 13,291.05 | **+40.0%** |
 
 Target (plan §4): ≥15% better than the best baseline on every flow — **met on
 all three** (`target_met: true`, 147,623 scored cells).
 
 **Honest weak spot:** day-level *net* loses to the baselines (model MAE
-12,606 vs 1,635–1,981). Daily inflow/outflow still win (+24.5%/+8.8%), but
+12,466 vs 1,636–1,981). Daily inflow/outflow still win (+24.9%/+9.1%), but
 their difference compounds day to day. Impact is bounded because the solver
 reads 14-day totals, not single days — still, day-level net is the first thing
 we would fix with real data (joint net target instead of inflow−outflow).
+
+**Serving guard (GAP-01):** the net residual booster is biased for earners
+whose corner has no training mass (demo backtest: model −৳5.4k/14d vs the
+user's own trailing mean −৳0.2k, confirmed across two retrains). When the
+model window total disagrees with the user's own flows beyond 15% (floor
+৳500), the served level falls back to the trailing-28-day anchor with the
+model's weekday shape, and the provenance says so (`net_source: "anchor"`).
+Anchors agree by construction, so the card never contradicts itself; the
+demo plan verifies feasible end-to-end in `test_demo_acceptance.py`.
 
 ### 4.2 Anomaly detection — IsolationForest vs fixed-threshold rule
 
@@ -63,31 +72,33 @@ we would fix with real data (joint net target instead of inflow−outflow).
 
 | Metric | IsolationForest | Fixed rule (global cutoff ৳2,487) |
 |---|---|---|
-| Precision | **25.05** | 7.85 |
-| Recall | 15.13 | **16.90** |
-| F1 | **18.87 (+76%)** | 10.72 |
-| AUC | **0.8375 (+37%)** | 0.6122 |
+| Precision | **34.76** | 7.85 |
+| Recall | 20.43 | **16.90** |
+| F1 | **25.73 (+140%)** | 10.72 |
+| AUC | **0.8416 (+37%)** | 0.6122 |
 
 Recall by injected type (the plan §4 claim, as arithmetic):
 
 | Type (count) | Model recall | Rule recall |
 |---|---|---|
-| Rapid repeats (372) | **10.48** | 6.99 |
-| Unusual time (167) | **34.13** | 4.79 |
-| Unusually large (254) | 9.45 | **39.37** |
+| Rapid repeats (372) | **6.99** | 6.99 |
+| Unusual time (167) | **69.46** | 4.79 |
+| Unusually large (254) | 7.87 | **39.37** |
 
 Honest reading: the rule wins on huge amounts — its home turf, a single
-absolute cutoff is built for that. The model wins everywhere user-relative
-(unusual hour: 7× the rule) and ranks far better overall (AUC 0.84 vs 0.61).
-Overall recall trails the rule by 1.8pp because the rule fires indiscriminately
-(precision 7.85 vs 25.05). For a companion that must not cry wolf, precision +
+absolute cutoff is built for that. The model wins big on user-relative
+timing (unusual hour: 69.5 vs 4.8) and ranks far better overall (AUC 0.84
+vs 0.61). Overall recall leads by 3.5pp here, but the margin is thin and
+the rapid-repeat type is tied — a per-user rule tuned on validation users
+matches this precision with higher recall (GAP-07: documented limitation,
+hybrid detector planned). For a companion that must not cry wolf, precision +
 ranking is the right trade — stated here, not hidden.
 
 ### 4.3 Consistency signal — LogisticRegression, AUC on held-out users
 
 | Metric | Model | Random baseline |
 |---|---|---|
-| AUC (75 test users, 44% positive rate) | **0.7843** | 0.5079 |
+| AUC (75 test users, 44% positive rate) | **0.8088** | 0.5079 |
 
 Educational band only (Building / Steady / Strong) with top-3 SHAP factors and
 a "not a lending decision" banner on every view. Labels come from a latent
@@ -114,38 +125,38 @@ against pressure-day dips is listed as pre-pilot work, not a solved problem.
 
 ## 6. Fairness (plan §10: no group worse than 15% relative gap)
 
-Headline first: **the forecast model beats the best baseline in all 9
-persona/income groups** (+15.9% to +67.8% improvement). Raw MAE differs widely
-across groups, but MAE scales with money moved — salaried users' MAE (20,378)
-is ~8× daily-wage users' (2,560) because their flows are ~8× larger, not
+Headline first: **the forecast model beats the best baseline in 8 of 9
+persona/income groups** (+10.1% to +68.1% improvement); gig riders (+10.1%,
+n=9) miss the 15% bar on a noisy cell. Raw MAE differs widely across
+groups, but MAE scales with money moved — salaried users' MAE (20,019)
+is ~7× daily-wage users' (2,671) because their flows are ~7× larger, not
 because the model serves them worse.
 
 | Persona (test users) | Net MAE | Improvement vs best baseline |
 |---|---|---|
-| daily_wage (16) | 2,559.69 | +53.5% |
-| gig_rider (9) | 3,764.04 | +15.9% |
-| remittance_receiver (4) | 10,138.78 | +67.8% |
-| salaried (19) | 20,378.23 | +22.6% |
-| shopkeeper (23) | 3,783.35 | +58.7% |
-| student (4) | 2,774.76 | +65.6% |
+| daily_wage (16) | 2,670.98 | +51.5% |
+| gig_rider (9) | 4,024.11 | +10.1% |
+| remittance_receiver (4) | 10,058.05 | +68.1% |
+| salaried (19) | 20,019.26 | +23.9% |
+| shopkeeper (23) | 3,754.49 | +59.0% |
+| student (4) | 2,945.72 | +63.4% |
 
 | Income band (test users) | Net MAE | Improvement vs best baseline |
 |---|---|---|
-| high (14) | 6,867.34 | +50.6% |
-| low (31) | 7,839.91 | +27.3% |
-| mid (30) | 8,722.77 | +44.1% |
+| high (14) | 6,948.01 | +50.0% |
+| low (31) | 7,690.33 | +28.7% |
+| mid (30) | 8,739.29 | +44.0% |
 
-Anomaly flag rates are 0.6%–4.5% across personas (max absolute gap 3.8pp),
-0.95%–2.35% across districts (2.35pp), 1.26%–2.03% across income bands
-(0.77pp). Relative gaps look alarming (up to 597%) only because the base rates
+Anomaly flag rates are 0.77%–2.75% across personas (max absolute gap
+1.98pp), 0.88%–2.33% across districts (1.44pp), 1.33%–1.89% across income
+bands (0.56pp). Relative gaps look alarming only because the base rates
 are tiny — a textbook rare-event artifact, reported here in absolute points.
 
-Consistency-signal "Strong" shares vary widely (e.g. 0% students,
-43% shopkeepers; districts 0–100%), but with 75 test users spread over 10
-districts some cells hold 1–4 users — noise dominates. Stated plainly: this
-demo cannot clear a 15% bar on band shares, and we do not claim it. Required
-follow-up with real data: larger cohorts, then re-run this exact table before
-any release (governance gate, §9).
+Consistency-signal band shares vary widely, but with 75 test users spread
+over 10 districts some cells hold 1–4 users — noise dominates. Stated
+plainly: this demo cannot clear a 15% bar on band shares, and we do not
+claim it. Required follow-up with real data: larger cohorts, then re-run
+this exact table before any release (governance gate, §9).
 
 ## 7. Responsible AI & security (guideline §14)
 
@@ -155,8 +166,10 @@ any release (governance gate, §9).
   (IDOR probed: `user_id` in body ignored); 401/403 enforced; SQLite opened
   read-only; `check_same_thread=False` so parallel frontend calls never 500
   (30/30 under burst, was 3/30).
-- **Prompt injection:** user text is classified into a whitelist, never placed
-  in a prompt; 10 EN+BN injection payloads sink to the safe `unknown` template.
+- **Prompt injection:** user text is classified into a whitelist. Free text
+  that reaches the model travels only as an inert `user_text_untrusted`
+  JSON field (never an instruction); 10 EN+BN injection payloads sink to
+  the safe `unknown` template.
 - **Banned output:** loan/urgency/guarantee/promo/lending/score filters screen
   every answer in both languages; refusals and banners survive the filter.
 - **Number grounding:** every figure in LLM output is checked against the
@@ -167,7 +180,7 @@ any release (governance gate, §9).
 - **Live black-box probe:** `backend/scripts/security_probe.py` —
   **34/34 passed** (auth ×5, injection ×10, banned-output ×6, grounding ×2,
   validation ×9, rate-limit, privacy).
-- **Unit tests:** 300 passed (`pytest backend/tests`).
+- **Unit tests:** full suite green in CI (`pytest backend/tests`, backend-test job).
 
 ## 8. How to reproduce every number
 
@@ -175,13 +188,14 @@ any release (governance gate, §9).
 backend/.venv/bin/python backend/scripts/generate_data.py   # dataset
 backend/.venv/bin/python backend/scripts/train_all.py       # §4.1 + §4.3 -> ml/artifacts/metrics.json
 backend/.venv/bin/python backend/scripts/compute_report_metrics.py  # §4.2 + §5 + §6
-backend/.venv/bin/python -m pytest backend/tests -q         # 300 tests
+backend/.venv/bin/python -m pytest backend/tests -q         # full suite, green in CI
 backend/.venv/bin/python backend/scripts/security_probe.py  # 34 checks (needs server up)
 ```
 
 Model IDs and keys used for the LLM verbalizer are listed in `.env.example`
-(failover pool: Groq → Gemini → OpenRouter-free → template). LLM wording never
-changes a number: the grounding check (§7) enforces it mechanically.
+(failover pool: Groq → Gemini → OpenRouter-free → template). The LLM is not
+given computation tasks: its output is rejected when it contains a number
+absent from the computed context, so wording cannot introduce new figures.
 
 ## 9. Scale path (guideline §13)
 

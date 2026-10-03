@@ -8,6 +8,7 @@ and Phase 8 the evaluation surface (``/metrics``).
 """
 from __future__ import annotations
 
+import os
 from typing import Dict, Optional
 
 from fastapi import FastAPI
@@ -33,6 +34,15 @@ from .routers import (
 def create_app(settings: Optional[Settings] = None) -> FastAPI:
     """Build the application (a factory keeps tests free of global state)."""
     active = settings or get_settings()
+    # GAP-11: refuse to boot on a placeholder token — a public demo must never
+    # run with "change-me". Tests use explicit tokens; local dev sets
+    # ALLOW_DEFAULT_TOKEN=1 (or any real token) to bypass.
+    if active.demo_auth_token in {"", "change-me", "change-me-set-in-render-dashboard"}:
+        if os.getenv("ALLOW_DEFAULT_TOKEN") != "1":
+            raise RuntimeError(
+                "refusing to boot with a placeholder DEMO_AUTH_TOKEN; "
+                "set a real token (ALLOW_DEFAULT_TOKEN=1 bypasses locally)"
+            )
     app = FastAPI(
         title=active.app_name,
         version=active.api_version,
@@ -41,11 +51,13 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             "LLM never invents numbers — it only verbalises structured results."
         ),
     )
+    # GAP-11: no allow_origin_regex — it admitted every origin and defeated
+    # the allow-list below. Auth rides a header (never cookies), so
+    # credentials stay off. Demo/LAN origins come from CORS_ORIGINS env.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=active.cors_origin_list,
-        allow_origin_regex=r"^https?://.*",
-        allow_credentials=True,
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )

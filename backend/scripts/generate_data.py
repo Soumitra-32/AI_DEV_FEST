@@ -86,7 +86,9 @@ def build_dataset(
     anomaly_labels = pd.concat([labels_train, labels_test], ignore_index=True)
     latent = {**latent_train, **latent_test, cfg["demo_user"]["user_id"]: 0.0}
 
-    splits = split.assign_splits(cfg, users)
+    # GAP-02: the configured split seed was dead (assign_splits fell back to
+    # seed 0). Wire it so seeds.split in config.yaml actually governs the split.
+    splits = split.assign_splits(cfg, users, seed=int(cfg["seeds"]["split"]))
     user_labels = labels.generate_stability_labels(
         cfg, users, seed=int(cfg["seeds"]["label"]), latent=latent
     )

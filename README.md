@@ -41,7 +41,7 @@
 3. **Spending Companion & Fee Switcher (`POST /anomalies`)**
    - Unsupervised Isolation Forest detects unusual transaction timing and volume.
    - Calculates exact savings from switching agent cash-outs to digital app transfers.
-4. **Consistency Signal (`POST /signal`)**
+4. **Consistency Signal (`POST /credit-readiness`)**
    - Educational consistency band (Building / Steady / Strong), strictly labeled as **not a credit score or lending decision**.
 5. **Goal Copilot & Voice Input (`POST /parse-goal`)**
    - Spoken Bangla/English goal extraction (e.g., *"৬ মাসে ৩০ হাজার টাকা জমাতে চাই"*) directly populating the savings solver.
@@ -134,7 +134,7 @@ Frontend will be live at `http://localhost:3000`.
 ## 🌐 Production Deployment
 
 ### Backend on Render
-The repository includes a ready-to-deploy [`render.yaml`](file:///home/taskifbin/Documents/AI%20HACKATHON/AI_DEV_FEST/render.yaml) blueprint:
+The repository includes a ready-to-deploy [`render.yaml`](./render.yaml) blueprint:
 1. Connect your GitHub repository to Render.
 2. Render detects `render.yaml` automatically.
 3. Build command installs dependencies and seeds the deterministic dataset:
@@ -162,7 +162,7 @@ Run backend tests:
 ```bash
 python -m pytest backend/tests -q
 ```
-All 361 backend integration tests verify API contracts, auth tokens, ML pipelines, fairness auditing, and guardrails.
+All backend tests (run green in CI on every push — see the Actions tab) verify API contracts, auth tokens, ML pipelines, fairness auditing, and guardrails.
 
 ---
 

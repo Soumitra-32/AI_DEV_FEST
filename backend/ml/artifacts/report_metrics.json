@@ -8,26 +8,26 @@
     "by_type": {
       "rapid_repeat": {
         "count": 372,
-        "model_recall": 10.48,
+        "model_recall": 6.99,
         "baseline_recall": 6.99
       },
       "unusual_time": {
         "count": 167,
-        "model_recall": 34.13,
+        "model_recall": 69.46,
         "baseline_recall": 4.79
       },
       "unusually_large": {
         "count": 254,
-        "model_recall": 9.45,
+        "model_recall": 7.87,
         "baseline_recall": 39.37
       }
     },
     "contamination": 0.02,
     "model": {
-      "precision": 25.05,
-      "recall": 15.13,
-      "f1": 18.87,
-      "auc": 0.8375
+      "precision": 34.76,
+      "recall": 20.43,
+      "f1": 25.73,
+      "auc": 0.8416
     },
     "baseline": {
       "precision": 7.85,
@@ -36,145 +36,145 @@
       "auc": 0.6122,
       "threshold_bdt": 2487.4
     },
-    "improvement_recall_pct": -10.47,
-    "improvement_f1_pct": 76.03,
-    "improvement_auc_pct": 36.8
+    "improvement_recall_pct": 20.89,
+    "improvement_f1_pct": 140.02,
+    "improvement_auc_pct": 37.47
   },
   "fairness_forecast": {
     "persona": {
       "groups": {
         "daily_wage": {
-          "mae_net": 2559.69,
-          "improvement_vs_best_pct": 53.5,
+          "mae_net": 2670.98,
+          "improvement_vs_best_pct": 51.5,
           "test_users": 16
         },
         "gig_rider": {
-          "mae_net": 3764.04,
-          "improvement_vs_best_pct": 15.9,
+          "mae_net": 4024.11,
+          "improvement_vs_best_pct": 10.1,
           "test_users": 9
         },
         "remittance_receiver": {
-          "mae_net": 10138.78,
-          "improvement_vs_best_pct": 67.8,
+          "mae_net": 10058.05,
+          "improvement_vs_best_pct": 68.1,
           "test_users": 4
         },
         "salaried": {
-          "mae_net": 20378.23,
-          "improvement_vs_best_pct": 22.6,
+          "mae_net": 20019.26,
+          "improvement_vs_best_pct": 23.9,
           "test_users": 19
         },
         "shopkeeper": {
-          "mae_net": 3783.35,
-          "improvement_vs_best_pct": 58.7,
+          "mae_net": 3754.49,
+          "improvement_vs_best_pct": 59.0,
           "test_users": 23
         },
         "student": {
-          "mae_net": 2774.76,
-          "improvement_vs_best_pct": 65.6,
+          "mae_net": 2945.72,
+          "improvement_vs_best_pct": 63.4,
           "test_users": 4
         }
       },
-      "max_relative_gap_pct": 696.12,
-      "max_absolute_gap_bdt": 17818.54
+      "max_relative_gap_pct": 649.51,
+      "max_absolute_gap_bdt": 17348.28
     },
     "income_band": {
       "groups": {
         "high": {
-          "mae_net": 6867.34,
-          "improvement_vs_best_pct": 50.6,
+          "mae_net": 6948.01,
+          "improvement_vs_best_pct": 50.0,
           "test_users": 14
         },
         "low": {
-          "mae_net": 7839.91,
-          "improvement_vs_best_pct": 27.3,
+          "mae_net": 7690.33,
+          "improvement_vs_best_pct": 28.7,
           "test_users": 31
         },
         "mid": {
-          "mae_net": 8722.77,
-          "improvement_vs_best_pct": 44.1,
+          "mae_net": 8739.29,
+          "improvement_vs_best_pct": 44.0,
           "test_users": 30
         }
       },
-      "max_relative_gap_pct": 27.02,
-      "max_absolute_gap_bdt": 1855.43
+      "max_relative_gap_pct": 25.78,
+      "max_absolute_gap_bdt": 1791.28
     }
   },
   "fairness_anomaly": {
     "persona": {
       "flag_rate": {
-        "daily_wage": 0.01,
-        "gig_rider": 0.0395,
-        "remittance_receiver": 0.0411,
-        "salaried": 0.0266,
-        "shopkeeper": 0.0064,
-        "student": 0.0446
+        "daily_wage": 0.0098,
+        "gig_rider": 0.029,
+        "remittance_receiver": 0.0421,
+        "salaried": 0.0275,
+        "shopkeeper": 0.0077,
+        "student": 0.0424
       },
-      "max_relative_gap_pct": 596.87,
-      "max_absolute_gap_pp": 3.82
+      "max_relative_gap_pct": 450.65,
+      "max_absolute_gap_pp": 3.47
     },
     "district": {
       "flag_rate": {
-        "Barishal": 0.019,
-        "Chattogram": 0.0184,
-        "Cox's Bazar": 0.0,
-        "Cumilla": 0.01,
-        "Dhaka": 0.0235,
-        "Khulna": 0.0158,
-        "Mymensingh": 0.0186,
-        "Rajshahi": 0.0194,
-        "Rangpur": 0.0095,
-        "Sylhet": 0.0178
+        "Barishal": 0.0184,
+        "Chattogram": 0.0166,
+        "Cox's Bazar": 0.0024,
+        "Cumilla": 0.0106,
+        "Dhaka": 0.0233,
+        "Khulna": 0.0173,
+        "Mymensingh": 0.0167,
+        "Rajshahi": 0.0171,
+        "Rangpur": 0.0088,
+        "Sylhet": 0.0192
       },
-      "max_relative_gap_pct": null,
-      "max_absolute_gap_pp": 2.35
+      "max_relative_gap_pct": 870.83,
+      "max_absolute_gap_pp": 2.09
     },
     "income_band": {
       "flag_rate": {
-        "high": 0.0126,
-        "low": 0.0169,
-        "mid": 0.0203
+        "high": 0.0133,
+        "low": 0.0167,
+        "mid": 0.0189
       },
-      "max_relative_gap_pct": 61.11,
-      "max_absolute_gap_pp": 0.77
+      "max_relative_gap_pct": 42.11,
+      "max_absolute_gap_pp": 0.56
     }
   },
   "fairness_signal": {
     "persona": {
       "strong_share": {
-        "daily_wage": 0.375,
-        "gig_rider": 0.3333,
+        "daily_wage": 0.4375,
+        "gig_rider": 0.2222,
         "remittance_receiver": 0.0,
         "salaried": 0.0526,
         "shopkeeper": 0.4348,
         "student": 0.0
       },
       "max_relative_gap_pct": null,
-      "max_absolute_gap_pp": 43.48
+      "max_absolute_gap_pp": 43.75
     },
     "district": {
       "strong_share": {
-        "Barishal": 0.0,
+        "Barishal": 0.2,
         "Chattogram": 0.1111,
         "Cox's Bazar": 1.0,
-        "Cumilla": 0.75,
-        "Dhaka": 0.2381,
+        "Cumilla": 0.5,
+        "Dhaka": 0.1905,
         "Khulna": 0.5,
         "Mymensingh": 0.5,
         "Rajshahi": 0.25,
-        "Rangpur": 0.3,
+        "Rangpur": 0.4,
         "Sylhet": 0.1
       },
-      "max_relative_gap_pct": null,
-      "max_absolute_gap_pp": 100.0
+      "max_relative_gap_pct": 900.0,
+      "max_absolute_gap_pp": 90.0
     },
     "income_band": {
       "strong_share": {
         "high": 0.5,
-        "low": 0.2258,
-        "mid": 0.2
+        "low": 0.1935,
+        "mid": 0.2333
       },
-      "max_relative_gap_pct": 150.0,
-      "max_absolute_gap_pp": 30.0
+      "max_relative_gap_pct": 158.4,
+      "max_absolute_gap_pp": 30.65
     },
     "test_users": 75
   },

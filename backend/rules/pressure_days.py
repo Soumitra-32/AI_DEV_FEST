@@ -1,9 +1,14 @@
 """Pressure-day detection (rules layer).
 
-A pressure day is a forecast day whose predicted net is negative OR whose
-predicted closing balance drops below the safety buffer — the "wallet will be
-tight that day" warning from the demo story (days 28-31). Pure rules on top
-of the forecast: no model, no LLM, fully explainable.
+A pressure day is a forecast day whose predicted closing balance drops below
+the safety buffer — the "wallet will be tight that day" warning from the demo
+story (days 28-31). Pure rules on top of the forecast: no model, no LLM,
+fully explainable.
+
+Deliberately balance-based, never net-based: a negative-net day against a
+healthy balance (e.g. −৳30 with ৳58,000 in the wallet) is not pressure, and
+flagging it cried wolf on the demo user. The net still matters for *why* —
+``both`` marks a below-buffer day the day's own outflow drove.
 """
 
 from __future__ import annotations
@@ -16,19 +21,13 @@ class PressureDay:
     date: str
     predicted_net_bdt: float
     predicted_balance_bdt: float
-    reason_code: str  # "negative_net" | "below_buffer" | "both"
+    reason_code: str  # "below_buffer" | "both"
 
 
 def _reason(net: float, balance: float, buffer: float) -> str | None:
-    low_net = net < 0
-    low_balance = balance < buffer
-    if low_net and low_balance:
-        return "both"
-    if low_net:
-        return "negative_net"
-    if low_balance:
-        return "below_buffer"
-    return None
+    if balance >= buffer:
+        return None
+    return "both" if net < 0 else "below_buffer"
 
 
 def detect(

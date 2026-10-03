@@ -34,9 +34,10 @@ code and covered by tests; measured numbers live in `REPORT.md` §§4–7.
 
 ## Security
 
-- Prompt-injection defense: user text classified into whitelisted intents,
-  never placed in a prompt; system/user roles separated
-  (`backend/rules/guardrails.py`, `backend/genai/prompts.py`).
+- Prompt-injection defense: user text classified into whitelisted intents;
+  free text reaching the model travels only as an inert
+  `user_text_untrusted` field, never as an instruction; system/user roles
+  separated (`backend/rules/guardrails.py`, `backend/genai/prompts.py`).
 - Access control: `user_id` comes from the demo token, never the request
   body (`backend/app/deps.py`); 401/403 enforced; SQLite opened read-only.
 - Validation (Pydantic), 20 req/min chat rate limit, banned-output filter

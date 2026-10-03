@@ -28,33 +28,16 @@ export default function SignalPage() {
 
   const activeStep = live ? (BAND_INDEX[live.band] ?? 1) : 1;
   const stepKeys = ["signal.step1", "signal.step2", "signal.step3"] as const;
+  const bandKey =
+    live?.band === "Building"
+      ? ("signal.bandBuilding" as const)
+      : live?.band === "Strong"
+        ? ("signal.bandStrong" as const)
+        : ("signal.bandSteady" as const);
 
-  const factors = [
-    {
-      featureBn: "ব্যালেন্স স্থিতিশীলতা",
-      featureEn: "Balance Stability",
-      direction: "improves",
-      weight: 0.35,
-      descBn: "আপনার ওয়ালেটের ব্যালেন্স নিয়মিত ইতিবাচক থাকে এবং হঠাৎ শূন্য হয় না।",
-      descEn: "Wallet balance remains consistently positive without abrupt zero drops.",
-    },
-    {
-      featureBn: "নিয়মিত সঞ্চয়ের উদ্বৃত্ত",
-      featureEn: "Savings Surplus Consistency",
-      direction: "improves",
-      weight: 0.28,
-      descBn: "মাসিক খরচের পর একটি স্থিতিশীল উদ্বৃত্ত ধরে রাখা সম্ভব হচ্ছে।",
-      descEn: "Forecasted monthly surplus consistently supports goal progression.",
-    },
-    {
-      featureBn: "ঘন ঘন ক্যাশ-আউট",
-      featureEn: "Cash-Out Frequency",
-      direction: "weakens",
-      weight: 0.22,
-      descBn: "বারবার ছোট অংকের ক্যাশ-আউট ফি বাড়ায় ও নগদ স্থিতিশীলতা কমায়।",
-      descEn: "Frequent small withdrawals increase fee overhead and diminish liquidity.",
-    },
-  ];
+  // GAP-10: no static fallback factors. Without live data the factors
+  // section shows "unavailable" — the old hardcoded weights (0.35/0.28/0.22)
+  // presented as the user's result were removed.
 
   return (
     <>
@@ -88,7 +71,7 @@ export default function SignalPage() {
           <div className="space-y-3 py-2">
             <div className="flex items-baseline justify-between">
               <span className="font-serif-bn font-bold text-2xl md:text-3xl text-ink">
-                {live ? live.band : tr("signal.bandSteady")}
+                {live ? tr(bandKey) : "—"}
               </span>
               <span className="badge success">
                 {tr("signal.bandRating")}
@@ -96,12 +79,17 @@ export default function SignalPage() {
             </div>
 
             {/* Stepped Ledger Indicator */}
+            {!live && (
+              <p className="text-sm font-hind text-ink-muted">
+                {tr("signal.unavailable")}
+              </p>
+            )}
             <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono pt-2">
               {stepKeys.map((key, idx) => (
                 <div
                   key={key}
                   className={
-                    idx === activeStep
+                    live && idx === activeStep
                       ? "p-2 border-2 border-primaryGreen bg-surface rounded-stamp font-bold text-primaryGreen"
                       : "p-2 border border-rule bg-paper/60 rounded-stamp text-ink-muted"
                   }
@@ -122,40 +110,33 @@ export default function SignalPage() {
           </div>
 
           <div className="divide-y divide-rule font-hind">
-            {(live && live.factors.length > 0
-              ? live.factors.map((f) => ({
-                  title: f.feature,
-                  desc: f.plain_language,
-                  direction: f.direction,
-                  weight: f.magnitude,
-                }))
-              : factors.map((f) => ({
-                  title: lang === "bn" ? f.featureBn : f.featureEn,
-                  desc: lang === "bn" ? f.descBn : f.descEn,
-                  direction: f.direction,
-                  weight: f.weight,
-                }))
-            ).map((f, idx) => (
-              <div key={idx} className="py-3 space-y-1">
-                <div className="flex items-baseline justify-between">
-                  <span className="font-bold text-sm text-ink">
-                    {f.title}
-                  </span>
-                  <span className="dotted-leader" />
-                  <span
-                    className={`font-mono text-xs font-bold ${
-                      f.direction === "improves" ? "text-primaryGreen" : "text-brickRed"
-                    }`}
-                  >
-                    {f.direction === "improves" ? "+ " : "- "}
-                    {f.weight}
-                  </span>
+            {live && live.factors.length > 0 ? (
+              live.factors.map((f, idx) => (
+                <div key={idx} className="py-3 space-y-1">
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-bold text-sm text-ink">
+                      {f.feature}
+                    </span>
+                    <span className="dotted-leader" />
+                    <span
+                      className={`font-mono text-xs font-bold ${
+                        f.direction === "improves" ? "text-primaryGreen" : "text-brickRed"
+                      }`}
+                    >
+                      {f.direction === "improves" ? "+ " : "- "}
+                      {f.magnitude}
+                    </span>
+                  </div>
+                  <p className="text-xs text-ink-muted leading-relaxed">
+                    {f.plain_language}
+                  </p>
                 </div>
-                <p className="text-xs text-ink-muted leading-relaxed">
-                  {f.desc}
-                </p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-ink-muted leading-relaxed font-hind py-3">
+                {tr("signal.unavailable")}
+              </p>
+            )}
           </div>
         </div>
 

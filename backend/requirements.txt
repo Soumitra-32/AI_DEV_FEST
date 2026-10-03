@@ -1,26 +1,30 @@
+# Pinned exact (GAP-02): the forecast numbers are reproducible only in the
+# environment that produced metrics.json. Do NOT relax these to >= without
+# regenerating data, retraining, and re-committing metrics.json + REPORT.md.
+# Pinned from backend/.venv on 2026-10-03 (Python 3.12).
+
 # Web framework
-fastapi>=0.115
-uvicorn[standard]>=0.30
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
 
 # Validation / config
-pydantic>=2.7
-pydantic-settings>=2.2
-PyYAML>=6.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+PyYAML==6.0.3
 
 # Data & ML (per plan.txt)
-pandas>=2.2
-numpy>=1.26
-scikit-learn>=1.4
-lightgbm>=4.3
-shap>=0.45
+pandas==3.0.6
+numpy==2.5.3
+scikit-learn==1.9.1
+lightgbm==4.7.0
+shap==0.52.0
 
 # Synthetic data
-Faker>=25.0
+Faker==40.40.0
 
 # LLM + HTTP (Phase 4)
-openai>=1.30
-httpx>=0.27
+openai==3.23.0
+httpx==0.28.1
 
 # Tests
-pytest>=8.0
-
+pytest==9.1.1

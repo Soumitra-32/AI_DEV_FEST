@@ -42,9 +42,10 @@ export interface Provenance {
 export interface ForecastRequest {
   horizon_days?: number;
   include_pressure_days?: boolean;
+  as_of?: string;
 }
 
-export type PressureReason = "negative_net" | "below_buffer" | "both";
+export type PressureReason = "below_buffer" | "both";
 
 export interface DayForecast {
   date: string;
@@ -66,7 +67,7 @@ export interface ForecastMetrics {
   net_mae_bdt?: number;
   net_baseline_name?: string;
   net_improvement_pct?: number;
-  net_source?: "model" | "difference";
+  net_source?: "model" | "difference" | "anchor";
 }
 
 export interface Driver {
@@ -81,7 +82,7 @@ export interface ForecastResponse {
   horizon_days: number;
   generated_at: string;
   generated_from: string | null;
-  net_source: "model" | "difference";
+  net_source: "model" | "difference" | "anchor";
   days: DayForecast[];
   pressure_days: string[];
   drivers: Driver[];
@@ -285,6 +286,7 @@ export function fetchForecast(body: ForecastRequest = {}): Promise<ForecastRespo
     body: JSON.stringify({
       horizon_days: body.horizon_days ?? 14,
       include_pressure_days: body.include_pressure_days ?? true,
+      ...(body.as_of ? { as_of: body.as_of } : {}),
     }),
   });
 }

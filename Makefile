@@ -21,9 +21,9 @@ api:             ## Start FastAPI server (Phase 2)
 web:             ## Start Next.js dev server (Phase 2)
 	cd web && npm run dev
 
-deploy:          ## Deploy (Vercel + Render) (Phase 9)
-	@echo "TODO(phase 9): deploy steps"
+deploy:          ## Deploy (Vercel + Render) — see docs/DEPLOYMENT.md
+	@echo "Render reads render.yaml (dashboard secret for DEMO_AUTH_TOKEN); Vercel builds web/ (NEXT_PUBLIC_* env)."
 
 clean:           ## Remove generated data and artifacts
-	@echo "TODO: remove backend/data/*.db and backend/ml/artifacts/*"
+	rm -f backend/data/shonchoy.db backend/data/*.sqlite* backend/ml/artifacts/requests.jsonl backend/ml/artifacts/feedback.jsonl
 

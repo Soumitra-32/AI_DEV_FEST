@@ -14,7 +14,9 @@ services:
       - key: DEMO_AUTH_TOKEN
         # Never commit a real token: set the value in the Render dashboard
         # (Environment) and mirror it in Vercel as NEXT_PUBLIC_DEMO_TOKEN.
+        # sync:false keeps dashboard edits from being overwritten by deploys.
         value: change-me-set-in-render-dashboard
+        sync: false
       - key: CORS_ORIGINS
         value: "http://localhost:3000,http://127.0.0.1:3000,https://shonchoy-copilot.vercel.app"
       - key: DATABASE_PATH

@@ -15,6 +15,6 @@
     "max_samples": "auto",
     "random_state": 7
   },
-  "n_train_transactions": 122466,
-  "offset": -0.6267287664620302
+  "n_train_transactions": 123111,
+  "offset": -0.6356757480936718
 }

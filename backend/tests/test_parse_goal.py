@@ -9,12 +9,18 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.app.config import Settings, get_settings
 from backend.app.main import create_app
+
+PARSE_TOKEN = "parse-goal-token"
 
 
 @pytest.fixture(scope="module")
 def client() -> TestClient:
-    return TestClient(create_app())
+    settings = Settings(demo_auth_token=PARSE_TOKEN)
+    app = create_app(settings)
+    app.dependency_overrides[get_settings] = lambda: settings
+    return TestClient(app)
 
 
 @pytest.mark.parametrize(
@@ -46,13 +52,15 @@ def test_parse_goal_rejects_empty_message(client: TestClient) -> None:
 def test_metrics_serves_model_scoreboard() -> None:
     from fastapi.testclient import TestClient
 
-    from backend.app.config import get_settings
+    from backend.app.config import Settings, get_settings
     from backend.app.main import create_app
 
     # /metrics follows the demo-token convention like every other app router.
-    token = get_settings().demo_auth_token
-    response = TestClient(create_app()).get(
-        "/metrics", headers={"X-Demo-Token": token}
+    settings = Settings(demo_auth_token=PARSE_TOKEN)
+    app = create_app(settings)
+    app.dependency_overrides[get_settings] = lambda: settings
+    response = TestClient(app).get(
+        "/metrics", headers={"X-Demo-Token": PARSE_TOKEN}
     )
     assert response.status_code == 200
     body = response.json()

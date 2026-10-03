@@ -45,6 +45,7 @@ def get_forecast(
             horizon_days=body.horizon_days,
             include_pressure_days=body.include_pressure_days,
             db_path=settings.db_path,
+            as_of=body.as_of.isoformat() if body.as_of is not None else None,
         )
     except KeyError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

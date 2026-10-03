@@ -13,14 +13,18 @@ def _day(date: str, net: float) -> dict:
     return {"date": date, "predicted_net_bdt": net}
 
 
-def test_flags_a_negative_net_day() -> None:
+def test_a_negative_net_day_against_a_healthy_balance_is_not_pressure() -> None:
+    """GAP-01 regression: −৳250 with ৳50,000 in the wallet is not pressure.
+
+    The old net-based rule flagged this; the balance-based rule must not —
+    flagging it cried wolf on the demo user (−৳30 at ৳58,189 vs a ৳3,706
+    buffer produced 12/14 pressure days).
+    """
     flagged = pressure_days.detect(
         [_day("2025-07-01", 900), _day("2025-07-02", -250)],
         opening_balance_bdt=50000, safety_buffer_bdt=2000,
     )
-    assert [item.date for item in flagged] == ["2025-07-02"]
-    assert flagged[0].reason_code == "negative_net"
-    assert flagged[0].predicted_net_bdt == -250
+    assert flagged == []
 
 
 def test_running_balance_carries_forward_and_can_fall_below_the_buffer() -> None:
@@ -56,5 +60,5 @@ def test_a_positive_net_can_still_be_a_pressure_day() -> None:
 
 def test_flagged_days_keep_the_order_of_the_forecast() -> None:
     days = [_day(f"2025-07-{day:02d}", -100) for day in range(1, 6)]
-    flagged = pressure_days.detect(days, opening_balance_bdt=1000, safety_buffer_bdt=0)
+    flagged = pressure_days.detect(days, opening_balance_bdt=1000, safety_buffer_bdt=1200)
     assert [item.date for item in flagged] == [day["date"] for day in days]

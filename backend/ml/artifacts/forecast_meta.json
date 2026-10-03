@@ -58,10 +58,10 @@
     "deterministic": true,
     "num_threads": 1
   },
-  "bias_inflow": 14.736077405391619,
-  "bias_outflow": 1.672900184685159,
-  "bias_net": 6.380686607889145,
-  "val_mae_inflow": 170.7867323619083,
-  "val_mae_outflow": 194.8177792006884,
-  "val_mae_net": 242.95900679690223
+  "bias_inflow": 1.3966925252358484,
+  "bias_outflow": -11.417368667693435,
+  "bias_net": 9.181807509971264,
+  "val_mae_inflow": 160.2075709575351,
+  "val_mae_outflow": 187.3991067324698,
+  "val_mae_net": 232.33948152042205
 }

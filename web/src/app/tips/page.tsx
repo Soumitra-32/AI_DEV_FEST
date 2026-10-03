@@ -6,14 +6,15 @@ import NotADecisionBanner from "@/components/NotADecisionBanner";
 import InsightCard from "@/components/InsightCard";
 import DoNothingToggle from "@/components/DoNothingToggle";
 import { useLanguage } from "@/components/LangToggle";
-import { fetchExplain, fetchAnomalies } from "@/lib/api";
-import type { ExplainResponse, FeeSwitchSuggestion } from "@/lib/api";
+import { fetchExplain, fetchAnomalies, fetchSavingsPlan } from "@/lib/api";
+import type { ExplainResponse, FeeSwitchSuggestion, SavingsPlanResponse } from "@/lib/api";
 import { formatBDT, formatDigits } from "@/lib/i18n";
 
 export default function TipsPage() {
   const { lang, tr } = useLanguage();
   const [explainRes, setExplainRes] = useState<ExplainResponse | null>(null);
   const [feeSwitch, setFeeSwitch] = useState<FeeSwitchSuggestion | null>(null);
+  const [plan, setPlan] = useState<SavingsPlanResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -29,7 +30,10 @@ export default function TipsPage() {
         language: lang,
       }),
       fetchAnomalies({ window_days: 30, limit: 20 }),
-    ]).then(([explainResult, anomResult]) => {
+      // The savings card below renders from this live response — never from
+      // hardcoded numbers (GAP-10). Demo goal shown as the worked example.
+      fetchSavingsPlan({ goal_bdt: 30000, months: 6 }),
+    ]).then(([explainResult, anomResult, planResult]) => {
       if (cancelled) return;
 
       if (explainResult.status === "fulfilled") {
@@ -37,6 +41,9 @@ export default function TipsPage() {
       }
       if (anomResult.status === "fulfilled" && anomResult.value.fee_switch) {
         setFeeSwitch(anomResult.value.fee_switch);
+      }
+      if (planResult.status === "fulfilled") {
+        setPlan(planResult.value);
       }
       setLoading(false);
     });
@@ -46,62 +53,74 @@ export default function TipsPage() {
     };
   }, [lang]);
 
-  const cashOutCount = feeSwitch?.cash_out_count ?? 5;
-  const avgAmount =
+  // GAP-10: no ?? fallbacks. Without live fee data there is no fee card —
+  // an explicit unavailable note instead of 5 / 3500 / 324 guesses.
+  const feeCard =
     feeSwitch && feeSwitch.cash_out_count > 0
-      ? feeSwitch.cash_out_volume_bdt / feeSwitch.cash_out_count
-      : 3500;
-  const potentialSaving = feeSwitch?.potential_saving_bdt ?? 324;
+      ? (() => {
+          const cashOutCount = feeSwitch.cash_out_count;
+          const avgAmount = feeSwitch.cash_out_volume_bdt / feeSwitch.cash_out_count;
+          const potentialSaving = feeSwitch.potential_saving_bdt;
+          const tip1DescBn = `আপনি মাসে ${formatDigits(
+            String(cashOutCount),
+            "bn"
+          )} বার গড়ে ${formatBDT(avgAmount, "bn")} করে ক্যাশ-আউট করেন। বারবার ক্যাশ-আউট না করে একবার বা দুইবারে প্রয়োজনমতো তুললে বা সরাসরি অ্যাপ ট্রান্সফার করলে প্রতি মাসে আনুমানিক ${formatBDT(
+            potentialSaving,
+            "bn"
+          )} ফি সাশ্রয় সম্ভব।`;
+          const tip1DescEn = `You currently cash out ~${cashOutCount} times/month averaging ${formatBDT(
+            avgAmount,
+            "en"
+          )}. Consolidating into 1-2 withdrawals or paying via app transfer can save ~${formatBDT(
+            potentialSaving,
+            "en"
+          )} in monthly fees.`;
+          return {
+            titleBn: "ঘন ঘন ছোট ক্যাশ-আউট কমান",
+            titleEn: "Consolidate Frequent Small Cash-Outs",
+            descBn: tip1DescBn,
+            descEn: tip1DescEn,
+            tagBn: "ফি সাশ্রয়",
+            tagEn: "Fee Saving",
+            stampKey: "tips.stampRule" as const,
+          };
+        })()
+      : null;
 
-  const tip1DescBn = `আপনি মাসে ${formatDigits(
-    String(cashOutCount),
-    "bn"
-  )} বার গড়ে ${formatBDT(avgAmount, "bn")} করে ক্যাশ-আউট করেন। বারবার ক্যাশ-আউট না করে একবার বা দুইবারে প্রয়োজনমতো তুললে বা সরাসরি অ্যাপ ট্রান্সফার করলে প্রতি মাসে আনুমানিক ${formatBDT(
-    potentialSaving,
-    "bn"
-  )} ফি সাশ্রয় সম্ভব।`;
-
-  const tip1DescEn = `You currently cash out ~${cashOutCount} times/month averaging ${formatBDT(
-    avgAmount,
-    "en"
-  )}. Consolidating into 1-2 withdrawals or paying via app transfer can save ~${formatBDT(
-    potentialSaving,
-    "en"
-  )} in monthly fees.`;
+  // Live savings verdict for the worked example goal — never a hardcoded
+  // "fits" claim. Unavailable instead of invented when the API is down.
+  const planCard = plan
+    ? {
+        titleBn: "সঞ্চয়ের বাস্তবসম্মত লক্ষ্য নির্ধারণ",
+        titleEn: "Set a Realistic Surplus-Matched Goal",
+        descBn: plan.feasible
+          ? `উদাহরণ (৬ মাসে ৳৩০,০০০): উদ্বৃত্ত থেকে বাফার বাদে মাসে ${formatBDT(plan.feasible_monthly_bdt, "bn")} রাখা সম্ভব — লক্ষ্যটি মানানসই।`
+          : `উদাহরণ (৬ মাসে ৳৩০,০০০): বর্তমান পূর্বাভাসে মাসে ${formatBDT(plan.feasible_monthly_bdt, "bn")} রাখা সম্ভব — লক্ষ্য বা সময়সীমা বদলাতে হবে।`,
+        descEn: plan.feasible
+          ? `Worked example (৳30,000 in 6 months): about ${formatBDT(plan.feasible_monthly_bdt, "en")}/month is keepable after the buffer — the goal fits.`
+          : `Worked example (৳30,000 in 6 months): only about ${formatBDT(plan.feasible_monthly_bdt, "en")}/month is keepable — adjust the goal or timeline.`,
+        tagBn: "সঞ্চয়",
+        tagEn: "Savings",
+        stampKey: "tips.stampPlan" as const,
+      }
+    : null;
 
   const curatedTips = [
-    {
-      titleBn: "ঘন ঘন ছোট ক্যাশ-আউট কমান",
-      titleEn: "Consolidate Frequent Small Cash-Outs",
-      descBn: tip1DescBn,
-      descEn: tip1DescEn,
-      tagBn: "ফি সাশ্রয়",
-      tagEn: "Fee Saving",
-      stampKey: "tips.stampRule" as const,
-    },
+    ...(feeCard ? [feeCard] : []),
     {
       titleBn: "২৮–৩১ তারিখের জন্য অগ্রিম বাফার রাখুন",
       titleEn: "Maintain Month-End Cash Buffer for Days 28–31",
       descBn:
-        "মাসের শেষ সপ্তাহে আপনার দোকানের বিল ও ক্যাশ খরচের চাপ বেশি থাকে। মাসের ১৫ তারিখ থেকেই দৈনিক ৳৫০ আলাদা রাখলে মাস শেষে টানাটানি পড়বে না।",
+        "মাসের শেষ সপ্তাহে আপনার মাসের বিল ও ক্যাশ খরচের চাপ বেশি থাকে। মাসের ১৫ তারিখ থেকেই দৈনিক ৳৫০ আলাদা রাখলে মাস শেষে টানাটানি পড়বে না।",
       descEn:
         "Outflows spike near month-end due to rent and utility schedules. Retaining a small safety buffer earlier prevents emergency borrowing.",
       tagBn: "ক্যাশ-ফ্লো",
       tagEn: "Cash Flow",
       stampKey: "tips.stampForecast" as const,
     },
-    {
-      titleBn: "সঞ্চয়ের বাস্তবসম্মত লক্ষ্য নির্ধারণ",
-      titleEn: "Set a Realistic Surplus-Matched Goal",
-      descBn:
-        "আপনার বর্তমান মাসিক উদ্বৃত্ত থেকে সেফটি বাফার বাদ দিলে প্রতি মাসে ৳৫,০০০ সঞ্চয় করা সম্ভব। ৬ মাসে ৳৩০,০০০ লক্ষ্য আপনার স্বাভাবিক উপার্জনের সাথে মানানসই।",
-      descEn:
-        "After retaining a safety buffer, your forecasted monthly surplus supports ৳5,000/month. The ৳30,000 in 6 months goal fits your profile.",
-      tagBn: "সঞ্চয়",
-      tagEn: "Savings",
-      stampKey: "tips.stampPlan" as const,
-    },
+    ...(planCard ? [planCard] : []),
   ];
+  const dataMissing = !loading && (!feeSwitch || !plan);
 
   return (
     <>
@@ -168,6 +187,14 @@ export default function TipsPage() {
               {tr("tips.coreGuidance")}
             </h2>
           </div>
+
+          {dataMissing && (
+            <div className="bg-surface border border-rule rounded-ledger p-5">
+              <p className="text-sm text-ink-muted leading-relaxed font-hind">
+                {tr("tips.unavailable")}
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 gap-4">
             {curatedTips.map((tip, idx) => (
