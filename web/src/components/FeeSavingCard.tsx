@@ -32,8 +32,8 @@ export default function FeeSavingCard({ feeSwitch }: FeeSavingCardProps) {
         </p>
         <p className="text-xs text-ink-muted font-hind">
           {lang === "bn"
-            ? `কতজন ব্যবহার করতে পারে (${formatDigits(feeSwitch.adoption_range || "৩০%–৭০%", lang)}): মাসে আনুমানিক ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.3), lang)} থেকে ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.7), lang)} পর্যন্ত বাঁচতে পারে।`
-            : `How many may use it (${feeSwitch.adoption_range || "30%–70%"}): you could save ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.3), lang)} to ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.7), lang)} a month.`}
+            ? `প্রত্যাশিত ব্যবহারের হার (${formatDigits(feeSwitch.adoption_range || "৩০%–৭০%", lang)}): মাসে আনুমানিক ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.3), lang)} থেকে ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.7), lang)} পর্যন্ত সাশ্রয় হতে পারে।`
+            : `Expected adoption range (${feeSwitch.adoption_range || "30%–70%"}): estimated monthly savings between ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.3), lang)} and ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.7), lang)}.`}
         </p>
       </div>
 

@@ -26,10 +26,10 @@ const ACTION_KEY: Record<TradeOffAction, TranslationKey> = {
 };
 
 const ACTION_LABEL: Record<TradeOffAction, { bn: string; en: string }> = {
-  reduce: { bn: "লক্ষ্য কমান", en: "Lower the goal" },
-  delay: { bn: "সময় বাড়ান", en: "Take more time" },
-  switch: { bn: "কিউআরে দিন", en: "Pay by QR" },
-  do_nothing: { bn: "কিছুই করব না", en: "Do nothing" },
+  reduce: { bn: "লক্ষ্য কমান", en: "Lower the target" },
+  delay: { bn: "সময়সীমা বাড়ান", en: "Extend the timeline" },
+  switch: { bn: "QR ব্যবহার করুন", en: "Switch to QR" },
+  do_nothing: { bn: "কিছু পরিবর্তন করব না", en: "Keep as is" },
 };
 
 function formatDoNothingOutcome(desc: string | null | undefined, lang: "bn" | "en"): string {
@@ -39,8 +39,8 @@ function formatDoNothingOutcome(desc: string | null | undefined, lang: "bn" | "e
     const fee = formatBDT(Number(m[2].replace(/,/g, "")), lang);
     const taka = lang === "bn" ? "টাকা" : "taka";
     return lang === "bn"
-      ? `কিছু না করলে ${formatDigits(m[1], lang)} মাসে জমানো থাকবে ৳০, আর ফি যাবে প্রায় ${fee} ${taka}।`
-      : `If you do nothing, after ${m[1]} months you will have ৳0 saved and pay about ${fee} ${taka} in fees.`;
+      ? `কোনো পরিবর্তন না করলে ${formatDigits(m[1], lang)} মাসে সঞ্চয়ের পরিমাণ হবে ৳০ এবং ফি বাবদ ব্যয় হবে প্রায় ${fee} ${taka}।`
+      : `If you make no changes, after ${m[1]} months you will have ৳0 saved and pay about ${fee} ${taka} in fees.`;
   }
   return lang === "bn" ? formatDigits(desc, lang) : desc;
 }
@@ -115,33 +115,33 @@ function formatArithmeticStep(step: string, lang: "bn" | "en"): string {
   if (!step) return step;
   if (step.includes("required monthly")) {
     return formatDigits(
-      step.replace("required monthly =", lang === "bn" ? "প্রতি মাসে দরকার =" : "Needed each month ="),
+      step.replace("required monthly =", lang === "bn" ? "প্রয়োজনীয় মাসিক সঞ্চয় =" : "Required monthly savings ="),
       lang,
     );
   }
   if (step.includes("safety buffer")) {
     return formatDigits(
       step
-        .replace("safety buffer =", lang === "bn" ? "নিরাপদে রাখা টাকা =" : "Money kept aside =")
-        .replace("day(s) of typical outflow =", lang === "bn" ? "দিনের নিয়মিত খরচ =" : "days of usual spending ="),
+        .replace("safety buffer =", lang === "bn" ? "সংরক্ষিত নিরাপত্তা বাফার =" : "Safety buffer =")
+        .replace("day(s) of typical outflow =", lang === "bn" ? "দিনের স্বাভাবিক খরচ =" : "days of typical outflow ="),
       lang,
     );
   }
   if (step.includes("feasible monthly")) {
     return formatDigits(
       step
-        .replace("feasible monthly = surplus", lang === "bn" ? "মাসে জমাতে পারবেন = হাতে থাকা টাকা" : "You can save each month = extra money")
-        .replace("- buffer", lang === "bn" ? "- নিরাপদ সীমা" : "- kept-aside money"),
+        .replace("feasible monthly = surplus", lang === "bn" ? "সম্ভাব্য মাসিক সঞ্চয় = মাসিক উদ্বৃত্ত" : "Achievable monthly savings = surplus")
+        .replace("- buffer", lang === "bn" ? "- বাফার" : "- buffer"),
       lang,
     );
   }
   if (step === "feasible") {
-    return lang === "bn" ? "এই পরিকল্পনা আপনার হাতে থাকা টাকায় চলবে।" : "This plan fits the money you have.";
+    return lang === "bn" ? "এই পরিকল্পনা বর্তমান উদ্বৃত্তে বাস্তবায়নযোগ্য।" : "This plan is achievable with your current surplus.";
   }
   if (step.includes("not feasible")) {
     return lang === "bn"
-      ? "নিরাপদ টাকা সরিয়ে রেখে এই সময়ে শেষ করা যাবে না।"
-      : "After keeping safety money aside, this cannot finish in time.";
+      ? "নিরাপত্তা বাফার বজায় রেখে বর্তমান উদ্বৃত্তে এই লক্ষ্য অর্জন সম্ভব নয়।"
+      : "After preserving the safety buffer, this goal cannot be met within the timeline.";
   }
   return lang === "bn" ? formatDigits(step, lang) : step;
 }

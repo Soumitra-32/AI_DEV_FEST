@@ -218,7 +218,7 @@ export default function ForecastPage() {
                   <tfoot>
                     <tr className="border-t border-rule ledger-double-bottom text-xs font-mono text-ink-muted">
                       <td colSpan={5} className="py-2 text-right">
-                        {formatDigits(String(data.days.length), lang)} {lang === "bn" ? "দিন একটা একটা করে গোনা" : "days counted one by one"}
+                        {formatDigits(String(data.days.length), lang)} {lang === "bn" ? "দিনের হিসাব অন্তর্ভুক্ত" : "days analyzed in total"}
                       </td>
                     </tr>
                   </tfoot>

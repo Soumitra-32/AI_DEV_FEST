@@ -35,44 +35,44 @@ function formatAnomalyReason(reason: string, lang: "bn" | "en"): string {
   if (m1) {
     const amt = formatBDT(Number(m1[2].replace(/,/g, "")), lang);
     return lang === "bn"
-      ? `২,০০০ টাকার সীমার কাছে বারবার লেনদেন (${amt}) — নিয়ম ভাঙা ঠেকাতে নজরে রাখা হচ্ছে।`
-      : `Several payments near ${amt} — watched to stop rule-breaking (payment law, 2024).`;
+      ? `২,০০০ টাকার সীমার কাছাকাছি একাধিক লেনদেন (${amt}) — পেমেন্ট আইন, ২০২৪ অনুযায়ী পর্যবেক্ষণ করা হচ্ছে।`
+      : `Repeated transactions near ৳2,000 (${amt}) — monitored under Payment Systems Act, 2024.`;
   }
 
   const m2 = reason.match(/High-value merchant payment\s*\(([\d,]+)\s*BDT\)\s*flagged for unauthorised cash-out review/i);
   if (m2) {
     const amt = formatBDT(Number(m2[1].replace(/,/g, "")), lang);
     return lang === "bn"
-      ? `দোকানে বড় অংকের পেমেন্ট (${amt}) — কিউআরের ভুল ব্যবহার বা অনুমতি ছাড়া ক্যাশ-আউট ঠেকাতে দেখা হচ্ছে।`
-      : `A big shop payment (${amt}) — checked to stop QR misuse or cash-outs without permission.`;
+      ? `দোকানে বড় অঙ্কের পেমেন্ট (${amt}) — অননুমোদিত ক্যাশ-আউট প্রতিরোধে পর্যালোচনা করা হচ্ছে।`
+      : `High-value merchant payment (${amt}) — reviewed to prevent unauthorized cash-outs.`;
   }
 
   const m3 = reason.match(/Another very similar payment within\s*(\d+)\s*minutes/i);
   if (m3) {
     return lang === "bn"
-      ? `${formatDigits(m3[1], "bn")} মিনিটের মধ্যে একই ধরনের আরেকটি লেনদেন।`
-      : `Another payment just like this one within ${m3[1]} minutes.`;
+      ? `${formatDigits(m3[1], "bn")} মিনিটের মধ্যে অনুরূপ আরেকটি লেনদেন সম্পন্ন হয়েছে।`
+      : `Another similar payment was made within ${m3[1]} minutes.`;
   }
 
   const m4 = reason.match(/Happened at\s*(\d{2}:\d{2}),\s*outside your usual hours/i);
   if (m4) {
     return lang === "bn"
-      ? `আপনি সাধারণত এই সময়ে লেনদেন করেন না — এবার ${formatDigits(m4[1], "bn")} টায় হয়েছে।`
-      : `You don't usually pay at this hour — this one was at ${m4[1]}.`;
+      ? `এই সময়টি আপনার স্বাভাবিক লেনদেনের সময়ের বাইরে (${formatDigits(m4[1], "bn")})।`
+      : `This payment occurred outside your typical transaction hours (${m4[1]}).`;
   }
 
   const m5 = reason.match(/About\s*([\d.]+)x\s*your own average payment/i);
   if (m5) {
     return lang === "bn"
-      ? `আপনার সাধারণ লেনদেনের চেয়ে প্রায় ${formatDigits(m5[1], "bn")} গুণ বড়।`
-      : `About ${m5[1]} times bigger than what you usually pay.`;
+      ? `আপনার স্বাভাবিক লেনদেনের গড়ের চেয়ে প্রায় ${formatDigits(m5[1], "bn")} গুণ বেশি।`
+      : `About ${m5[1]} times larger than your average transaction.`;
   }
 
   const m6 = reason.match(/Timing is unusual for you\s*\(([^)]+)\s*is not one of your usual hours\)/i);
   if (m6) {
     return lang === "bn"
-      ? `এই সময়ে আপনি সাধারণত লেনদেন করেন না।`
-      : `You don't usually pay at this time.`;
+      ? `এই লেনদেনটি আপনার স্বাভাবিক সময়ের বাইরে সম্পন্ন হয়েছে।`
+      : `This payment occurred outside your standard hours.`;
   }
 
   return lang === "bn" ? formatDigits(reason, lang) : reason;
@@ -81,10 +81,10 @@ function formatAnomalyReason(reason: string, lang: "bn" | "en"): string {
 function formatSuggestedAction(action: string | null | undefined, lang: "bn" | "en"): string {
   if (!action) return "";
   const lower = action.toLowerCase();
-  if (lower.includes("review")) return lang === "bn" ? "যাচাই করুন" : "Check it";
-  if (lower.includes("bangla_qr") || lower.includes("bangla qr")) return lang === "bn" ? "দোকানে বাংলা কিউআরে দিন" : "Pay by QR";
-  if (lower.includes("app transfer") || lower.includes("p2p")) return lang === "bn" ? "অ্যাপে পাঠান" : "Send in the app";
-  if (lower.includes("none")) return lang === "bn" ? "কিছু করতে হবে না" : "Nothing to do";
+  if (lower.includes("review")) return lang === "bn" ? "পর্যালোচনা করুন" : "Review";
+  if (lower.includes("bangla_qr") || lower.includes("bangla qr")) return lang === "bn" ? "দোকানে QR-এ দিন" : "Pay by QR";
+  if (lower.includes("app transfer") || lower.includes("p2p")) return lang === "bn" ? "অ্যাপে পাঠান" : "Transfer in app";
+  if (lower.includes("none")) return lang === "bn" ? "কোনো ব্যবস্থা প্রয়োজন নেই" : "No action required";
   return action;
 }
 
