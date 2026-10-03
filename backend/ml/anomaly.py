@@ -28,7 +28,11 @@ import joblib
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
-from sklearn.metrics import precision_recall_fscore_support, roc_auc_score
+from sklearn.metrics import (
+    average_precision_score,
+    precision_recall_fscore_support,
+    roc_auc_score,
+)
 
 from . import baselines
 
@@ -68,10 +72,50 @@ OFF_HOURS_END = 5
 #: Two near-identical transactions inside this many minutes read as a repeat.
 RAPID_REPEAT_MINUTES = 20
 
+#: ``amount_over_user_mean`` when the user has no past outflow to compare to.
+#: 1.0 says "about your usual size", which is the honest answer when the question
+#: is unanswerable; 0.0 would assert the row is far below average.
+NEUTRAL_AMOUNT_RATIO = 1.0
+
+#: Floor on the per-user std used by ``amount_zscore``. A user whose past amounts
+#: are all identical has a sample std of exactly 0, which leaves the z-score
+#: undefined -- and "identical so far" is precisely when a deviation matters most.
+#: The floor is the larger of an absolute value (one generator rounding unit,
+#: ``dataset.round_to_bdt``) and this fraction of the user's own past mean, so a
+#: perfectly consistent user still gets a finite, strongly positive score.
+MIN_ZSCORE_STD_BDT = 10.0
+MIN_ZSCORE_RELATIVE_STD = 0.05
+
+#: Winsorising bound for ``amount_zscore``. The floored denominator above can
+#: otherwise produce scores in the hundreds, which would swamp every other input
+#: to the forest and let one feature decide the answer.
+ZSCORE_CAP = 12.0
+#: Hard-coded rather than derived from the frame so that training and serving
+#: cannot disagree -- whatever slice a caller passes in must not change how any
+#: row is encoded. Mirrors ``dataset.active_hours`` ``[6, 23]`` in the generator
+#: config; the midpoint is the least-assuming single number for it. Using the
+#: user's whole-ledger median here instead leaked the future (truncation moved
+#: the feature by up to 8.0 hours).
+DEFAULT_TYPICAL_HOUR = 14.5
+
 #: How far back a gap is capped when a user has no previous transaction.
 MAX_GAP_MINUTES = 1440.0
 
 DEFAULT_CONTAMINATION = 0.02
+
+#: How many candidate cut-offs are evaluated between the observed score bounds.
+THRESHOLD_GRID_SIZE = 81
+
+#: Product guard on the selected operating point: no cut that flags more than
+#: this share of validation rows is eligible, however good its raw F1 looks.
+MAX_FLAG_RATE = 0.20
+
+#: Objective for :func:`select_threshold`. F1 is the right default here because
+#: the card shows a *ranked* list to one person: a false positive costs the user
+#: one row of attention, a false negative costs a missed anomaly. Ties are
+#: broken towards the higher cut-off (fewer false alarms), because a spending
+#: companion that cries wolf is abandoned.
+THRESHOLD_OBJECTIVE = "f1"
 
 #: Small, deterministic, single-threaded: trains in a few seconds on a laptop.
 PARAMS: dict[str, Any] = {
@@ -91,12 +135,64 @@ class AnomalyScores:
     threshold: Optional[float] = None
 
 
+def _past_only_reference(
+    amount: pd.Series,
+    is_income: pd.Series,
+    user_id: pd.Series,
+) -> tuple[pd.Series, pd.Series]:
+    """Per-user outflow mean and std computed from **strictly past** rows only.
+
+    The audit found this was the single worst feature defect in the repository:
+    the reference was the user's mean over the *whole* ledger, so a transaction
+    dated 3 January was scored against a mean that included March. Correlation
+    between that version and a genuinely causal one is only 0.229, and 23.8% of
+    rows moved by more than 0.5 once the future was removed.
+
+    ``shift(1).expanding()`` gives each row the statistics of everything strictly
+    before it, which is what "how big is this for *me*" has to mean at scoring
+    time.
+
+    ``user_id`` must be the **real** user column. An earlier revision of this
+    fix reconstructed the key from ``amount.index``, which after the
+    ``reset_index(drop=True)`` inside :func:`build_features` is a positional
+    RangeIndex -- so every row formed its own one-row group, ``shift(1)`` was
+    always NaN, and the whole-ledger fallback took over. That silently reduced
+    ``amount_zscore`` to the constant 0.0 for all 176 416 rows and left
+    ``amount_over_user_mean`` at exactly 1.0 for 79% of them, i.e. two of the
+    seven inputs to the isolation forest were dead.
+
+    Rows with no past outflow (a user's first transactions) get NaN here; the
+    caller turns that into a neutral encoding rather than borrowing the user's
+    own future.
+    """
+    frame = pd.DataFrame(
+        {
+            "user_id": pd.Series(user_id).to_numpy(),
+            "amount": amount.where(~is_income).to_numpy(dtype=float),
+        }
+    )
+    grouped = frame.groupby("user_id", sort=False)["amount"]
+    past_mean = grouped.transform(lambda s: s.shift(1).expanding().mean())
+    past_std = grouped.transform(lambda s: s.shift(1).expanding().std())
+    return (
+        past_mean.astype(float).set_axis(amount.index),
+        past_std.astype(float).set_axis(amount.index),
+    )
+
+
 def build_features(transactions: pd.DataFrame) -> pd.DataFrame:
     """Per-user behaviour features for every transaction row.
 
     Returns a frame with the same index as ``transactions`` and the columns in
     :data:`FEATURE_COLUMNS`, all numeric (no NaNs). Per-user statistics are
-    computed inside each user only — a neighbour's spending never sets the bar.
+    computed inside each user only - a neighbour's spending never sets the bar -
+    and from **strictly past** rows only, so a feature never encodes the future
+    (see :func:`_past_only_reference`).
+
+    Callers must pass the user's **whole** history, not a recent window. The
+    per-user reference is a function of history length, so a window produces a
+    different feature distribution than the one the model was fitted on; the
+    serving path builds features first and slices the window afterwards.
     """
     if transactions is None or transactions.empty:
         return pd.DataFrame(columns=FEATURE_COLUMNS)
@@ -113,26 +209,51 @@ def build_features(transactions: pd.DataFrame) -> pd.DataFrame:
     )
     amount = frame["amount_bdt"].astype(float)
 
-    # --- per-user amount reference (outflow rows only) ---------------------
-    reference = frame.loc[~is_income]
-    by_user = reference.groupby("user_id")["amount_bdt"]
-    user_mean = frame["user_id"].map(by_user.mean()).astype(float)
-    user_std = frame["user_id"].map(by_user.std()).astype(float)
-    fallback_mean = float(amount[~is_income].mean()) if bool((~is_income).any()) else float(amount.mean())
-    if not np.isfinite(fallback_mean):
-        fallback_mean = 0.0
-    user_mean = user_mean.fillna(fallback_mean)
-
-    safe_std = user_std.where(user_std.gt(0))
-    zscore = ((amount - user_mean) / safe_std).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+    # --- per-user amount reference (strictly past outflow rows only) --------
+    user_mean, user_std = _past_only_reference(amount, is_income, frame["user_id"])
+    # Denominator floor: see :data:`MIN_ZSCORE_STD_BDT`. Rows with no past outflow
+    # keep a NaN mean, so the ratio below falls back to the neutral encoding.
+    std_floor = pd.concat(
+        [
+            pd.Series(MIN_ZSCORE_STD_BDT, index=user_mean.index, dtype=float),
+            user_mean.abs() * MIN_ZSCORE_RELATIVE_STD,
+        ],
+        axis=1,
+    ).max(axis=1)
+    safe_std = user_std.clip(lower=std_floor).where(user_mean.notna())
+    zscore = (
+        ((amount - user_mean) / safe_std)
+        .replace([np.inf, -np.inf], np.nan)
+        .clip(-ZSCORE_CAP, ZSCORE_CAP)
+        .fillna(0.0)
+    )
     positive_mean = user_mean.where(user_mean.gt(0))
-    over_mean = (amount / positive_mean).replace([np.inf, -np.inf], np.nan).fillna(0.0)
+    # No past outflow yet -> the ratio is unknown, and the neutral value is 1.0
+    # ("about your usual size"). It used to fall back to 0.0, which asserts the
+    # row is far *below* average -- a claim we have no evidence for.
+    over_mean = (
+        (amount / positive_mean)
+        .replace([np.inf, -np.inf], np.nan)
+        .fillna(NEUTRAL_AMOUNT_RATIO)
+    )
 
     # --- time shape --------------------------------------------------------
     hour = frame["timestamp"].dt.hour.astype(float)
-    ref_hours = frame.loc[~is_income].assign(_hour=hour)
-    typical = frame["user_id"].map(ref_hours.groupby("user_id")["_hour"].median())
-    typical = typical.fillna(float(hour.median()) if len(hour) else 12.0)
+    hours = pd.DataFrame(
+        {
+            "user_id": frame["user_id"],
+            "_hour": hour.where(~is_income),
+        }
+    )
+    past_median = hours.groupby("user_id", sort=False)["_hour"].transform(
+        lambda s: s.shift(1).expanding().median()
+    )
+    # A user's opening rows have no past hour to compare against, so they get the
+    # fixed mid-window hour from :data:`DEFAULT_TYPICAL_HOUR`. The previous
+    # fallback was the user's own whole-ledger median hour, which leaked the
+    # future (truncation moved this feature by up to 8.0 hours) and made the
+    # encoding depend on which slice a caller passed in.
+    typical = past_median.fillna(DEFAULT_TYPICAL_HOUR).astype(float)
     hours_from_typical = (hour - typical).abs()
 
     previous = frame.groupby("user_id")["timestamp"].shift(1)
@@ -167,13 +288,135 @@ def _slice_split(features: pd.DataFrame, splits: Optional[pd.DataFrame], name: s
 
 
 def contamination_from(cfg: Optional[Mapping[str, Any]], default: float = DEFAULT_CONTAMINATION) -> float:
-    """Expected anomaly share, from the dataset config when it is available."""
+    """Expected anomaly share, from the dataset config when it is available.
+
+    NOTE: this is only the *fitting-time* hint for the forest. It is deliberately
+    **not** the shipped decision threshold -- see :func:`select_threshold`.
+    """
     if cfg is None:
         return float(default)
     try:
         return float(cfg["anomalies"]["rate"])
     except (KeyError, TypeError, ValueError):
         return float(default)
+
+
+def candidate_thresholds(
+    score: np.ndarray,
+    size: int = THRESHOLD_GRID_SIZE,
+) -> np.ndarray:
+    """Candidate cut-offs derived from the *observed* score distribution.
+
+    H3 follow-up (audit verification): the first implementation hard-coded
+    ``np.linspace(-0.60, -0.20, 81)`` -- the sign convention of
+    ``decision_function``, not of the ``-score_samples`` values this module
+    actually ranks by. Those scores span roughly 0.37-0.80, so **all 81
+    candidates sat below the entire distribution** and were the identical
+    "flag everything" point: precision 2.86%, recall 100%, F1 5.57%, 25 903 rows
+    flagged. The reported optimum also sat on the grid's upper edge, which is the
+    signature of an unsearched range.
+
+    Deriving the grid from the scores removes the failure class outright: it
+    cannot be out of range by construction, and because a row can only be flagged
+    by a cut that is one of the observed values, the attainable F1 optimum is
+    always inside it.
+
+    The ``-score_samples`` orientation (higher = odder) is decided by the caller;
+    this function is sign-agnostic.
+    """
+    values = np.asarray(score, dtype=float)
+    values = values[np.isfinite(values)]
+    if values.size == 0:
+        return np.array([0.0])
+    unique = np.unique(values)
+    if unique.size <= size:
+        return unique
+    # Keep the extremes and interpolate between them on a quantile grid, so
+    # resolution follows where the rows actually are rather than the range.
+    return np.unique(np.quantile(values, np.linspace(0.0, 1.0, size)))
+
+
+def threshold_curve(
+    truth: np.ndarray,
+    score: np.ndarray,
+    grid: Optional[Sequence[float]] = None,
+) -> list[dict[str, Any]]:
+    """Precision / recall / F1 at every candidate cut, for one labelled split.
+
+    Published rather than hidden so the trade-off is a reader's decision: at
+    these prevalences (2.9%) the same score can buy 92% recall at 4% precision
+    or 20% recall at 35% precision, and the operating point is a product choice.
+
+    ``grid`` defaults to :func:`candidate_thresholds` evaluated on ``score``.
+    """
+    score = np.asarray(score, dtype=float)
+    if grid is None:
+        # ``candidate_thresholds`` returns an ndarray, which is not a
+        # ``Sequence[float]`` under the numpy stubs -- materialise a real list
+        # so ``grid`` is narrowed to a concrete type instead of staying
+        # ``Optional`` for the loop below.
+        grid = [float(cut) for cut in candidate_thresholds(score)]
+    out: list[dict[str, Any]] = []
+    for cut in grid:
+        flagged = score >= float(cut)
+        tp = int(np.sum(flagged & (truth == 1)))
+        fp = int(np.sum(flagged & (truth == 0)))
+        fn = int(np.sum(~flagged & (truth == 1)))
+        precision = tp / (tp + fp) if (tp + fp) else 0.0
+        recall = tp / (tp + fn) if (tp + fn) else 0.0
+        f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
+        out.append({
+            "threshold": round(float(cut), 4),
+            "flagged": int(flagged.sum()),
+            "tp": tp, "fp": fp, "fn": fn,
+            "precision": round(precision * 100.0, 2),
+            "recall": round(recall * 100.0, 2),
+            "f1": round(f1 * 100.0, 2),
+        })
+    return out
+
+
+def select_threshold(
+    truth: np.ndarray,
+    score: np.ndarray,
+    grid: Optional[Sequence[float]] = None,
+    max_flag_rate: float = MAX_FLAG_RATE,
+) -> tuple[Optional[float], list[dict[str, Any]]]:
+    """Pick the operating cut on **validation** data.
+
+    Returns ``(threshold, curve)``; ``threshold`` is ``None`` when the split has
+    no labelled anomaly, in which case the caller keeps the forest's own
+    ``offset_``.
+
+    H3 (ML audit): the shipped cut used to be
+    ``contamination = cfg["anomalies"]["rate"]`` -- the *data generator's*
+    injection rate. That is not a decision anyone made about the product; it just
+    happened to be 2%, while the true held-out prevalence is 2.873%. The result was
+    the worst realistic operating point: recall 20.4% against a best-on-validation
+    F1 of ~38%, and on the ``unusually_large`` family -- the one the product most
+    needs to catch -- the model scored 7.9% recall while the dumb absolute rule
+    it is sold against scored 39.4%.
+
+    Ties go to the **higher** cut (fewer false alarms) via ``>=`` on F1, and
+    ``max_flag_rate`` additionally refuses any cut that would flag more than that
+    share of validation rows. At a 2.9% prevalence the raw F1 maximum is
+    insensitive over a wide range, so without the cap a run of bad luck on 75
+    validation users can land the product on an operating point where one in five
+    transactions is an "anomaly".
+    """
+    truth = np.asarray(truth).astype(int)
+    score = np.asarray(score, dtype=float)
+    if truth.size == 0 or int(truth.sum()) == 0 or truth.min() == truth.max():
+        return None, []
+    if grid is None:
+        grid = [float(cut) for cut in candidate_thresholds(score)]
+    curve = threshold_curve(truth, score, grid)
+    rate_cap = max(int(np.ceil(max_flag_rate * truth.size)), 1)
+    usable = [row for row in curve if row["flagged"] <= rate_cap]
+    if not usable:
+        return None, curve
+    best = max(usable, key=lambda row: (row["f1"], row["threshold"]))
+    return float(best["threshold"]), curve
 
 
 def train(
@@ -183,13 +426,16 @@ def train(
     artifact_dir: str | Path = ARTIFACT_DIR,
     contamination: Optional[float] = None,
     params: Optional[Mapping[str, Any]] = None,
+    anomaly_labels: Optional[pd.DataFrame] = None,
 ) -> dict[str, Any]:
     """Fit the forest on the ``train`` users and write the artifact.
 
-    The model is unsupervised: it never sees ``anomaly_labels``. ``contamination``
-    is the expected anomalous share (the generator injects ~2%), which sets the
-    ``predict == -1`` boundary; when ``splits`` is given the fit uses train users
-    only, so ``val`` and ``test`` stay untouched.
+    The model is unsupervised: it never sees ``anomaly_labels`` **for fitting**.
+    When labels *are* supplied they are used on the ``val`` split only, to pick
+    the operating threshold -- never to train the forest and never on ``test``.
+
+    ``contamination`` is the fitting-time hint only; the shipped decision cut
+    comes from :func:`select_threshold`.
     """
     if features is None or features.empty:
         raise ValueError("no features to train the anomaly model on")
@@ -207,6 +453,40 @@ def train(
     model = IsolationForest(contamination=rate, **options)
     model.fit(matrix)
 
+    # --- operating threshold, chosen on validation only --------------------
+    threshold: Optional[float] = None
+    curve: list[dict[str, Any]] = []
+    threshold_source = "isolation_forest_offset"
+    val_summary: dict[str, Any] = {}
+    if anomaly_labels is not None and not anomaly_labels.empty and splits is not None:
+        val_rows = _slice_split(features, splits, "val")
+        if not val_rows.empty:
+            labelled = set(anomaly_labels["transaction_id"])
+            val_truth = val_rows["transaction_id"].isin(labelled).to_numpy().astype(int)
+            if int(val_truth.sum()) > 0:
+                val_score = -model.score_samples(val_rows[FEATURE_COLUMNS].to_numpy(dtype=float))
+                threshold, curve = select_threshold(val_truth, val_score)
+                if threshold is not None:
+                    threshold_source = "selected_on_val_f1"
+                    chosen = min(
+                        curve,
+                        key=lambda row: (abs(row["threshold"] - threshold), -row["flagged"]),
+                    )
+                    val_summary = {
+                        "n_rows": int(val_truth.size),
+                        "n_anomalies": int(val_truth.sum()),
+                        "prevalence_pct": round(100.0 * float(val_truth.mean()), 3),
+                        "score_min": round(float(np.min(val_score)), 4),
+                        "score_max": round(float(np.max(val_score)), 4),
+                        "selected_precision": chosen["precision"],
+                        "selected_recall": chosen["recall"],
+                        "selected_f1": chosen["f1"],
+                        "selected_flag_rate_pct": round(
+                            100.0 * chosen["flagged"] / max(int(val_truth.size), 1), 3
+                        ),
+                        "max_flag_rate_cap_pct": round(100.0 * MAX_FLAG_RATE, 2),
+                    }
+
     directory = Path(artifact_dir)
     directory.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, directory / MODEL_FILE)
@@ -217,6 +497,13 @@ def train(
         "params": {key: value for key, value in options.items() if key != "n_jobs"},
         "n_train_transactions": int(len(matrix)),
         "offset": float(model.offset_),
+        # ``None`` means "use offset_"; kept explicit so a reader never has to
+        # guess which cut is live.
+        "threshold": threshold,
+        "threshold_source": threshold_source,
+        "threshold_objective": THRESHOLD_OBJECTIVE,
+        "threshold_validation": val_summary,
+        "validation_curve": curve,
     }
     (directory / META_FILE).write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return meta
@@ -252,17 +539,32 @@ def predict(
 
     ``anomaly_score`` is ``-score_samples`` so that *higher means odder*, which is
     what every caller (and the API's ``AnomalyItem.score``) expects.
+
+    ``is_anomaly`` uses the threshold chosen on the **validation** split and
+    stored in ``anomaly_meta.json``. When none was stored (no labelled validation
+    anomaly) it falls back to the forest's own ``offset_``.
+
+    That fallback is **negated**, because sklearn's ``offset_`` lives in
+    ``score_samples`` units and is negative here: it defines
+    ``decision_function(X) = score_samples(X) - offset_`` and calls a row an
+    outlier when ``score_samples < offset_``, which in this module's orientation
+    (``score = -score_samples``, higher = odder) is ``score > -offset_``.
+    Comparing the positive ``score`` against the raw negative ``offset_`` is true
+    for every row, so the fallback used to mark the entire ledger anomalous
+    (measured on the 60-user test dataset: precision 2.82%, recall 100%).
     """
     model = load(artifact_dir)
     if model is None or features is None or features.empty:
         return None
     matrix = features[FEATURE_COLUMNS].to_numpy(dtype=float)
     score = -model.score_samples(matrix)
-    flag = model.predict(matrix) == -1
+    stored = load_meta(artifact_dir).get("threshold")
+    threshold = float(stored) if isinstance(stored, (int, float)) else -float(model.offset_)
+    flag = score >= threshold
     frame = pd.DataFrame(
         {"anomaly_score": score, "is_anomaly": flag}, index=features.index
     )
-    return AnomalyScores(frame=frame, source="model", threshold=float(model.offset_))
+    return AnomalyScores(frame=frame, source="model", threshold=threshold)
 
 
 def rule_scores(
@@ -284,21 +586,43 @@ def rule_scores(
 
 
 def _scores_metrics(truth: np.ndarray, flags: np.ndarray, score: np.ndarray) -> dict[str, Any]:
-    """Precision/recall/F1 at the operating point, plus ranking AUC."""
+    """Precision/recall/F1 at the operating point, PR-AUC and ranking AUC.
+
+    M3 (ML audit): PR-AUC (average precision) is now reported because at a 2.9%
+    positive rate ROC-AUC flatters a rare-event detector -- 0.84 sounds strong
+    while precision at the operating point is 35%. The two have to be read
+    together.
+    """
     precision, recall, f1, _ = precision_recall_fscore_support(
         truth, flags, average="binary", zero_division=0
     )
     auc: Optional[float] = None
+    pr_auc: Optional[float] = None
     if truth.min() != truth.max():
         try:
             auc = round(float(roc_auc_score(truth, score)), 4)
         except ValueError:  # pragma: no cover - degenerate scores
             auc = None
+        try:
+            pr_auc = round(float(average_precision_score(truth, score)), 4)
+        except ValueError:  # pragma: no cover
+            pr_auc = None
+    # FPR / FNR: the two rates that decide whether the card is usable or merely
+    # interesting. FPR is the false-alarm tax on a paying user's attention.
+    positives = int((truth == 1).sum())
+    negatives = int((truth == 0).sum())
+    fn = positives - int(((flags == 1) & (truth == 1)).sum())
+    fp = int(((flags == 1) & (truth == 0)).sum())
     return {
         "precision": round(float(precision) * 100.0, 2),
         "recall": round(float(recall) * 100.0, 2),
         "f1": round(float(f1) * 100.0, 2),
         "auc": auc,
+        "pr_auc": pr_auc,
+        "false_positive_rate": round(fp / negatives, 5) if negatives else None,
+        "false_negative_rate": round(fn / positives, 5) if positives else None,
+        "true_positive_rate": round(float(recall), 5),
+        "specificity": round(1 - (fp / negatives), 5) if negatives else None,
     }
 
 
@@ -317,12 +641,27 @@ def evaluate(
     has never seen it. Both methods are scored on the *same* test rows, with the
     same precision/recall machinery, so "the model beats the rule" is a measured
     statement rather than a claim.
+
+    L1 (ML audit): the returned block also carries a **rule-encoding ablation**.
+    ``is_off_hours`` is ``hour <= 5`` and ``is_rapid_repeat`` is
+    ``minutes_since_prev <= 20`` -- which are, in this synthetic dataset, exactly
+    the generator's own injection rules for the ``unusual_time`` and
+    ``rapid_repeat`` families. 100% of injected ``unusual_time`` rows carry the
+    flag and 0% of normal rows do, so part of the headline AUC measures recovery
+    of the data generator's bookkeeping rather than of behaviour. The ablation
+    reports the AUC without those two columns so the headline number cannot be
+    over-read.
     """
     if features is None or features.empty:
         raise ValueError("no features to evaluate the anomaly model on")
+    # M1: never silently fall back to the whole frame (which includes train
+    # users). A mis-configured run must say so rather than publish train metrics
+    # under a test label.
     test_features = _slice_split(features, splits, "test")
     if test_features.empty:
-        test_features = features
+        raise ValueError(
+            "no test users in the split; refusing to report train metrics as held-out"
+        )
     if anomaly_labels is None or anomaly_labels.empty:
         raise ValueError("no anomaly labels to evaluate against")
 
@@ -395,6 +734,9 @@ def evaluate(
         "n_anomalies": int(truth_int.sum()),
         "by_type": by_type,
         "contamination": contamination_from(cfg),
+        "threshold": model_scores.threshold,
+        "threshold_source": load_meta(artifact_dir).get("threshold_source"),
+        "threshold_objective": THRESHOLD_OBJECTIVE,
         "model": model_metrics,
         "baseline": {
             **baseline_metrics,
@@ -402,8 +744,47 @@ def evaluate(
                 test_transactions, threshold_multiplier
             )), 2),
         },
+        "rule_encoding_ablation": _rule_encoding_ablation(features, splits, test_features, truth_int, artifact_dir),
         "improvement_recall_pct": _gain("recall"),
         "improvement_f1_pct": _gain("f1"),
         "improvement_auc_pct": _gain("auc"),
+    }
+
+
+def _rule_encoding_ablation(
+    features: pd.DataFrame,
+    splits: Optional[pd.DataFrame],
+    test_features: pd.DataFrame,
+    truth: np.ndarray,
+    artifact_dir: str | Path,
+) -> dict[str, Any]:
+    """AUC with the two injection-rule columns removed, refitted on train only.
+
+    L1 (ML audit). Reports the honest ceiling so the headline AUC is not read as
+    pure behavioural detection.
+    """
+    dropped = ("is_off_hours", "is_rapid_repeat")
+    keep = [c for c in FEATURE_COLUMNS if c not in dropped]
+    train_rows = _slice_split(features, splits, "train")
+    if train_rows.empty or len(keep) == 0:
+        return {"status": "unavailable", "reason": "no training rows"}
+    probe = IsolationForest(
+        contamination=DEFAULT_CONTAMINATION, **{
+            k: v for k, v in PARAMS.items() if k != "contamination"
+        }
+    )
+    probe.fit(train_rows[keep].to_numpy(dtype=float))
+    score = -probe.score_samples(test_features[keep].to_numpy(dtype=float))
+    if truth.min() == truth.max():  # pragma: no cover - degenerate split
+        return {"status": "unavailable", "reason": "single-class test split"}
+    return {
+        "status": "ok",
+        "dropped_features": list(dropped),
+        "auc_without_rule_encoding_features": round(float(roc_auc_score(truth, score)), 4),
+        "note": (
+            "is_off_hours / is_rapid_repeat restate this dataset generator's own "
+            "injection rules, so part of the headline AUC measures recovery of the "
+            "generator rather than of user behaviour."
+        ),
     }
 

@@ -20,7 +20,6 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pandas as pd
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -48,8 +47,14 @@ def trained(small_db, tmp_path_factory) -> Path:
         user_features.user_features(cfg, transactions), splits
     )
     signal.train(rows, user_features.load_user_labels(small_db), splits, artifact_dir=directory)
+    # With labels, as production trains it: the operating cut is then chosen on
+    # the validation split rather than left on the unsupervised ``offset_``.
     anomaly.train(
-        anomaly.build_features(transactions), splits, cfg, artifact_dir=directory
+        anomaly.build_features(transactions),
+        splits,
+        cfg,
+        artifact_dir=directory,
+        anomaly_labels=user_features.load_anomaly_labels(small_db),
     )
     return directory
 

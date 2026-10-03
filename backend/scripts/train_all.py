@@ -24,6 +24,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any, Mapping
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
@@ -78,9 +79,15 @@ def _train_anomaly(
     optional: a missing artifact would leave ``/anomalies`` on the rule, but a
     missing *evaluation* only means the claim is unproven this run, which is
     recorded rather than raised.
+
+    ``labels`` is handed to ``anomaly.train`` **only** so the operating threshold
+    can be chosen on the ``val`` split (audit H3). The forest itself stays
+    unsupervised: it is never fitted on labels, and ``test`` is never consulted.
     """
     features = anomaly.build_features(transactions)
-    anomaly.train(features, splits, cfg, artifact_dir=artifacts)
+    anomaly.train(
+        features, splits, cfg, artifact_dir=artifacts, anomaly_labels=labels
+    )
     try:
         return anomaly.evaluate(
             features, transactions, labels, splits, cfg, artifact_dir=artifacts
@@ -90,6 +97,46 @@ def _train_anomaly(
         # land. Either way the model is trained and served; only the
         # model-vs-rule claim is unavailable.
         return {"status": "unavailable", "reason": str(exc)}
+
+
+def _fairness_gate(metrics: Mapping[str, Any]) -> dict:
+    """Hoist a single honest verdict on the fairness families (audit H2).
+
+    The audit found all three families failing the plan's 15% target while
+    ``metrics.json`` recorded ``target_met: false`` inside a deeply nested block
+    that nothing consumed. The failure was visible only to a reader who went
+    looking for it -- which is exactly how a failed responsible-AI check becomes
+    an assumed pass. This puts one boolean at the top level, beside the numbers
+    it summarises, and warns on stdout.
+    """
+    block = metrics.get("fairness") or {}
+    families = block.get("by_family") or {}
+    if not families:
+        return {
+            "status": "unavailable",
+            "all_targets_met": None,
+            "reason": block.get("reason", "no fairness block computed"),
+        }
+    failing = sorted(
+        name for name, family in families.items()
+        if isinstance(family, dict) and family.get("target_met") is False
+    )
+    return {
+        "status": "checked",
+        "all_targets_met": not failing,
+        "families_checked": sorted(families),
+        "failing_families": failing,
+        "worst_relative_gap_pct": round(max(
+            (float(f.get("worst_relative_gap_pct") or 0.0) for f in families.values()),
+            default=0.0,
+        ), 2),
+        "target_relative_gap_pct": fairness.TARGET_RELATIVE_GAP_PCT,
+        "note": (
+            "A failure here is a published finding, not a crash: the models still "
+            "train and serve. It must be read before any claim that the system is "
+            "group-fair. See docs/ML_AUDIT_REPORT.md."
+        ),
+    }
 
 
 def main(argv=None) -> int:
@@ -162,13 +209,19 @@ def main(argv=None) -> int:
             frame, db_path, splits, transactions, user_rows, artifacts,
             max(int(args.min_group_users), 1),
         )
+    metrics["responsible_ai_gate"] = _fairness_gate(metrics)
 
     path = evaluate.write_metrics(metrics, artifacts)
     print(json.dumps(metrics, indent=2))
     print(f"artifacts: {artifacts}  metrics: {path}")
+    gate = metrics.get("responsible_ai_gate") or {}
+    if gate.get("all_targets_met") is False:
+        print(
+            "WARNING: fairness target NOT met for: "
+            + ", ".join(gate.get("failing_families", []))
+        )
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

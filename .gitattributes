@@ -1,0 +1,25 @@
+# ============================================================
+# Line endings are load-bearing for binary/artifact files.
+#
+# C1 (ML audit): with core.autocrlf=true and no .gitattributes, git
+# rewrote the LightGBM boosters (*.txt) to CRLF on checkout.
+# lgb.Booster(model_file=...) then logs "Model format error, expect a
+# tree here" and calls Log::Fatal, which ABORTS the process
+# (exit -1073740791). That is a native abort, not a Python
+# exception, so the serving fallback cannot catch it: /forecast
+# hard-crashes the worker and pytest segfaults.
+#
+# Model artifacts are text formats with a line-oriented parser, so
+# they must never be CRLF-normalised.
+# ============================================================
+backend/ml/artifacts/*.txt   -text
+backend/ml/artifacts/*.json  -text
+backend/ml/artifacts/*.joblib binary
+
+# Source and config: normalise to LF in the repo, checkout as-is.
+* text=auto eol=lf
+*.py   text eol=lf
+*.md   text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.json text eol=lf

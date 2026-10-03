@@ -11,6 +11,16 @@ Two entry points:
 * :func:`shap_contributions` / :func:`top_drivers` — per-row SHAP values for one
   user's latest feature row, turned into the ``Driver`` shape the API returns.
 
+The consistency signal's per-user explanation does **not** live here: it belongs
+to :mod:`backend.ml.signal`, whose :func:`~backend.ml.signal.shap_explanation`
+produces the exact decomposition for the logistic regression the signal actually
+uses. An earlier revision carried a second ``linear_contributions`` /
+``top_signal_factors`` pair here; the audit found them dead code *and* wrong
+(they looked for ``feature_std_`` / ``scaler_``, which a scikit-learn
+``LogisticRegression`` never has, so they silently returned ``coef x raw value``).
+They were removed rather than left as a second, differently-wrong explanation
+path for someone to wire up later (audit M4).
+
 Design rules:
 
 * **Sign, not size, is the message.** A driver says "cash-outs this month push
@@ -27,7 +37,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd
@@ -298,68 +308,3 @@ def signal_label(feature: str, language: str = "en") -> str:
     if entry is None:
         return feature_label(feature, language)
     return entry[0] if language == "bn" else entry[1]
-
-
-def linear_contributions(
-    model: Any,
-    feature_row: Mapping[str, float],
-    feature_columns: Sequence[str] | None = None,
-) -> dict[str, float]:
-    """Per-feature contributions of a fitted logistic regression.
-
-    For a linear model the SHAP value *is* ``coef x standardised value``, so this
-    is the exact explanation rather than an approximation — and it needs no shap
-    import. Coefficients are scaled by the training standard deviation when the
-    model carries ``scaler_``/``feature_std_``, so contributions are comparable
-    across features with different units (spending vs ratios).
-
-    Returns ``{}`` for a model without ``coef_``, which keeps the Phase 5 signal
-    card usable before that model exists.
-    """
-    coefficients = getattr(model, "coef_", None)
-    if coefficients is None:
-        return {}
-    columns = list(feature_columns or feature_row.keys())
-    scale = getattr(model, "feature_std_", None) or getattr(model, "scaler_", None)
-    out: dict[str, float] = {}
-    for index, column in enumerate(columns):
-        if index >= len(coefficients) or column not in feature_row:
-            continue
-        value = float(feature_row[column])
-        if scale is not None:
-            try:
-                value = value / float(scale[index])
-            except (IndexError, TypeError, ZeroDivisionError):
-                pass
-        out[column] = float(coefficients[index]) * value
-    return out
-
-
-def top_signal_factors(
-    model: Any,
-    feature_row: Mapping[str, float],
-    feature_columns: Sequence[str] | None = None,
-    limit: int = 3,
-) -> list[Driver]:
-    """The strongest factors behind one user's consistency band.
-
-    A positive contribution pushes the band up, a negative one pulls it down;
-    the returned ``direction`` says which, so the UI can render
-    "improves" / "weakens" without a second sign convention.
-    """
-    contributions = linear_contributions(model, feature_row, feature_columns)
-    ranked = sorted(contributions.items(), key=lambda item: abs(item[1]), reverse=True)
-    factors: list[Driver] = []
-    for feature, value in ranked[: max(int(limit), 1)]:
-        if abs(value) < 1e-9:
-            continue
-        factors.append(
-            Driver(
-                feature=feature,
-                direction="increases" if value > 0 else "decreases",
-                impact_bdt=abs(float(value)),
-                detail=signal_label(feature, "en"),
-            )
-        )
-    return factors
-

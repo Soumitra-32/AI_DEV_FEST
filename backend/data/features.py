@@ -27,6 +27,15 @@ ID_COLUMNS = ["user_id"]
 DEMOGRAPHIC_COLUMNS = ["persona", "district", "income_band"]
 
 #: Model inputs. Nothing here is derived from the label tables.
+#:
+#: ``fee_per_month_bdt`` is deliberately **absent**. The simulated cash-out fee is
+#: a flat 1.85% of the cash-out amount, so ``fee_per_month_bdt`` is a
+#: deterministic multiple of ``cash_out_volume_per_month_bdt``
+#: (``corr = 1.000000``). Keeping both makes the design matrix exactly
+#: collinear, which leaves the coefficients unidentifiable: an unregularised fit
+#: splits the same effect arbitrarily between the two copies and the explanation
+#: then double-counts one real driver. ``fee_share_of_income`` (a *ratio*) is
+#: kept instead - it is merely highly correlated (r = 0.97), not dependent.
 FEATURE_COLUMNS: List[str] = [
     "income_mean_bdt",
     "income_cv",
@@ -36,7 +45,6 @@ FEATURE_COLUMNS: List[str] = [
     "cash_out_count_per_month",
     "cash_out_volume_per_month_bdt",
     "cash_out_share_of_outflow",
-    "fee_per_month_bdt",
     "fee_share_of_income",
     "balance_mean_bdt",
     "balance_min_bdt",
@@ -46,7 +54,21 @@ FEATURE_COLUMNS: List[str] = [
     "weekend_spend_ratio",
 ]
 
-USER_FEATURE_COLUMNS = ID_COLUMNS + DEMOGRAPHIC_COLUMNS + ["months_observed"] + FEATURE_COLUMNS
+#: Computed, label-free, and **not** model inputs. ``fee_per_month_bdt`` is a
+#: deterministic multiple of ``cash_out_volume_per_month_bdt`` (see
+#: :data:`FEATURE_COLUMNS`), so it must stay out of the design matrix -- but it is
+#: a perfectly good *trigger*: the tips bank and the explanation layer ask "what
+#: did this user pay in fees?", which is exactly this column. An earlier revision
+#: of the collinearity fix dropped it from the returned frame entirely, which left
+#: two tips with triggers that could never fire.
+DERIVED_COLUMNS: List[str] = ["fee_per_month_bdt"]
+
+#: Numeric, label-free columns a **consumer** (tips bank, explanation layer,
+#: health score) may name. A superset of :data:`FEATURE_COLUMNS`: the extras are
+#: real per-user quantities that are unsafe as model inputs but valid as triggers.
+NUMERIC_FEATURE_COLUMNS: List[str] = ["months_observed"] + FEATURE_COLUMNS + DERIVED_COLUMNS
+
+USER_FEATURE_COLUMNS = ID_COLUMNS + DEMOGRAPHIC_COLUMNS + NUMERIC_FEATURE_COLUMNS
 
 
 def default_db_path() -> Path:
@@ -272,13 +294,17 @@ def user_features(
         outflow=("_outflow", "sum")
     )
     weekend_days = [int(day) for day in cfg["dataset"]["weekend_weekdays"]]
+    # ``apply`` excludes the grouping columns by default: pandas 3 removed the
+    # ``include_groups`` keyword entirely and now *raises* on
+    # ``include_groups=True``. Only ``user_id`` is grouped on here, so ``part``
+    # still carries ``day_of_month``/``weekday`` and the explicit flag that used
+    # to suppress the pandas 2.x deprecation warning is simply gone.
     month_end_ratio = (
         daily.groupby("user_id")
         .apply(
             lambda part: _ratio(
                 part, part["day_of_month"] >= 28, part["day_of_month"].between(10, 20), "outflow"
-            ),
-            include_groups=False,
+            )
         )
         .rename("month_end_spend_ratio")
         .reset_index()
@@ -291,8 +317,7 @@ def user_features(
                 part["weekday"].isin(weekend_days),
                 ~part["weekday"].isin(weekend_days),
                 "outflow",
-            ),
-            include_groups=False,
+            )
         )
         .rename("weekend_spend_ratio")
         .reset_index()

@@ -281,8 +281,10 @@ class ShapFeature(BaseModel):
 
     Signed, unlike :class:`SignalFactor.magnitude`, which is an absolute size
     stripped of direction: a positive value pushes towards "stable", a negative
-    one pushes away. :mod:`backend.ml.signal` produces these from
-    ``shap.LinearExplainer``, which is exact for a linear model.
+    one pushes away. :mod:`backend.ml.signal` produces these with the closed-form
+    linear decomposition ``phi_i = w_i * x_i``, which is **exact** for a logistic
+    regression -- not an approximation, and not the ``shap`` package, whose
+    ``LinearExplainer`` cannot be paired with this model's masker.
     """
 
     feature: str
@@ -300,11 +302,16 @@ class ShapExplanation(BaseModel):
     summarised in ``factors``) is what makes the band auditable: a reader can
     check the arithmetic instead of taking the top three on trust.
 
+    ``base_value`` is the model intercept, so it is a small number (order 1 in
+    log-odds). A large base here means the contributions are on the wrong scale.
+
     Absent (``None``) when the rule band answered, because a rule has no SHAP
     values -- an empty contribution list would look like "nothing mattered".
     """
 
-    method: str = Field(description="How the values were computed, e.g. shap.LinearExplainer")
+    method: str = Field(
+        description="How the values were computed, e.g. exact_linear_decomposition"
+    )
     base_value: float
     log_odds: float = Field(description="The model's log-odds for this user")
     band_cutoffs: Dict[str, float] = Field(

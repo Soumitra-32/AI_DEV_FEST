@@ -36,12 +36,16 @@ DEFAULT_LIMIT = 20
 LARGE_RATIO = 3.0
 
 
-def _reason(features_row: pd.Series, timestamp: pd.Timestamp) -> str:
+def _reason(features_row: pd.Series, timestamp: str | pd.Timestamp) -> str:
     """Plain-language reason for one ranked row, from its own features.
 
     The order mirrors the injected anomaly families (repeat, odd hour, large
     amount) and incorporates statutory monitoring duties under the Payment and
     Settlement Systems Act, 2024 (1 Oct 2026 Bangladesh Bank Bangla QR circular).
+
+    ``timestamp`` is accepted as a string as well as a Timestamp because
+    ``pd.Timestamp`` is applied to it below anyway, so callers that hold the raw
+    ISO text do not have to convert it just to satisfy the signature.
     """
     rapid = float(features_row.get("is_rapid_repeat", 0.0))
     off_hours = float(features_row.get("is_off_hours", 0.0))
@@ -180,13 +184,27 @@ def build_anomalies(
 
     days = max(int(window_days), 1)
     cutoff = transactions["timestamp"].max() - pd.Timedelta(days=days)
+
+    # C4 (ML audit): features are built from the user's **whole** history and the
+    # window is sliced *afterwards*. The per-user reference inside
+    # ``build_features`` is a function of how much history exists, so building
+    # features from the 30-day window alone produced a different distribution
+    # than the model was fitted on (measured: amount_zscore drifted +0.18 and
+    # is_rapid_repeat roughly doubled, and the flag decisions disagreed with the
+    # evaluation path). Training and serving must build features the same way.
+    all_features = ml_anomaly.build_features(transactions)
+    window_ids = set(
+        transactions.loc[transactions["timestamp"].ge(cutoff), "transaction_id"]
+    )
     window = transactions.loc[transactions["timestamp"].ge(cutoff)].reset_index(drop=True)
+    window_features = all_features.loc[
+        all_features["transaction_id"].isin(window_ids)
+    ].reset_index(drop=True)
 
-    features = ml_anomaly.build_features(window)
     directory = artifact_dir if artifact_dir is not None else ml_anomaly.ARTIFACT_DIR
-    scores = _rank(window, features, directory)
+    scores = _rank(window, window_features, directory)
 
-    ranked = window.join(features[ml_anomaly.FEATURE_COLUMNS])
+    ranked = window.join(window_features[ml_anomaly.FEATURE_COLUMNS])
     ranked["anomaly_score"] = scores.frame["anomaly_score"].to_numpy()
     ranked["is_anomaly"] = scores.frame["is_anomaly"].to_numpy()
     ranked = ranked.sort_values("anomaly_score", ascending=False, kind="stable").reset_index(drop=True)

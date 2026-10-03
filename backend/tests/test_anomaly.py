@@ -40,10 +40,23 @@ def features(transactions: pd.DataFrame) -> pd.DataFrame:
 
 @pytest.fixture(scope="module")
 def trained_artifact(tmp_path_factory, small_db, transactions, features) -> str:
-    """One trained forest shared by the read-only tests below."""
+    """One trained forest shared by the read-only tests below.
+
+    Trained the way production trains it -- with the anomaly labels available so
+    the operating cut is selected on the validation split. A label-free fit still
+    works but leaves the model on the unsupervised ``offset_``, which the audit
+    measured as the worst realistic operating point; a test that asserts model
+    quality has to exercise the configuration that actually ships.
+    """
     directory = tmp_path_factory.mktemp("anomaly_artifacts")
     splits = split_module.load_splits(small_db)
-    anomaly.train(features, splits, generator.load_config(), artifact_dir=directory)
+    anomaly.train(
+        features,
+        splits,
+        generator.load_config(),
+        artifact_dir=directory,
+        anomaly_labels=user_features.load_anomaly_labels(small_db),
+    )
     return str(directory)
 
 
@@ -138,7 +151,45 @@ def test_train_writes_the_artifact_and_predict_round_trips(
     assert scores.frame["anomaly_score"].notna().all()
     # higher score = odder, which is what the API's AnomalyItem.score documents
     assert scores.frame["anomaly_score"].min() < scores.frame["anomaly_score"].max()
-    assert scores.threshold == pytest.approx(anomaly.load(trained_artifact).offset_)
+    stored = meta.get("threshold")
+    if isinstance(stored, (int, float)):
+        expected = float(stored)
+    else:
+        forest = anomaly.load(trained_artifact)
+        assert forest is not None, "the fixture trained an artifact, so it must load"
+        expected = -float(forest.offset_)
+    assert scores.threshold == pytest.approx(expected)
+    assert meta["threshold_source"] == "selected_on_val_f1"
+
+
+def test_the_offset_fallback_negates_sklearns_offset(tmp_path, small_db, features) -> None:
+    """A label-free artifact must not flag the whole ledger.
+
+    sklearn's ``offset_`` is expressed in ``score_samples`` units and is negative
+    here, while this module ranks by ``-score_samples`` (positive, higher = odder).
+    Comparing the two directly is true for every row, so the fallback used to
+    report precision 2.82% / recall 100% -- everything anomalous, which is the
+    same as nothing. Pinned here because the shipped artifact never takes this
+    path (``train_all`` passes labels), so only a test can catch a regression.
+    """
+    splits = split_module.load_splits(small_db)
+    anomaly.train(
+        features, splits, generator.load_config(), artifact_dir=tmp_path, anomaly_labels=None
+    )
+    meta = anomaly.load_meta(tmp_path)
+    assert meta["threshold"] is None
+    assert meta["threshold_source"] == "isolation_forest_offset"
+
+    scores = anomaly.predict(features, tmp_path)
+    assert scores is not None
+    forest = anomaly.load(tmp_path)
+    assert forest is not None, "the artifact was just trained, so it must load"
+    offset = float(forest.offset_)
+    assert offset < 0.0, "the negated fallback only matters because offset_ is negative"
+    assert scores.threshold == pytest.approx(-offset)
+
+    flagged = float(scores.frame["is_anomaly"].mean())
+    assert flagged < 0.10, f"the fallback flagged {flagged:.1%} of rows, not ~contamination"
 
 
 def test_predict_returns_none_when_the_artifact_is_missing(tmp_path) -> None:
@@ -282,7 +333,10 @@ def test_anti_misuse_detection_under_payment_and_settlement_act_2024() -> None:
         "is_rapid_repeat": 1.0,
         "amount_over_user_mean": 1.2,
     }
-    reason_split = anomaly_service._reason(split_row, "2026-10-02T10:00:00")
+    # ``_reason`` reads its input as a Series; the bare dict below works at
+    # runtime but is not what the signature says, so it is wrapped to match it
+    # rather than loosening the annotation.
+    reason_split = anomaly_service._reason(pd.Series(split_row), "2026-10-02T10:00:00")
     assert "transaction splitting" in reason_split
     assert "Payment & Settlement Systems Act, 2024" in reason_split
 
@@ -293,7 +347,9 @@ def test_anti_misuse_detection_under_payment_and_settlement_act_2024() -> None:
         "amount_over_user_mean": 4.5,
         "amount_zscore": 3.5,
     }
-    reason_cashout = anomaly_service._reason(qr_cashout_row, "2026-10-02T10:00:00")
+    reason_cashout = anomaly_service._reason(
+        pd.Series(qr_cashout_row), "2026-10-02T10:00:00"
+    )
     assert "unauthorised cash-out review" in reason_cashout
     assert "statutory QR anti-misuse monitoring" in reason_cashout
 
