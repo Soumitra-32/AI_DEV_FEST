@@ -39,7 +39,11 @@ function PlanContent() {
   const [plan, setPlan] = useState<SavingsPlanResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const autoRan = useRef(false);
+  // Key of the last voice handoff already handled. Same-route navigation
+  // (home → plan → home → plan) does NOT remount this component, so a
+  // run-once ref would swallow every handoff after the first and the page
+  // would keep showing stale/default values (GAP-10 voice carry bug).
+  const lastHandoff = useRef<string | null>(null);
 
   function runPlan(goalBdt: number, monthsCount: number) {
     setBusy(true);
@@ -73,13 +77,22 @@ function PlanContent() {
     runPlan(goalBdt, monthsCount);
   }
 
-  // Voice handoff: landing with ?prompt= means the user already spoke, so
-  // calculate immediately instead of showing an empty form. Runs once.
+  // Voice handoff: landing with ?goal=&months=&prompt= means the user spoke
+  // (or confirmed numbers on the home page), so the form takes those values
+  // and calculates immediately. Keyed on the full query string, so a second
+  // voice handoff to the same route re-syncs instead of showing stale values.
   useEffect(() => {
-    if (autoRan.current || !searchParams.get("prompt")) return;
-    autoRan.current = true;
-    const goalBdt = Number(searchParams.get("goal") ?? goal);
-    const monthsCount = Number(searchParams.get("months") ?? months);
+    const prompt = searchParams.get("prompt");
+    if (!prompt) return;
+    const key = `${searchParams.get("goal")}|${searchParams.get("months")}|${prompt}`;
+    if (lastHandoff.current === key) return;
+    lastHandoff.current = key;
+    const goalParam = searchParams.get("goal");
+    const monthsParam = searchParams.get("months");
+    if (goalParam !== null) setGoal(goalParam);
+    if (monthsParam !== null) setMonths(monthsParam);
+    const goalBdt = Number(goalParam ?? goal);
+    const monthsCount = Number(monthsParam ?? months);
     if (
       Number.isFinite(goalBdt) &&
       goalBdt > 0 &&
@@ -89,7 +102,7 @@ function PlanContent() {
       runPlan(goalBdt, monthsCount);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   return (
     <>

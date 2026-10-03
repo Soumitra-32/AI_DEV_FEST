@@ -244,6 +244,7 @@ export default function HomePage() {
           />
           {pending && (
             <GoalConfirm
+              key={`${pending.text}|${pending.goal}|${pending.months}`}
               text={pending.text}
               initialGoal={pending.goal}
               initialMonths={pending.months}
