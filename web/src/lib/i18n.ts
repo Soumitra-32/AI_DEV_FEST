@@ -718,7 +718,7 @@ export function formatFeatureName(name: string | null | undefined, lang: Lang): 
     return lang === "bn" ? "আয়ের ফিতে ব্যয় অনুপাত" : "Fee Share of Income";
   }
   if (lower.includes("shortfall_days_per_month")) {
-    return lang === "bn" ? "মাসে টানাটানির দিন" : "Shortfall Days Per Month";
+    return lang === "bn" ? "মাসে ঘাটতির দিন" : "Shortfall Days Per Month";
   }
   if (lower.includes("balance_min_bdt")) {
     return lang === "bn" ? "সর্বনিম্ন ব্যালেন্স" : "Minimum Balance";
@@ -801,7 +801,7 @@ export function sanitizeBullet(bullet: string, lang: Lang): string {
     clean = clean.replace(/fee_share_of_income/g, lang === "bn" ? "আয়ের ফিতে ব্যয় অনুপাত" : "fee share of income");
   }
   if (clean.includes("shortfall_days_per_month")) {
-    clean = clean.replace(/shortfall_days_per_month/g, lang === "bn" ? "মাসে টানাটানির দিন" : "shortfall days per month");
+    clean = clean.replace(/shortfall_days_per_month/g, lang === "bn" ? "মাসে ঘাটতির দিন" : "shortfall days per month");
   }
   if (clean.includes("balance_min_bdt")) {
     clean = clean.replace(/balance_min_bdt/g, lang === "bn" ? "সর্বনিম্ন ব্যালেন্স" : "minimum balance");
@@ -872,15 +872,15 @@ export function formatStatusBadge(status: string | null | undefined, lang: Lang)
   if (lang === "en") return status;
   const map: Record<string, string> = {
     Strong: "দৃঢ়",
-    Building: "শুরু",
+    Building: "চলমান",
     Steady: "স্থিতিশীল",
-    "System Computed": "স্বয়ংক্রিয় হিসাব",
-    "Rule Verified": "✓ যাচাই করা",
+    "System Computed": "আমাদের হিসাবে",
+    "Rule Verified": "✓ যাচাইকৃত",
     "Plain Language": "সহজ ভাষায়",
-    "Logistic Regression": "ধারাবাহিকতা যাচাই",
-    "Isolation Forest": "অস্বাভাবিক খোঁজার পদ্ধতি",
-    LightGBM: "স্মার্ট হিসাব",
-    Educational: "শুধু তথ্য",
+    "Logistic Regression": "ধারাবাহিকতা মডেল",
+    "Isolation Forest": "অস্বাভাবিক লেনদেন শনাক্তকারী",
+    LightGBM: "আমাদের মডেল",
+    Educational: "শিক্ষামূলক",
   };
   return map[status] ?? status;
 }
