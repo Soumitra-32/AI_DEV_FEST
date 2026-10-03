@@ -63,7 +63,12 @@ def test_every_tip_is_written_in_both_languages() -> None:
 
 def test_every_trigger_is_a_real_feature_and_operator() -> None:
     """A trigger naming an unknown feature could never fire -- a silent dead tip."""
-    known = set(user_features.FEATURE_COLUMNS) | {"months_observed"}
+    # The contract a trigger is written against is ``NUMERIC_FEATURE_COLUMNS``,
+    # not ``FEATURE_COLUMNS``: the latter is the *model input* list, and a tip may
+    # legitimately ask about a column the model is not allowed to see (fees are
+    # the example -- they are deterministically tied to cash-out volume, so they
+    # are out of the design matrix but still the honest trigger for a fee tip).
+    known = set(user_features.NUMERIC_FEATURE_COLUMNS)
     for tip in rag.load_bank():
         trigger = tip["trigger"]
         assert trigger["feature"] in known, tip["id"]

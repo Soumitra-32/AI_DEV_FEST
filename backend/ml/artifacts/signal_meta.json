@@ -9,7 +9,6 @@
     "cash_out_count_per_month",
     "cash_out_volume_per_month_bdt",
     "cash_out_share_of_outflow",
-    "fee_per_month_bdt",
     "fee_share_of_income",
     "balance_mean_bdt",
     "balance_min_bdt",
@@ -20,32 +19,89 @@
   ],
   "bands": [
     [
-      0.4,
+      0.33,
       "Building"
     ],
     [
-      0.6,
+      0.52,
       "Steady"
     ]
   ],
+  "bands_source": "selected_on_val_terciles",
+  "C": 1.0,
+  "C_source": "selected_on_val",
+  "C_selection_note": "default C=1 kept: the +0.0201 validation gain for C=0.05 does not survive bootstrap (5th pct -0.0066)",
+  "C_search": [
+    {
+      "C": 0.05,
+      "val_auc": 0.7477
+    },
+    {
+      "C": 0.1,
+      "val_auc": 0.7415
+    },
+    {
+      "C": 0.25,
+      "val_auc": 0.733
+    },
+    {
+      "C": 0.5,
+      "val_auc": 0.7284
+    },
+    {
+      "C": 1.0,
+      "val_auc": 0.7276
+    },
+    {
+      "C": 2.0,
+      "val_auc": 0.7269
+    },
+    {
+      "C": 4.0,
+      "val_auc": 0.7284
+    }
+  ],
   "trained_rows": 350,
-  "positive_rate": 0.42,
+  "positive_rate": 0.4314,
+  "intercept": -0.44906,
   "coefficients": {
-    "income_mean_bdt": -0.756674,
-    "income_cv": -0.564677,
-    "income_days_per_month": 0.014533,
-    "spend_mean_bdt": -0.469998,
-    "spend_cv": -0.202062,
-    "cash_out_count_per_month": 0.005892,
-    "cash_out_volume_per_month_bdt": 0.312989,
-    "cash_out_share_of_outflow": 1.130568,
-    "fee_per_month_bdt": 0.312839,
-    "fee_share_of_income": -0.008213,
-    "balance_mean_bdt": 0.427926,
-    "balance_min_bdt": -0.104319,
-    "balance_volatility": 0.115372,
-    "shortfall_days_per_month": -0.189836,
-    "month_end_spend_ratio": -0.0425,
-    "weekend_spend_ratio": 0.048809
-  }
+    "income_mean_bdt": -0.565125,
+    "income_cv": -0.500126,
+    "income_days_per_month": -0.100288,
+    "spend_mean_bdt": -0.712696,
+    "spend_cv": -0.135638,
+    "cash_out_count_per_month": 0.199838,
+    "cash_out_volume_per_month_bdt": 0.696186,
+    "cash_out_share_of_outflow": 0.897869,
+    "fee_share_of_income": 0.004714,
+    "balance_mean_bdt": 0.154976,
+    "balance_min_bdt": 0.008904,
+    "balance_volatility": 0.213261,
+    "shortfall_days_per_month": -0.368293,
+    "month_end_spend_ratio": -0.16392,
+    "weekend_spend_ratio": 0.008364
+  },
+  "sign_conflicts": [
+    {
+      "feature": "income_mean_bdt",
+      "univariate_r": 0.1481,
+      "coefficient": -0.565125
+    },
+    {
+      "feature": "income_days_per_month",
+      "univariate_r": 0.1021,
+      "coefficient": -0.100288
+    }
+  ],
+  "library_versions": {
+    "numpy": "2.0.0",
+    "pandas": "3.0.6",
+    "sklearn": "1.9.1",
+    "lightgbm": "4.7.0"
+  },
+  "python": "3.12.10",
+  "config_hash": "de7ba495e40e42bf",
+  "generator_version": "1.0.0",
+  "dataset_path": "shonchoy.db",
+  "dataset_bytes": 39378944
 }

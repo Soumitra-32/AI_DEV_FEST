@@ -26,6 +26,18 @@ backend/packages/
 backend/ml/artifacts/*.jsonl
 
 
+# --- Tooling scratch (never part of the submission) ---
+# Editor/agent worktrees and duplicated checkouts of this repo.
+.kilo/
+.kilocode/
+# Type-checker and diff dumps written to the repo root by ad-hoc runs.
+_pyright*.json
+_before.json
+_after.json
+_bak_*.py
+_diag_*.py
+
+
 # --- Editors / OS / misc ---
 # Workspace settings and recommended extensions are shared on purpose: they pin
 # the interpreter, so Pylance resolves third-party imports for every teammate.
@@ -37,3 +49,4 @@ backend/ml/artifacts/*.jsonl
 Thumbs.db
 *.log
 
+_diag_*.py

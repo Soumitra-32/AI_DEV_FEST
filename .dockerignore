@@ -13,3 +13,11 @@ backend/__pycache__/
 .env.local
 web/.env.local
 *.log
+
+# Tooling scratch: agent worktrees are full copies of the repo and must
+# never enter the build context.
+.kilo/
+.kilocode/
+.gitignore
+.gitattributes
+plan.txt

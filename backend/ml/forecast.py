@@ -222,6 +222,30 @@ def train(
     }
 
 
+def _read_booster_text(path: Path) -> str:
+    """Read a booster file and guarantee LF line endings.
+
+    LightGBM's text model format is line-oriented and its parser aborts the
+    whole process (``Log::Fatal`` -> exit ``-1073740791``) when a line ends
+    with CRLF: it reports ``Model format error, expect a tree here`` and then
+    dies. That is a native abort, *not* a Python exception, so no
+    ``try/except`` in the serving path can recover from it -- the request
+    simply takes the worker down.
+
+    The committed boosters are LF, but git with ``core.autocrlf=true`` rewrites
+    them to CRLF on checkout on Windows. ``.gitattributes`` now marks them
+    ``-text`` so that rewrite stops happening; this function is the second
+    layer, because a corrupted artifact already on disk, a copy made through a
+    ZIP, or a Windows editor would otherwise still be fatal.
+
+    Returns the file contents with every CRLF collapsed to LF.
+    """
+    raw = path.read_bytes()
+    if b"\r\n" in raw:
+        raw = raw.replace(b"\r\n", b"\n")
+    return raw.decode("utf-8", errors="replace")
+
+
 def load(artifact_dir: str | Path = ARTIFACT_DIR) -> LoadedModels:
     """Load the trained boosters, keyed by flow, plus their metadata under ``_meta``.
 
@@ -237,8 +261,12 @@ def load(artifact_dir: str | Path = ARTIFACT_DIR) -> LoadedModels:
     boosters: LoadedModels = {}
     for flow, filename in (("inflow", INFLOW_MODEL), ("outflow", OUTFLOW_MODEL), ("net", NET_MODEL)):
         path = directory / filename
-        if path.exists():
-            boosters[flow] = lgb.Booster(model_file=str(path))
+        if not path.exists():
+            continue
+        # Built from the normalised text rather than ``model_file=`` so a CRLF
+        # artifact degrades into a wrong-but-live model instead of killing the
+        # interpreter (see :func:`_read_booster_text`).
+        boosters[flow] = lgb.Booster(model_str=_read_booster_text(path))
     boosters["_meta"] = json.loads((directory / META_FILE).read_text(encoding="utf-8"))
     return boosters
 
@@ -246,6 +274,7 @@ def load(artifact_dir: str | Path = ARTIFACT_DIR) -> LoadedModels:
 def predict_mean(
     features: pd.DataFrame,
     artifact_dir: str | Path = ARTIFACT_DIR,
+    boosters: Optional[LoadedModels] = None,
 ) -> pd.DataFrame:
     """Predict the 14-day mean daily inflow/outflow/net for each feature row.
 
@@ -260,8 +289,13 @@ def predict_mean(
     independent, so their difference accumulates both; the solver reads net, so
     net gets its own prediction. Without a net artifact the difference is used
     and ``net_source`` says so, which keeps the gap visible instead of silent.
+
+    ``boosters`` lets a caller that scores the same artifacts repeatedly (the
+    serve-time level backtest in ``app/services/forecast_service.py``) load the
+    text models **once** instead of re-parsing three boosters per row.
     """
-    boosters = load(artifact_dir)
+    if boosters is None:
+        boosters = load(artifact_dir)
     # ``_meta`` is written on every successful load, but the TypedDict marks it
     # optional so a partial artifact directory still type-checks; the empty
     # fallback keeps a missing metadata file from turning into a KeyError.

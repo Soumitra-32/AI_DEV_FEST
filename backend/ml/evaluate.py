@@ -296,7 +296,7 @@ def scored_cells(
     splits: pd.DataFrame,
     artifact_dir: str | Path = ARTIFACT_DIR,
     horizon_days: int = HORIZON_DAYS,
-):
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Every held-out ``(user, date, horizon)`` cell, scored for model and rules.
 
     Returns ``(joined, test_features)``: the model's per-day spread beside both
@@ -308,6 +308,10 @@ def scored_cells(
     group-level error can never be measured on different rows than the headline
     MAE it is compared against. Rebuilding the join inside the fairness pass
     would be the easiest way to quietly break that, so it is not done.
+
+    The return annotation is load-bearing for the type checker: without it the
+    two DataFrames are inferred from the body, and a checker that loses them to
+    an ``infer`` pass reports the callers' unpacking as iterating ``NoReturn``.
     """
     frame = featured.merge(splits, on="user_id", how="inner")
     test_features = frame.loc[frame["split"].eq("test")].reset_index(drop=True)

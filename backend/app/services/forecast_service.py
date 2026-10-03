@@ -37,6 +37,25 @@ METRICS_FILE = forecast_evaluate.METRICS_FILE
 NET_GUARD_TOLERANCE = 0.15
 NET_GUARD_FLOOR_BDT = 500.0
 
+#: Second, independent guard trigger, and the one that actually catches the
+#: failure the tolerance check cannot see. ``model_total`` vs ``diff_total``
+#: compares the net booster against the inflow and outflow boosters, and all
+#: three are anchored on the *same* trailing mean and fitted on the same rows —
+#: so they can agree with each other perfectly while sharing one wrong level.
+#: Measured on the shipped artifacts: the net model's gap to
+#: inflow−outflow is only ৳108 over the window (well inside tolerance) while its
+#: 14-day level error against Rahim's actuals is −৳5.7k against the anchor's
+#: −৳0.2k. The only way to see that is to score the model against reality, so
+#: the guard rolls the net model over the user's own history and serves the
+#: anchor when the model's level error is the larger of the two.
+NET_LEVEL_BACKTEST_MIN_ORIGINS = 3
+
+#: How much better than the anchor the model has to be before its level is
+#: trusted. Zero would flip on noise; a small positive margin means "the model
+#: must actually beat the naive answer on this user", which is the claim the
+#: card makes when it serves a model number.
+NET_LEVEL_REQUIRED_IMPROVEMENT = 0.0
+
 
 def _metrics_block(artifact_dir: str | Path) -> Optional[dict[str, Any]]:
     """The trained model's held-out accuracy, for the ``/metrics`` card.
@@ -111,6 +130,51 @@ def _opening_balance(transactions: pd.DataFrame) -> float:
 
 
 
+def _net_level_check(
+    daily: pd.DataFrame,
+    boosters: Any,
+    horizon_days: int = forecast_model.HORIZON_DAYS,
+    min_origins: int = NET_LEVEL_BACKTEST_MIN_ORIGINS,
+) -> Optional[tuple[float, float, int]]:
+    """Roll the net model over this user's own history, goalpost-by-goalpost.
+
+    Walks the user's calendar in ``horizon_days`` steps, and at each origin asks
+    the model what the *next* ``horizon_days`` mean net would be, then compares
+    that with what actually happened and with what the user's own trailing
+    28-day mean would have said. Returns
+    ``(mean model error, mean anchor error, origins)`` or ``None`` when there is
+    not enough history to say anything.
+
+    Every origin uses only data up to that origin (``add_history`` builds the
+    lookback features from the passed slice), so this measures the model the way
+    it will actually be used — no peeking at the window it is judging.
+    """
+    ordered = daily.sort_values("date").reset_index(drop=True)
+    step = max(int(horizon_days), 1)
+    model_error, anchor_error, origins = 0.0, 0.0, 0
+    for end in range(60, len(ordered) - step, step):
+        history = ordered.iloc[:end]
+        future = ordered.iloc[end:end + step]
+        if future.empty:
+            continue
+        featured = forecast_dataset.add_history(history)
+        if featured.empty:
+            continue
+        actual = float((future["inflow_bdt"] - future["outflow_bdt"]).sum())
+        means = forecast_model.predict_mean(
+            featured.sort_values("date").iloc[[-1]], boosters=boosters
+        )
+        predicted = float(means["mean_net"].iloc[0]) * step
+        tail = history.tail(28)
+        anchor = float((tail["inflow_bdt"] - tail["outflow_bdt"]).mean()) * step
+        model_error += predicted - actual
+        anchor_error += anchor - actual
+        origins += 1
+    if origins < max(int(min_origins), 1):
+        return None
+    return model_error / origins, anchor_error / origins, origins
+
+
 def build_forecast(
     user_id: str,
     horizon_days: int = 14,
@@ -148,9 +212,11 @@ def build_forecast(
     horizon_days = max(1, min(int(horizon_days), 60))
 
     try:
-        mean_flows = forecast_model.predict_mean(last_row, artifacts)
+        boosters: Any = forecast_model.load(artifacts)
+        mean_flows = forecast_model.predict_mean(last_row, boosters=boosters)
         source = "model"
     except Exception:
+        boosters = None
         tail = daily.sort_values("date").tail(7)
         mean_in = float(tail["inflow_bdt"].mean() or 0.0)
         mean_out = float(tail["outflow_bdt"].mean() or 0.0)
@@ -176,6 +242,19 @@ def build_forecast(
     diff_total = inflow_total - outflow_total
     tolerance = max(NET_GUARD_TOLERANCE * abs(diff_total), NET_GUARD_FLOOR_BDT)
     guard_engaged = source == "model" and abs(model_total - diff_total) > tolerance
+    guard_reason = "flows" if guard_engaged else ""
+    level: Optional[tuple[float, float, int]] = None
+    if source == "model" and not guard_engaged:
+        # The tolerance check only proves the three boosters agree with *each
+        # other*. Score the net model against what actually happened before
+        # trusting its level -- see NET_LEVEL_BACKTEST_MIN_ORIGINS. The boosters
+        # are the ones already loaded for the prediction above, so this costs
+        # feature builds, not model parses.
+        if boosters:
+            level = _net_level_check(daily, boosters)
+        if level is not None and abs(level[0]) > abs(level[1]) + NET_LEVEL_REQUIRED_IMPROVEMENT:
+            guard_engaged = True
+            guard_reason = "level"
     if guard_engaged:
         # Anchor fallback: the model is off for this user, so serve the
         # user's own trailing-28-day level with the model's calendar shape.
@@ -265,10 +344,18 @@ def build_forecast(
         )
     elif source == "model":
         prediction = f"Next {horizon_days} days from {range_start}: net about {window_net:,.0f} taka."
+        if guard_reason == "level" and level is not None:
+            detail = (
+                f"backtested on your own last {level[2]} two-week stretches, the net model "
+                f"missed by {abs(level[0]):,.0f} taka against {abs(level[1]):,.0f} for your "
+                "own trailing average"
+            )
+        else:
+            detail = "the net model disagreed with your own flows beyond tolerance"
         assumption = (
             "Level from your own trailing-28-day average with the model's "
-            "weekday shape: the net model disagreed with your own flows "
-            "beyond tolerance, so its level was set aside (anchor fallback)."
+            f"weekday shape: {detail}, so its level was set aside "
+            "(anchor fallback)."
         )
     else:
         prediction = f"Baseline outlook for {range_start} to {range_end} (model unavailable)."
