@@ -33,11 +33,11 @@ export default function DoNothingToggle({ costBdt, months, outcome }: DoNothingT
   if (!open) {
     return (
       <div
-        className="bg-surface border border-rule rounded-ledger p-4 flex items-center justify-between cursor-pointer mb-6 hover:border-ink transition-colors"
+        className="bg-surface/50 border-t border-b border-rule p-4 flex items-center justify-between cursor-pointer mb-6 hover:border-ink transition-colors"
         onClick={() => setOpen(true)}
       >
         <div className="space-y-0.5">
-          <div className="font-bold text-base text-ink">
+          <div className="font-bold text-base text-ink font-serif-bn">
             {tr("common.doNothing")}
           </div>
         </div>
@@ -47,7 +47,7 @@ export default function DoNothingToggle({ costBdt, months, outcome }: DoNothingT
   }
 
   return (
-    <div className="bg-surface border border-rule rounded-ledger p-5 space-y-3 mb-6">
+    <div className="bg-surface/50 border-t border-b border-rule p-5 space-y-3 mb-6">
       <div
         className="flex items-center justify-between border-b border-rule pb-2 cursor-pointer"
         onClick={() => setOpen(false)}
@@ -58,21 +58,21 @@ export default function DoNothingToggle({ costBdt, months, outcome }: DoNothingT
         <ChevronUp className="w-5 h-5 text-ink-muted" strokeWidth={1.5} />
       </div>
 
-      <p className="text-sm font-medium text-ink leading-relaxed">
+      <p className="text-sm font-medium text-ink leading-relaxed font-hind">
         {outcomeText}
       </p>
 
       {typeof costBdt === "number" && (
-        <div className="flex items-baseline justify-between text-sm py-1 border-t border-b border-rule">
+        <div className="flex items-baseline justify-between text-sm py-1 border-t border-b border-rule font-hind">
           <span className="text-ink-muted">{tr("common.doNothingCost")}</span>
-          <span className="dotted-leader" />
-          <strong className="font-serif-bn text-base text-brickRed">
+          <span className="tab-leader" />
+          <strong className="font-serif-bn text-base text-brickRed text-right tabular-nums">
             {formatBDT(costBdt, lang)}
           </strong>
         </div>
       )}
 
-      <div className="text-xs text-ink-muted border-t border-rule pt-2 leading-relaxed">
+      <div className="text-xs text-ink-muted border-t border-rule pt-2 leading-relaxed font-hind">
         {tr("common.doNothingDisclaimer")}
       </div>
 

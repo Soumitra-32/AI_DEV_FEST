@@ -8,6 +8,7 @@ import DoNothingToggle from "@/components/DoNothingToggle";
 import InsightCard from "@/components/InsightCard";
 import NotADecisionBanner from "@/components/NotADecisionBanner";
 import TopBar from "@/components/TopBar";
+import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchSavingsPlan } from "@/lib/api";
 import type { SavingsPlanResponse, TradeOffAction } from "@/lib/api";
@@ -109,8 +110,10 @@ function PlanContent() {
       <TopBar />
       <main className="space-y-6">
         <header className="border-b border-rule pb-4 space-y-2">
-          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            {tr("plan.headerTag")} • {tr("stamp.computed")}
+          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider flex items-center gap-2">
+            <span>{tr("plan.headerTag")}</span>
+            <span>•</span>
+            <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("plan.title")}
@@ -122,10 +125,10 @@ function PlanContent() {
 
         <NotADecisionBanner />
 
-        {/* Input Form */}
+        {/* Input Form Ledger Section */}
         <form
           onSubmit={submit}
-          className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4"
+          className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -139,7 +142,7 @@ function PlanContent() {
                 step={500}
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                className="w-full h-12 bg-surface border border-rule rounded-ledger px-4 font-serif-bn text-xl font-bold text-ink focus:outline-none focus:border-ink transition-colors"
+                className="w-full h-12 bg-surface border border-rule px-4 font-serif-bn text-xl font-bold text-ink focus:outline-none focus:border-ink transition-colors rounded-none"
               />
             </div>
 
@@ -154,7 +157,7 @@ function PlanContent() {
                 max={36}
                 value={months}
                 onChange={(e) => setMonths(e.target.value)}
-                className="w-full h-12 bg-surface border border-rule rounded-ledger px-4 font-mono text-lg text-ink focus:outline-none focus:border-ink transition-colors"
+                className="w-full h-12 bg-surface border border-rule px-4 font-mono text-lg text-ink focus:outline-none focus:border-ink transition-colors rounded-none"
               />
             </div>
           </div>
@@ -162,14 +165,14 @@ function PlanContent() {
           <button
             type="submit"
             disabled={busy}
-            className="w-full h-12 bg-primaryGreen text-white text-[17px] font-medium rounded-ledger hover:opacity-95 transition"
+            className="w-full h-12 bg-primaryGreen text-white text-[17px] font-medium rounded-none hover:opacity-95 transition"
           >
             {busy ? tr("plan.calculating") : tr("plan.submit")}
           </button>
         </form>
 
         {error && (
-          <div className="bg-surface border border-brickRed rounded-ledger p-4 text-brickRed text-sm font-mono">
+          <div className="bg-surface/50 border-l-2 border-brickRed border-t border-b border-r border-rule p-4 text-brickRed text-sm font-mono">
             {error}
           </div>
         )}
@@ -177,21 +180,15 @@ function PlanContent() {
         {/* Plan Results */}
         {plan && (
           <div className="space-y-6">
-            {/* Feasibility Hero Card */}
-            <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+            {/* Feasibility Hero Section (no outer rounded card) */}
+            <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-rule pb-2">
                 <span className="text-xs font-mono text-ink-muted uppercase">
                   {tr("plan.title")} • {formatInteger(plan.months, lang)} {lang === "bn" ? "মাস" : "months"}
                 </span>
-                <span
-                  className={`border rounded-stamp px-2.5 py-0.5 text-[11px] font-mono uppercase ${
-                    plan.feasible
-                      ? "border-primaryGreen text-primaryGreen"
-                      : "border-brickRed text-brickRed"
-                  }`}
-                >
+                <Stamp variant={plan.feasible ? "ink" : "warn"}>
                   {plan.feasible ? tr("plan.feasible") : tr("plan.infeasible")}
-                </span>
+                </Stamp>
               </div>
 
               {/* Hero Numbers */}
@@ -199,7 +196,7 @@ function PlanContent() {
                 <div className="text-xs font-mono text-ink-muted uppercase">
                   {tr("plan.requiredMonthly")}
                 </div>
-                <div className="font-serif-bn text-4xl md:text-5xl font-bold text-ink tracking-tight">
+                <div className="font-serif-bn text-4xl md:text-5xl font-bold text-ink tracking-tight tabular-nums">
                   {formatBDT(plan.required_monthly_bdt, lang)}{" "}
                   <span className="text-sm font-hind font-normal text-ink-muted">
                     {tr("spending.perMonth")}
@@ -211,16 +208,16 @@ function PlanContent() {
               <div className="space-y-2 pt-3 border-t border-rule font-hind text-sm">
                 <div className="flex items-baseline justify-between">
                   <span className="text-ink-muted">{tr("plan.surplus")}</span>
-                  <span className="dotted-leader" />
-                  <span className="font-serif-bn font-bold text-ink">
+                  <span className="tab-leader" />
+                  <span className="font-serif-bn font-bold text-ink text-right tabular-nums">
                     {formatBDT(plan.forecasted_surplus_bdt, lang)}
                   </span>
                 </div>
 
                 <div className="flex items-baseline justify-between">
                   <span className="text-ink-muted">{tr("plan.buffer")}</span>
-                  <span className="dotted-leader" />
-                  <span className="font-serif-bn font-bold text-ink-muted">
+                  <span className="tab-leader" />
+                  <span className="font-serif-bn font-bold text-ink-muted text-right tabular-nums">
                     - {formatBDT(plan.safety_buffer_bdt, lang)}
                   </span>
                 </div>
@@ -230,8 +227,8 @@ function PlanContent() {
                     <span className="font-bold text-ink font-serif-bn text-base">
                       {tr("plan.feasibleMonthly")}
                     </span>
-                    <span className="dotted-leader" />
-                    <span className="font-serif-bn font-bold text-xl text-primaryGreen">
+                    <span className="tab-leader" />
+                    <span className="font-serif-bn font-bold text-xl text-primaryGreen text-right tabular-nums">
                       {formatBDT(plan.feasible_monthly_bdt, lang)}
                     </span>
                   </div>
@@ -240,7 +237,7 @@ function PlanContent() {
 
               {/* Pressure Warning Strip */}
               {plan.pressure_days.length > 0 && (
-                <div className="bg-surface border-l-4 border-brickRed border-t border-r border-b border-rule rounded-ledger p-4 space-y-1 mt-4">
+                <div className="bg-surface/50 border-l-2 border-brickRed border-t border-r border-b border-rule/60 p-4 space-y-1 mt-4">
                   <div className="text-xs font-mono uppercase tracking-wider text-brickRed font-bold">
                     {tr("spending.warningStripTitle")}
                   </div>
@@ -255,23 +252,21 @@ function PlanContent() {
 
             {/* Alternative Options (Trade-offs) */}
             {plan.trade_offs.length > 0 && (
-              <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+              <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
                 <div className="border-b border-rule pb-2">
                   <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                     {tr("plan.tradeOffs")}
                   </h3>
                 </div>
 
-                <div className="divide-y divide-rule font-hind">
+                <div className="divide-y divide-rule/60 font-hind">
                   {plan.trade_offs.map((item, idx) => (
                     <div key={idx} className="py-3 space-y-1">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-sm text-ink">
                           {tr(ACTION_KEY[item.action])}
                         </span>
-                        <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono text-ink-muted">
-                          {item.action}
-                        </span>
+                        <Stamp variant="muted">{item.action}</Stamp>
                       </div>
                       <p className="text-xs text-ink-muted leading-relaxed">
                         {item.description}
@@ -284,7 +279,7 @@ function PlanContent() {
 
             {/* Arithmetic Trace */}
             {plan.arithmetic.length > 0 && (
-              <div className="bg-surface border border-rule rounded-ledger p-5 space-y-2">
+              <div className="bg-surface/50 border-t border-b border-rule p-5 space-y-2">
                 <div className="text-xs font-mono text-ink-muted uppercase border-b border-rule pb-2">
                   {tr("plan.arithmetic")}
                 </div>
@@ -307,7 +302,7 @@ function PlanContent() {
             {/* Do Nothing Option */}
             <DoNothingToggle costBdt={plan.do_nothing?.estimated_cost_bdt} months={plan.months} />
 
-            <div className="p-4 bg-surface border border-rule rounded-ledger flex items-center justify-between">
+            <div className="p-4 bg-surface/50 border-t border-b border-rule flex items-center justify-between">
               <span className="font-hind text-sm text-ink-muted">
                 {tr("plan.reviewForecastPrompt")}
               </span>
@@ -326,10 +321,14 @@ function PlanContent() {
 }
 
 export default function PlanPage() {
-  // useSearchParams() requires a Suspense boundary (Next.js rule).
-  // Wrapping changes nothing visually — same page, same layout.
   return (
-    <Suspense>
+    <Suspense
+      fallback={
+        <div className="bg-surface/50 border-t border-b border-rule p-8 text-center">
+          <p className="font-mono text-sm text-ink-muted animate-pulse">...</p>
+        </div>
+      }
+    >
       <PlanContent />
     </Suspense>
   );

@@ -3,6 +3,7 @@
 import { useLanguage } from "@/components/LangToggle";
 import { formatBDT, formatInteger } from "@/lib/i18n";
 import type { FeeSwitchSuggestion } from "@/lib/api";
+import Stamp from "@/components/Stamp";
 
 interface SpendingSummaryProps {
   feeSwitch?: FeeSwitchSuggestion | null;
@@ -20,14 +21,12 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
   }
 
   return (
-    <div className="bg-surface border border-rule rounded-ledger p-4 md:p-6 mb-6 space-y-4">
+    <div className="border-t border-b border-rule bg-surface/50 p-4 md:p-6 mb-6 space-y-4">
       <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
         <span className="uppercase">
           {tr("spending.summary")} ({formatInteger(windowDays, lang)} {tr("spending.daysUnit")})
         </span>
-        <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[11px]">
-          {tr("stamp.computed")}
-        </span>
+        <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
       </div>
 
       <div className="space-y-3 font-hind text-base">
@@ -35,8 +34,8 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
         <div>
           <div className="flex items-baseline justify-between">
             <span className="font-medium text-ink">{tr("spending.cashOutCount")}</span>
-            <span className="dotted-leader" />
-            <span className="font-serif-bn font-bold text-lg text-ink">
+            <span className="tab-leader" />
+            <span className="font-serif-bn font-bold text-lg text-ink text-right tabular-nums">
               {formatInteger(feeSwitch.cash_out_count, lang)} {tr("spending.times")}
             </span>
           </div>
@@ -49,8 +48,8 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
         <div>
           <div className="flex items-baseline justify-between pt-1">
             <span className="font-medium text-ink">{tr("spending.cashOutVolume")}</span>
-            <span className="dotted-leader" />
-            <span className="font-serif-bn font-bold text-lg text-ink">
+            <span className="tab-leader" />
+            <span className="font-serif-bn font-bold text-lg text-ink text-right tabular-nums">
               {formatBDT(feeSwitch.cash_out_volume_bdt, lang)}
             </span>
           </div>
@@ -63,8 +62,8 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
         <div>
           <div className="flex items-baseline justify-between pt-1">
             <span className="font-medium text-ink">{tr("spending.feePaid")}</span>
-            <span className="dotted-leader" />
-            <span className="font-serif-bn font-bold text-lg text-brickRed">
+            <span className="tab-leader" />
+            <span className="font-serif-bn font-bold text-lg text-brickRed text-right tabular-nums">
               {formatBDT(feeSwitch.fee_paid_bdt, lang)}
             </span>
           </div>
@@ -79,8 +78,8 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
             <span className="font-bold text-ink font-serif-bn text-lg">
               {tr("spending.potentialSaving")}
             </span>
-            <span className="dotted-leader" />
-            <span className="font-serif-bn font-bold text-2xl text-primaryGreen">
+            <span className="tab-leader" />
+            <span className="font-serif-bn font-bold text-2xl text-primaryGreen text-right tabular-nums">
               {formatBDT(feeSwitch.potential_saving_bdt, lang)}
             </span>
           </div>

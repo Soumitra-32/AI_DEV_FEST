@@ -176,7 +176,7 @@ export default function VoiceInput({
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={placeholder ?? tr("voice.placeholder")}
-              className="w-full h-12 bg-surface border border-rule rounded-ledger px-4 text-sm font-hind text-ink placeholder-ink-muted/70 focus:outline-none focus:border-ink transition-colors"
+              className="w-full h-12 bg-surface border border-rule px-4 text-sm font-hind text-ink placeholder-ink-muted/70 focus:outline-none focus:border-ink transition-colors rounded-none"
             />
           </div>
           {/* Flat Mic Button - No gradient, no shadow */}
@@ -185,7 +185,7 @@ export default function VoiceInput({
             onClick={toggleListening}
             title={listening ? tr("voice.listening") : tr("voice.speak")}
             aria-label={listening ? tr("voice.listening") : tr("voice.speak")}
-            className={`h-12 w-12 bg-surface border rounded-ledger flex items-center justify-center shrink-0 transition-colors ${
+            className={`h-12 w-12 bg-surface border flex items-center justify-center shrink-0 transition-colors rounded-none ${
               listening
                 ? "border-brickRed text-brickRed"
                 : "border-rule text-ink hover:border-ink"
@@ -212,7 +212,7 @@ export default function VoiceInput({
       )}
 
       {pendingVoice && !listening && (
-        <div className="bg-surface border border-rule rounded-ledger p-3 mt-1 space-y-2 max-w-2xl">
+        <div className="bg-surface border border-rule p-3 mt-1 space-y-2 max-w-2xl rounded-none">
           <p className="text-sm font-hind text-ink">
             {tr("voice.heard")} <strong>“{pendingVoice}”</strong>
           </p>
@@ -220,14 +220,14 @@ export default function VoiceInput({
             <button
               type="button"
               onClick={handleConfirmVoice}
-              className="h-10 px-4 bg-primaryGreen text-white text-sm font-medium rounded-ledger hover:opacity-95 transition"
+              className="h-10 px-4 bg-primaryGreen text-white text-sm font-medium hover:opacity-95 transition rounded-none"
             >
               ✓ {tr("voice.confirm")}
             </button>
             <button
               type="button"
               onClick={handleRetryVoice}
-              className="h-10 px-4 bg-surface border border-rule text-sm font-medium rounded-ledger text-ink hover:border-ink transition"
+              className="h-10 px-4 bg-surface border border-rule text-sm font-medium text-ink hover:border-ink transition rounded-none"
             >
               {tr("voice.retry")}
             </button>

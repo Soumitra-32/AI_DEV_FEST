@@ -151,7 +151,7 @@ export default function ForecastChart({ days }: ForecastChartProps) {
 
       {/* Section 8: Diagonal Hatch Strip for Pressure Days */}
       {pressureDays.length > 0 && (
-        <div className="bg-surface border border-rule rounded-ledger p-4 space-y-2">
+        <div className="bg-surface/50 border-t border-b border-rule p-4 space-y-2">
           <div className="flex items-center justify-between text-xs font-mono text-ink-muted">
             <span>{tr("forecast.pressureTitle")}</span>
             <span className="text-brickRed font-bold">

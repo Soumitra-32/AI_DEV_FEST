@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import TopBar from "@/components/TopBar";
 import NotADecisionBanner from "@/components/NotADecisionBanner";
+import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchMetrics } from "@/lib/api";
 import type { MetricsResponse, ModelMetric, FairnessRow } from "@/lib/api";
@@ -62,8 +63,10 @@ export default function MetricsPage() {
       <TopBar />
       <main className="space-y-6">
         <header className="border-b border-rule pb-4 space-y-2">
-          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            {tr("metrics.headerTag")} • {tr("stamp.verified")}
+          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider flex items-center gap-2">
+            <span>{tr("metrics.headerTag")}</span>
+            <span>•</span>
+            <Stamp variant="muted">{tr("stamp.verified")}</Stamp>
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("metrics.title")}
@@ -76,7 +79,7 @@ export default function MetricsPage() {
         <NotADecisionBanner />
 
         {loading && (
-          <div className="bg-surface border border-rule rounded-ledger p-8 text-center">
+          <div className="bg-surface/50 border-t border-b border-rule p-8 text-center">
             <p className="font-mono text-sm text-ink-muted animate-pulse">
               {tr("metrics.loading")}
             </p>
@@ -84,7 +87,7 @@ export default function MetricsPage() {
         )}
 
         {error && !loading && (
-          <div className="bg-surface border border-brickRed rounded-ledger p-5 space-y-2">
+          <div className="bg-surface/50 border-l-2 border-brickRed border-t border-b border-r border-rule p-5 space-y-2">
             <p className="font-mono text-sm text-brickRed">{tr("error.title")}</p>
           </div>
         )}
@@ -92,19 +95,17 @@ export default function MetricsPage() {
         {data && !loading && (
           <>
             {/* Forecast Model Evaluation */}
-            <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+            <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-rule pb-2">
                 <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
                   {tr("metrics.forecast")}
                 </h2>
-                <span className="border border-primaryGreen rounded-stamp px-2 py-0.5 text-[10px] font-mono text-primaryGreen font-bold">
-                  LightGBM (14d)
-                </span>
+                <Stamp variant="ink">LightGBM (14d)</Stamp>
               </div>
 
               <div className="space-y-4 font-hind text-sm">
                 {maeForecastRows.map((row, idx) => (
-                  <div key={idx} className="border-b border-rule pb-3 space-y-1.5 last:border-b-0 last:pb-0">
+                  <div key={idx} className="border-b border-rule/60 pb-3 space-y-1.5 last:border-b-0 last:pb-0">
                     <div className="flex items-baseline justify-between text-xs font-mono text-ink-muted uppercase">
                       <span>{getFlowLabel(idx * 2)}</span>
                       <span>{row.baseline_name ? `vs ${row.baseline_name}` : ""}</span>
@@ -113,8 +114,8 @@ export default function MetricsPage() {
                       <span className="text-ink-muted">
                         {tr("metrics.model")} ({row.model_name})
                       </span>
-                      <span className="dotted-leader" />
-                      <strong className="font-serif-bn text-ink text-base">
+                      <span className="tab-leader" />
+                      <strong className="font-serif-bn text-ink text-base text-right tabular-nums">
                         MAE {formatBDT(row.value, lang)}
                       </strong>
                     </div>
@@ -124,8 +125,8 @@ export default function MetricsPage() {
                         <span className="text-ink-muted">
                           {tr("metrics.baseline")} ({row.baseline_name})
                         </span>
-                        <span className="dotted-leader" />
-                        <strong className="font-serif-bn text-ink-muted text-base">
+                        <span className="tab-leader" />
+                        <strong className="font-serif-bn text-ink-muted text-base text-right tabular-nums">
                           MAE {formatBDT(row.baseline_value, lang)}
                         </strong>
                       </div>
@@ -136,9 +137,9 @@ export default function MetricsPage() {
                         <span className="font-bold text-ink font-serif-bn">
                           {tr("metrics.improvement")}
                         </span>
-                        <span className="dotted-leader" />
+                        <span className="tab-leader" />
                         <span
-                          className={`font-serif-bn font-bold text-lg ${
+                          className={`font-serif-bn font-bold text-lg text-right tabular-nums ${
                             row.improvement_pct >= 0 ? "text-primaryGreen" : "text-brickRed"
                           }`}
                         >
@@ -153,14 +154,12 @@ export default function MetricsPage() {
             </div>
 
             {/* Anomaly Detection Model Specs */}
-            <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+            <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-rule pb-2">
                 <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                   {tr("metrics.anomaly")}
                 </h3>
-                <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono">
-                  Isolation Forest
-                </span>
+                <Stamp variant="muted">Isolation Forest</Stamp>
               </div>
               <p className="text-xs text-ink-muted font-hind leading-relaxed">
                 {tr("metrics.anomalyDesc")}
@@ -170,7 +169,7 @@ export default function MetricsPage() {
                 {data.anomaly.map((anom, idx) => (
                   <div
                     key={idx}
-                    className="border border-rule rounded-stamp p-2.5 bg-paper/50 space-y-1"
+                    className="border border-rule p-2.5 bg-paper/50 space-y-1"
                   >
                     <div className="text-[10px] text-ink-muted uppercase">
                       {anom.metric === "precision"
@@ -183,11 +182,11 @@ export default function MetricsPage() {
                         ? tr("metrics.auc")
                         : anom.metric}
                     </div>
-                    <div className="font-serif-bn font-bold text-base text-ink">
+                    <div className="font-serif-bn font-bold text-base text-ink text-right tabular-nums">
                       {formatMetricVal(anom.metric, anom.value)}
                     </div>
                     {anom.baseline_value !== null && anom.baseline_value !== undefined && (
-                      <div className="text-[10px] text-ink-muted">
+                      <div className="text-[10px] text-ink-muted text-right tabular-nums">
                         base: {formatMetricVal(anom.metric, anom.baseline_value)}
                       </div>
                     )}
@@ -197,14 +196,12 @@ export default function MetricsPage() {
             </div>
 
             {/* Consistency Model Specs */}
-            <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+            <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-rule pb-2">
                 <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                   {tr("metrics.signal")}
                 </h3>
-                <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono">
-                  Logistic Regression
-                </span>
+                <Stamp variant="muted">Logistic Regression</Stamp>
               </div>
 
               {data.signal.filter((s) => s.metric === "auc").map((sig, idx) => (
@@ -213,8 +210,8 @@ export default function MetricsPage() {
                     <span className="text-ink-muted">
                       {tr("metrics.auc")} ({sig.model_name})
                     </span>
-                    <span className="dotted-leader" />
-                    <strong className="font-serif-bn text-ink text-base">
+                    <span className="tab-leader" />
+                    <strong className="font-serif-bn text-ink text-base text-right tabular-nums">
                       {formatDigits(sig.value.toFixed(4), lang)}
                     </strong>
                   </div>
@@ -223,8 +220,8 @@ export default function MetricsPage() {
                       <span className="text-ink-muted">
                         {tr("metrics.baseline")} ({sig.baseline_name})
                       </span>
-                      <span className="dotted-leader" />
-                      <strong className="font-serif-bn text-ink-muted text-base">
+                      <span className="tab-leader" />
+                      <strong className="font-serif-bn text-ink-muted text-base text-right tabular-nums">
                         {formatDigits(sig.baseline_value.toFixed(4), lang)}
                       </strong>
                     </div>
@@ -234,8 +231,8 @@ export default function MetricsPage() {
                       <span className="font-bold text-ink font-serif-bn">
                         {tr("metrics.improvement")}
                       </span>
-                      <span className="dotted-leader" />
-                      <span className="font-serif-bn font-bold text-lg text-primaryGreen">
+                      <span className="tab-leader" />
+                      <span className="font-serif-bn font-bold text-lg text-primaryGreen text-right tabular-nums">
                         +{formatDigits(sig.improvement_pct.toFixed(1), lang)}%
                       </span>
                     </div>
@@ -246,21 +243,19 @@ export default function MetricsPage() {
 
             {/* Realized Impact */}
             {data.impact && data.impact.length > 0 && (
-              <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+              <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
                 <div className="flex items-center justify-between border-b border-rule pb-2">
                   <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                     {tr("metrics.impactTitle")}
                   </h3>
-                  <span className="border border-primaryGreen rounded-stamp px-2 py-0.5 text-[10px] font-mono text-primaryGreen">
-                    Outcome
-                  </span>
+                  <Stamp variant="muted">Outcome</Stamp>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
                   {data.impact
                     .filter((imp) => imp.metric === "avg_potential_fee_saving_bdt_per_month" || imp.metric === "observed_shortfall_days_per_month" || imp.metric === "requests")
                     .map((imp, idx) => (
-                      <div key={idx} className="border border-rule rounded-stamp p-3 bg-paper/40 space-y-1">
+                      <div key={idx} className="border border-rule p-3 bg-paper/40 space-y-1">
                         <div className="text-[10px] text-ink-muted uppercase">
                           {imp.metric === "avg_potential_fee_saving_bdt_per_month"
                             ? (lang === "bn" ? "গড় সম্ভাব্য ফি সাশ্রয় / মাস" : "Avg Potential Fee Saving / Mo")
@@ -268,7 +263,7 @@ export default function MetricsPage() {
                             ? (lang === "bn" ? "মাসিক শর্টফল দিন" : "Observed Shortfall Days / Mo")
                             : (lang === "bn" ? "মোট সার্ভ করা রিকোয়েস্ট" : "Total Served Requests")}
                         </div>
-                        <div className="font-serif-bn font-bold text-base text-ink">
+                        <div className="font-serif-bn font-bold text-base text-ink text-right tabular-nums">
                           {imp.metric.includes("bdt")
                             ? formatBDT(imp.value, lang)
                             : formatDigits(imp.value.toFixed(1), lang)}
@@ -280,7 +275,7 @@ export default function MetricsPage() {
             )}
 
             {/* Fairness Audit Ledger Table */}
-            <div className="bg-surface border border-rule rounded-ledger p-4 md:p-6 space-y-4">
+            <div className="bg-surface/50 border-t border-b border-rule p-4 md:p-6 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 border-b border-rule pb-2">
                 <h3 className="font-serif-bn font-bold text-xl text-ink m-0">
                   {tr("metrics.fairnessTable")}
@@ -297,29 +292,29 @@ export default function MetricsPage() {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-rule text-[11px] font-mono text-ink-muted uppercase">
-                      <th className="py-2 pr-3">{tr("metrics.dimension")}</th>
-                      <th className="py-2 pr-3">{tr("metrics.group")}</th>
-                      <th className="py-2 pr-3">{tr("metrics.metric")}</th>
-                      <th className="py-2 pr-3">{tr("metrics.value")}</th>
+                      <th className="py-2 pr-3 text-left">{tr("metrics.dimension")}</th>
+                      <th className="py-2 pr-3 text-left">{tr("metrics.group")}</th>
+                      <th className="py-2 pr-3 text-left">{tr("metrics.metric")}</th>
+                      <th className="py-2 pr-3 text-right">{tr("metrics.value")}</th>
                       <th className="py-2 text-right">{tr("metrics.gap")}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-rule font-hind text-xs">
+                  <tbody className="divide-y divide-rule/60 font-hind text-xs">
                     {data.fairness.slice(0, 15).map((row, idx) => (
                       <tr key={idx} className="hover:bg-paper/50">
-                        <td className="py-2 pr-3 font-mono text-ink-muted capitalize">
+                        <td className="py-2 pr-3 font-mono text-ink-muted capitalize text-left">
                           {row.dimension}
                         </td>
-                        <td className="py-2 pr-3 font-bold text-ink capitalize">
+                        <td className="py-2 pr-3 font-bold text-ink capitalize text-left">
                           {row.group}
                         </td>
-                        <td className="py-2 pr-3 font-mono text-ink-muted text-[11px]">
+                        <td className="py-2 pr-3 font-mono text-ink-muted text-[11px] text-left">
                           {row.metric}
                         </td>
-                        <td className="py-2 pr-3 font-serif-bn font-bold text-ink">
+                        <td className="py-2 pr-3 font-serif-bn font-bold text-ink text-right tabular-nums">
                           {formatMetricVal(row.metric, row.value)}
                         </td>
-                        <td className="py-2 text-right font-serif-bn font-bold">
+                        <td className="py-2 text-right font-serif-bn font-bold tabular-nums">
                           <span
                             className={
                               row.relative_gap_pct >= 0 ? "text-primaryGreen" : "text-brickRed"

@@ -8,6 +8,7 @@ import NotADecisionBanner from "@/components/NotADecisionBanner";
 import DoNothingToggle from "@/components/DoNothingToggle";
 import VoiceInput from "@/components/VoiceInput";
 import SuggestionChips from "@/components/SuggestionChips";
+import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchHealth, fetchIdentity, fetchParseGoal } from "@/lib/api";
 import type { HealthResponse, IdentityResponse } from "@/lib/api";
@@ -47,12 +48,10 @@ function StatusCard() {
   }, []);
 
   return (
-    <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 mb-6 space-y-4">
+    <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 mb-6 space-y-4">
       <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
         <span className="uppercase">{tr("status.title")}</span>
-        <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[11px]">
-          {tr("stamp.computed")}
-        </span>
+        <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
       </div>
 
       {status === "checking" && (
@@ -83,24 +82,24 @@ function StatusCard() {
           <div className="space-y-2 pt-2 border-t border-rule font-hind">
             <div className="flex items-baseline justify-between">
               <span className="text-ink-muted">{tr("status.database")}</span>
-              <span className="dotted-leader" />
-              <strong className="font-mono text-ink">
+              <span className="tab-leader" />
+              <strong className="font-mono text-ink text-right">
                 {health.database.available ? tr("status.databaseReady") : tr("status.databaseMissing")}
               </strong>
             </div>
 
             <div className="flex items-baseline justify-between">
               <span className="text-ink-muted">{tr("status.users")}</span>
-              <span className="dotted-leader" />
-              <strong className="font-serif-bn text-ink">
+              <span className="tab-leader" />
+              <strong className="font-serif-bn text-ink text-right tabular-nums">
                 {formatInteger(health.database.users, lang)}
               </strong>
             </div>
 
             <div className="flex items-baseline justify-between">
               <span className="text-ink-muted">{tr("status.transactions")}</span>
-              <span className="dotted-leader" />
-              <strong className="font-serif-bn text-ink">
+              <span className="tab-leader" />
+              <strong className="font-serif-bn text-ink text-right tabular-nums">
                 {formatInteger(health.database.transactions, lang)}
               </strong>
             </div>
@@ -143,7 +142,7 @@ function GoalConfirm({
   // Never substitute: the plan computes only what the user confirms here.
   const ready = Number(goal) > 0 && Number(months) >= 1;
   return (
-    <div className="border border-rule rounded-stamp p-4 space-y-3 bg-paper/60">
+    <div className="border border-rule p-4 space-y-3 bg-paper/60">
       <p className="text-sm font-hind text-ink">
         <span className="text-ink-muted">{tr("voice.heard")} </span>
         <strong>{text}</strong>
@@ -156,7 +155,7 @@ function GoalConfirm({
             min={1}
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
-            className="w-full border border-rule rounded-stamp px-2 py-1.5 bg-surface text-ink"
+            className="w-full border border-rule px-2 py-1.5 bg-surface text-ink rounded-none"
           />
         </label>
         <label className="space-y-1 text-sm font-hind text-ink">
@@ -167,7 +166,7 @@ function GoalConfirm({
             max={36}
             value={months}
             onChange={(e) => setMonths(e.target.value)}
-            className="w-full border border-rule rounded-stamp px-2 py-1.5 bg-surface text-ink"
+            className="w-full border border-rule px-2 py-1.5 bg-surface text-ink rounded-none"
           />
         </label>
       </div>
@@ -177,14 +176,14 @@ function GoalConfirm({
           type="button"
           disabled={!ready}
           onClick={() => ready && router.push(`/plan?goal=${Number(goal)}&months=${Number(months)}&prompt=${encodeURIComponent(text)}`)}
-          className="px-4 py-1.5 rounded-stamp bg-primaryGreen text-paper text-sm font-hind disabled:opacity-40"
+          className="px-4 py-1.5 bg-primaryGreen text-paper text-sm font-hind disabled:opacity-40 rounded-none"
         >
           {tr("voice.confirm")}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-1.5 rounded-stamp border border-rule text-sm font-hind text-ink"
+          className="px-4 py-1.5 border border-rule text-sm font-hind text-ink rounded-none"
         >
           {tr("voice.retry")}
         </button>
@@ -203,7 +202,8 @@ export default function HomePage() {
   return (
     <>
       <TopBar />
-      <main className="space-y-6">
+      {/* Real ledger margin rule on left (হাশিয়া - hashia) */}
+      <main className="space-y-6 border-l-2 border-rule/80 pl-4 md:pl-6 ml-1">
         {/* Top Ledger Header */}
         <header className="border-t-2 border-b border-rule pt-4 pb-6 space-y-3">
           <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-2">
@@ -223,12 +223,9 @@ export default function HomePage() {
         </header>
 
         {/* Section 9: Voice & Search Input Pair */}
-        <section className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+        <section className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
           <VoiceInput
             onSubmitText={(text) => {
-              // Speech carries the numbers: parse them, then ask the user to
-              // confirm. Missing halves stay missing (never guessed) and parse
-              // failures land on the same confirm card with empty fields.
               fetchParseGoal(text)
                 .then((parsed) => {
                   setPending({
@@ -258,18 +255,16 @@ export default function HomePage() {
           />
         </section>
 
-        {/* Live System Status Card */}
+        {/* Live System Status */}
         <StatusCard />
 
-        {/* Core Navigation Ledger Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Card 1: Forecast */}
-          <div className="bg-surface border border-rule rounded-ledger p-5 space-y-3">
+        {/* Core Navigation Ledger Grid (ruled cells, no cards) */}
+        <div className="border-t border-b border-rule grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:gap-px bg-rule">
+          {/* Cell 1: Forecast */}
+          <div className="bg-surface p-5 space-y-3">
             <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
               <span className="uppercase">{tr("nav.forecast")}</span>
-              <span className="border border-ink-muted rounded-stamp px-1.5 py-0.5 text-[10px]">
-                {tr("stamp.computed")}
-              </span>
+              <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
             </div>
             <h3 className="font-serif-bn text-xl font-bold text-ink">
               {tr("forecast.title")}
@@ -287,13 +282,11 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Card 2: Savings Plan */}
-          <div className="bg-surface border border-rule rounded-ledger p-5 space-y-3">
+          {/* Cell 2: Savings Plan */}
+          <div className="bg-surface p-5 space-y-3">
             <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
               <span className="uppercase">{tr("nav.plan")}</span>
-              <span className="border border-ink-muted rounded-stamp px-1.5 py-0.5 text-[10px]">
-                {tr("stamp.computed")}
-              </span>
+              <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
             </div>
             <h3 className="font-serif-bn text-xl font-bold text-ink">
               {tr("plan.title")}
@@ -311,13 +304,11 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Card 3: Spending Companion */}
-          <div className="bg-surface border border-rule rounded-ledger p-5 space-y-3">
+          {/* Cell 3: Spending Companion */}
+          <div className="bg-surface p-5 space-y-3">
             <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
               <span className="uppercase">{tr("nav.spending")}</span>
-              <span className="border border-ink-muted rounded-stamp px-1.5 py-0.5 text-[10px]">
-                {tr("stamp.computed")}
-              </span>
+              <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
             </div>
             <h3 className="font-serif-bn text-xl font-bold text-ink">
               {tr("spending.title")}
@@ -335,13 +326,11 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Card 4: Tips */}
-          <div className="bg-surface border border-rule rounded-ledger p-5 space-y-3">
+          {/* Cell 4: Tips */}
+          <div className="bg-surface p-5 space-y-3">
             <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
               <span className="uppercase">{tr("nav.tips")}</span>
-              <span className="border border-ink-muted rounded-stamp px-1.5 py-0.5 text-[10px]">
-                [{tr("stamp.easyExplain")}]
-              </span>
+              <Stamp variant="muted">[{tr("stamp.easyExplain")}]</Stamp>
             </div>
             <h3 className="font-serif-bn text-xl font-bold text-ink">
               {tr("tips.title")}

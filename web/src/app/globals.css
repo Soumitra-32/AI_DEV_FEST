@@ -13,8 +13,8 @@
   --font-serif-bn: "Noto Serif Bengali", serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  --radius-ledger: 6px;
-  --radius-stamp: 4px;
+  --radius-ledger: 0px;
+  --radius-stamp: 2px;
 }
 
 :root {
@@ -33,6 +33,7 @@
 
 body {
   background-color: #F4EFE3;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.025'/%3E%3C/svg%3E");
   color: #1E1B16;
   font-family: "Hind Siliguri", "Nirmala UI", sans-serif;
   font-size: 17px;
@@ -97,11 +98,12 @@ html[lang="bn"] .font-hind {
   );
 }
 
-.dotted-leader {
+.dotted-leader,
+.tab-leader {
   border-bottom: 1.5px dotted #D8CFBB;
-  flex-grow: 1;
-  margin: 0 10px 4px 10px;
-  height: 1px;
+  flex: 1 1 auto;
+  margin: auto 8px;
+  height: 0px;
 }
 
 /* Classic ledger container shell */
@@ -111,11 +113,11 @@ html[lang="bn"] .font-hind {
   padding: 16px 16px 88px;
 }
 
-/* Base Ledger Card */
+/* Base Ledger Card (flat ruled box, 0px border radius) */
 .card {
   background: #FBF8F1;
   border: 1px solid #D8CFBB;
-  border-radius: 6px;
+  border-radius: 0px;
   padding: 18px 20px;
   margin-bottom: 18px;
 }
@@ -132,15 +134,44 @@ html[lang="bn"] .font-hind {
   color: #6A6355;
 }
 
-/* Rubber Stamp Badges - 1px border, no pill, no heavy gradient */
+/* Rubber Stamp Badges - rectangular, 1px border, ink-muted or ink, rotated -1.5deg */
+.stamp {
+  display: inline-block;
+  border: 1px solid currentColor;
+  padding: 1px 6px;
+  font-size: 0.72rem;
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.05em;
+  transform: rotate(-1.5deg);
+  user-select: none;
+  border-radius: 2px;
+  background: transparent;
+  line-height: 1.3;
+}
+
+.stamp-muted {
+  color: #6A6355;
+  border-color: #6A6355;
+}
+
+.stamp-ink {
+  color: #1E1B16;
+  border-color: #1E1B16;
+}
+
+.stamp-warn {
+  color: #B0431F;
+  border-color: #B0431F;
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
   border: 1px solid #6A6355;
-  border-radius: 4px;
-  font-size: 0.8rem;
+  border-radius: 2px;
+  font-size: 0.78rem;
   font-family: "JetBrains Mono", monospace;
   background: #FBF8F1;
   color: #1E1B16;
@@ -158,8 +189,8 @@ html[lang="bn"] .font-hind {
 }
 
 .badge.success {
-  border-color: #1F4D36;
-  color: #1F4D36;
+  border-color: #1E1B16;
+  color: #1E1B16;
 }
 
 /* Warning Strip (3px brick-red left rule, no solid red background fill) */
@@ -171,7 +202,7 @@ html[lang="bn"] .font-hind {
   background: #FBF8F1;
   color: #1E1B16;
   padding: 14px 16px;
-  border-radius: 4px;
+  border-radius: 0px;
   margin-bottom: 18px;
 }
 
@@ -180,7 +211,7 @@ button,
 .button {
   font: inherit;
   padding: 9px 18px;
-  border-radius: 6px;
+  border-radius: 2px;
   border: 1px solid #D8CFBB;
   background: #FBF8F1;
   color: #1E1B16;
@@ -243,4 +274,11 @@ td {
 
 .suggestion-link:hover {
   color: #1E1B16;
+}
+
+@media print {
+  body {
+    background-image: none !important;
+    background-color: #ffffff !important;
+  }
 }

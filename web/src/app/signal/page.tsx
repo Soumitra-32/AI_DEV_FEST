@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import TopBar from "@/components/TopBar";
 import NotADecisionBanner from "@/components/NotADecisionBanner";
 import DoNothingToggle from "@/components/DoNothingToggle";
+import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchCreditReadiness } from "@/lib/api";
 import type { ConsistencySignalResponse } from "@/lib/api";
@@ -36,17 +37,15 @@ export default function SignalPage() {
         ? ("signal.bandStrong" as const)
         : ("signal.bandSteady" as const);
 
-  // GAP-10: no static fallback factors. Without live data the factors
-  // section shows "unavailable" — the old hardcoded weights (0.35/0.28/0.22)
-  // presented as the user's result were removed.
-
   return (
     <>
       <TopBar />
       <main className="space-y-6">
         <header className="border-b border-rule pb-4 space-y-2">
-          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            {tr("signal.headerTag")} • {tr("stamp.easyExplain")}
+          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider flex items-center gap-2">
+            <span>{tr("signal.headerTag")}</span>
+            <span>•</span>
+            <Stamp variant="muted">[{tr("stamp.easyExplain")}]</Stamp>
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("signal.title")}
@@ -59,14 +58,12 @@ export default function SignalPage() {
         <NotADecisionBanner />
 
         {/* Consistency Band Visualization */}
-        <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+        <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-rule pb-2">
             <span className="text-xs font-mono text-ink-muted uppercase">
               {tr("signal.band")}
             </span>
-            <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono">
-              {tr("signal.educationalBadge")}
-            </span>
+            <Stamp variant="muted">{tr("signal.educationalBadge")}</Stamp>
           </div>
 
           <div className="space-y-3 py-2">
@@ -74,7 +71,7 @@ export default function SignalPage() {
               <span className="font-serif-bn font-bold text-2xl md:text-3xl text-ink">
                 {live ? tr(bandKey) : "—"}
               </span>
-              <span className="badge success">
+              <Stamp variant="ink">
                 {live
                   ? live.band === "Building"
                     ? tr("signal.bandRatingBuilding")
@@ -82,7 +79,7 @@ export default function SignalPage() {
                       ? tr("signal.bandRatingStrong")
                       : tr("signal.bandRating")
                   : tr("signal.bandRating")}
-              </span>
+              </Stamp>
             </div>
 
             {/* Stepped Ledger Indicator */}
@@ -97,8 +94,8 @@ export default function SignalPage() {
                   key={key}
                   className={
                     live && idx === activeStep
-                      ? "p-2 border-2 border-primaryGreen bg-surface rounded-stamp font-bold text-primaryGreen"
-                      : "p-2 border border-rule bg-paper/60 rounded-stamp text-ink-muted"
+                      ? "p-2 border-2 border-primaryGreen bg-surface font-bold text-primaryGreen rounded-none"
+                      : "p-2 border border-rule bg-paper/60 text-ink-muted rounded-none"
                   }
                 >
                   {tr(key)}
@@ -109,24 +106,25 @@ export default function SignalPage() {
         </div>
 
         {/* Contributing Factors Ledger */}
-        <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
-          <div className="border-b border-rule pb-2">
+        <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
+          <div className="border-b border-rule pb-2 flex items-center justify-between">
             <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
               {tr("signal.factors")}
             </h3>
+            <Stamp variant="muted">Logistic Regression</Stamp>
           </div>
 
-          <div className="divide-y divide-rule font-hind">
+          <div className="divide-y divide-rule/60 font-hind">
             {live && live.factors.length > 0 ? (
               live.factors.map((f, idx) => (
                 <div key={idx} className="py-3 space-y-1">
                   <div className="flex items-baseline justify-between">
-                    <span className="font-bold text-sm text-ink">
+                    <span className="font-bold text-sm text-ink text-left">
                       {f.plain_language}
                     </span>
-                    <span className="dotted-leader" />
+                    <span className="tab-leader" />
                     <span
-                      className={`font-mono text-xs font-bold ${
+                      className={`font-serif-bn text-sm font-bold text-right tabular-nums ${
                         f.direction === "improves" ? "text-primaryGreen" : "text-brickRed"
                       }`}
                     >
@@ -134,7 +132,7 @@ export default function SignalPage() {
                       {formatBDT(f.magnitude, lang)}
                     </span>
                   </div>
-                  <p className="text-xs text-ink-muted leading-relaxed">
+                  <p className="text-xs text-ink-muted leading-relaxed font-hind text-left">
                     {f.direction === "improves" ? tr("signal.improves") : tr("signal.weakens")}
                   </p>
                 </div>
@@ -148,7 +146,7 @@ export default function SignalPage() {
         </div>
 
         {/* Educational Guarantee Banner */}
-        <div className="bg-surface border border-rule rounded-ledger p-4 text-xs font-mono text-ink-muted space-y-1">
+        <div className="bg-surface/50 border-l-2 border-ink border-t border-r border-b border-rule/60 p-4 text-xs font-mono text-ink-muted space-y-1">
           <div className="font-bold text-ink uppercase">
             {tr("signal.guaranteeTitle")}
           </div>

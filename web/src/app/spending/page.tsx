@@ -8,6 +8,7 @@ import FeeSavingCard from "@/components/FeeSavingCard";
 import AnomalyCard from "@/components/AnomalyCard";
 import InsightCard from "@/components/InsightCard";
 import DoNothingToggle from "@/components/DoNothingToggle";
+import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchAnomalies } from "@/lib/api";
 import type { AnomalyResponse } from "@/lib/api";
@@ -43,8 +44,10 @@ export default function SpendingPage() {
       <main className="space-y-6">
         {/* Header */}
         <header className="border-b border-rule pb-4 space-y-2">
-          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            {tr("spending.headerTag")} • {tr("stamp.computed")}
+          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider flex items-center gap-2">
+            <span>{tr("spending.headerTag")}</span>
+            <span>•</span>
+            <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("spending.title")}
@@ -57,7 +60,7 @@ export default function SpendingPage() {
         <NotADecisionBanner />
 
         {/* Warning strip */}
-        <div className="bg-surface border-l-4 border-brickRed border-t border-r border-b border-rule rounded-ledger p-4 space-y-1">
+        <div className="bg-surface/50 border-l-2 border-brickRed border-t border-r border-b border-rule/60 p-4 space-y-1">
           <div className="text-xs font-mono uppercase tracking-wider text-brickRed font-bold">
             {tr("spending.warningStripTitle")}
           </div>
@@ -67,7 +70,7 @@ export default function SpendingPage() {
         </div>
 
         {error && (
-          <div className="bg-surface border border-brickRed rounded-ledger p-5 space-y-3">
+          <div className="bg-surface/50 border-l-2 border-brickRed border-t border-b border-r border-rule p-5 space-y-3">
             <p className="font-mono text-sm text-brickRed">{error}</p>
             <button type="button" onClick={load} className="text-xs primary">
               {tr("error.retry")}
@@ -76,7 +79,7 @@ export default function SpendingPage() {
         )}
 
         {loading && !error && (
-          <div className="bg-surface border border-rule rounded-ledger p-8 text-center">
+          <div className="bg-surface/50 border-t border-b border-rule p-8 text-center">
             <p className="font-mono text-sm text-ink-muted animate-pulse">
               {tr("spending.loading")}
             </p>
@@ -88,10 +91,10 @@ export default function SpendingPage() {
             {/* Ledger Overview Rows */}
             <SpendingSummary feeSwitch={data.fee_switch} windowDays={data.window_days} />
 
-            {/* Fee Switch Opportunity Card */}
+            {/* Fee Switch Opportunity */}
             {data.fee_switch && <FeeSavingCard feeSwitch={data.fee_switch} />}
 
-            {/* Anomalies List */}
+            {/* Anomalies Ruled Section */}
             <div className="space-y-4">
               <div className="flex items-baseline justify-between border-b border-rule pb-2">
                 <h2 className="font-serif-bn font-bold text-xl text-ink">
@@ -103,13 +106,15 @@ export default function SpendingPage() {
               </div>
 
               {data.items.length === 0 ? (
-                <div className="bg-surface border border-rule rounded-ledger p-6 text-center text-sm text-ink-muted font-hind">
+                <div className="bg-surface/50 border-t border-b border-rule p-6 text-center text-sm text-ink-muted font-hind">
                   {tr("spending.anomaliesNone")}
                 </div>
               ) : (
-                data.items.map((item) => (
-                  <AnomalyCard key={item.transaction_id} item={item} />
-                ))
+                <div className="border-t border-b border-rule bg-surface/30 divide-y divide-rule/60">
+                  {data.items.map((item) => (
+                    <AnomalyCard key={item.transaction_id} item={item} />
+                  ))}
+                </div>
               )}
             </div>
 

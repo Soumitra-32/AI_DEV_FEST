@@ -19,7 +19,7 @@ export default function TopBar() {
   ];
 
   return (
-    <header className="border-b border-rule px-4 py-3 bg-surface rounded-ledger flex items-center justify-between gap-3 mb-6">
+    <header className="border-b border-rule px-4 py-3 bg-surface/70 flex items-center justify-between gap-3 mb-6">
       <div className="flex items-center gap-6">
         <Link
           href="/"

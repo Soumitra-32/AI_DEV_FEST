@@ -3,40 +3,43 @@
 import { useLanguage } from "@/components/LangToggle";
 import { formatBDT } from "@/lib/i18n";
 import type { AnomalyItem } from "@/lib/api";
+import Stamp from "@/components/Stamp";
 
 interface AnomalyCardProps {
   item: AnomalyItem;
 }
 
 /**
- * Section 8: Warning & Anomaly Marker
- * 3px Brick Red Left Border, pure flat, no solid red background fill.
+ * Section 8 / D2: Khata Anomaly Row
+ * A ruled row with a 2px left brick-red indicator rule, dotted leader to amount,
+ * tabular numerals, and authentic ink-muted stamp. No card boxes.
  */
 export default function AnomalyCard({ item }: AnomalyCardProps) {
   const { lang, tr } = useLanguage();
 
   return (
-    <div className="bg-surface border-l-4 border-brickRed border-t border-r border-b border-rule rounded-ledger p-4 md:p-5 mb-4 space-y-2">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-rule pb-2">
+    <div className="border-l-2 border-brickRed border-b border-rule/60 bg-surface/40 px-3.5 py-3 hover:bg-surface/80 transition-colors space-y-1.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="font-serif-bn font-bold text-xl text-brickRed">
-            {formatBDT(item.amount_bdt, lang)}
-          </span>
           <span className="text-xs font-mono text-ink-muted uppercase">
             {item.channel}
           </span>
-        </div>
-        <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-ink-muted">
             {item.timestamp ? item.timestamp.slice(0, 10) : ""}
           </span>
-          <span className="border border-brickRed rounded-stamp px-2 py-0.5 text-[10px] font-mono text-brickRed uppercase">
+          <Stamp variant="muted">
             {item.anomaly_type ? item.anomaly_type.replace(/_/g, " ") : tr("spending.anomalies")}
+          </Stamp>
+        </div>
+
+        <div className="flex items-baseline gap-2">
+          <span className="font-serif-bn font-bold text-lg text-brickRed tabular-nums">
+            {formatBDT(item.amount_bdt, lang)}
           </span>
         </div>
       </div>
 
-      <div className="space-y-1 text-sm font-hind">
+      <div className="text-sm font-hind">
         <p className="text-ink leading-relaxed font-medium">
           {item.reason}
         </p>

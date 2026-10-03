@@ -5,6 +5,7 @@ import TopBar from "@/components/TopBar";
 import NotADecisionBanner from "@/components/NotADecisionBanner";
 import InsightCard from "@/components/InsightCard";
 import DoNothingToggle from "@/components/DoNothingToggle";
+import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchExplain, fetchAnomalies, fetchSavingsPlan } from "@/lib/api";
 import type { ExplainResponse, FeeSwitchSuggestion, SavingsPlanResponse } from "@/lib/api";
@@ -153,8 +154,10 @@ export default function TipsPage() {
       <TopBar />
       <main className="space-y-6">
         <header className="border-b border-rule pb-4 space-y-2">
-          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider">
-            {tr("tips.headerTag")} • {tr("stamp.easyExplain")}
+          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider flex items-center gap-2">
+            <span>{tr("tips.headerTag")}</span>
+            <span>•</span>
+            <Stamp variant="muted">[{tr("stamp.easyExplain")}]</Stamp>
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("tips.title")}
@@ -168,7 +171,7 @@ export default function TipsPage() {
 
         {/* Live Assistant Response if available */}
         {loading && (
-          <div className="bg-surface border border-rule rounded-ledger p-6 text-center">
+          <div className="bg-surface/50 border-t border-b border-rule p-6 text-center">
             <p className="font-mono text-sm text-ink-muted animate-pulse">
               {tr("tips.loading")}
             </p>
@@ -176,14 +179,12 @@ export default function TipsPage() {
         )}
 
         {explainRes && !loading && (
-          <div className="bg-surface border border-rule rounded-ledger p-5 md:p-6 space-y-4">
+          <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-rule pb-2">
               <span className="text-xs font-mono uppercase text-primaryGreen font-bold">
                 {tr("tips.coachAdvice")}
               </span>
-              <span className="border border-ink-muted rounded-stamp px-2 py-0.5 text-[10px] font-mono">
-                {explainRes.source}
-              </span>
+              <Stamp variant="muted">{explainRes.source}</Stamp>
             </div>
 
             <p className="font-serif-bn text-base md:text-lg font-bold text-ink leading-snug">
@@ -206,7 +207,7 @@ export default function TipsPage() {
           </div>
         )}
 
-        {/* Curated Khata Advice Cards */}
+        {/* Curated Khata Advice - Ruled list, not separate cards */}
         <div className="space-y-4">
           <div className="border-b border-rule pb-2">
             <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
@@ -215,23 +216,23 @@ export default function TipsPage() {
           </div>
 
           {dataMissing && (
-            <div className="bg-surface border border-rule rounded-ledger p-5">
+            <div className="bg-surface/50 border-t border-b border-rule p-5">
               <p className="text-sm text-ink-muted leading-relaxed font-hind">
                 {tr("tips.unavailable")}
               </p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="border-t border-b border-rule bg-surface/30 divide-y divide-rule/60">
             {curatedTips.map((tip, idx) => (
               <div
                 key={idx}
-                className="bg-surface border border-rule rounded-ledger p-5 space-y-2.5"
+                className="p-5 space-y-2 hover:bg-surface/60 transition-colors"
               >
-                <div className="flex items-center justify-between border-b border-rule pb-2">
-                  <span className="border border-primaryGreen rounded-stamp px-2 py-0.5 text-[10px] font-mono text-primaryGreen uppercase font-bold">
+                <div className="flex items-center justify-between">
+                  <Stamp variant="ink">
                     {lang === "bn" ? tip.tagBn : tip.tagEn}
-                  </span>
+                  </Stamp>
                   <span className="text-xs font-mono text-ink-muted">
                     [{tr(tip.stampKey)}]
                   </span>
