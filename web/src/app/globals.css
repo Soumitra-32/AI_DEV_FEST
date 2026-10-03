@@ -9,7 +9,7 @@
   --color-primaryGreen: #1F4D36;
   --color-brickRed: #B0431F;
 
-  --font-hind: "Hind Siliguri", sans-serif;
+  --font-hind: "Noto Sans Bengali", "Hind Siliguri", sans-serif;
   --font-serif-bn: "Noto Serif Bengali", serif;
   --font-mono: "JetBrains Mono", monospace;
 
@@ -35,7 +35,7 @@ body {
   background-color: #F4EFE3;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.025'/%3E%3C/svg%3E");
   color: #1E1B16;
-  font-family: "Hind Siliguri", "Nirmala UI", sans-serif;
+  font-family: "Noto Sans Bengali", "Hind Siliguri", "Nirmala UI", sans-serif;
   font-size: 17px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
@@ -43,9 +43,50 @@ body {
   padding: 0;
 }
 
-/* Bengali typographic pass scoped to html[lang="bn"] */
+/* Bengali typographic pass scoped to html[lang="bn"] (synced by LangToggle).
+   Unlayered author CSS beats Tailwind v4's layered utilities, so these
+   minimums apply without !important and only in Bangla mode. */
 html[lang="bn"] body {
+  font-size: 18px;
   line-height: 1.8;
+}
+
+html[lang="bn"] p,
+html[lang="bn"] li,
+html[lang="bn"] td {
+  line-height: 1.8;
+}
+
+/* One-step-up minimums: 14px prose -> 16px, 12px labels -> 13px,
+   11px nav labels -> 13px, 12px sub-text -> 14px. */
+html[lang="bn"] .text-sm {
+  font-size: 1rem;
+}
+
+html[lang="bn"] .text-xs {
+  font-size: 0.8125rem;
+}
+
+html[lang="bn"] .text-\[11px\] {
+  font-size: 0.8125rem;
+}
+
+html[lang="bn"] .text-\[12px\] {
+  font-size: 0.875rem;
+}
+
+html[lang="bn"] th {
+  font-size: 0.85rem;
+  letter-spacing: 0;
+}
+
+html[lang="bn"] .badge {
+  font-size: 0.85rem;
+}
+
+html[lang="bn"] table td,
+html[lang="bn"] table th {
+  padding: 12px 8px;
 }
 
 html[lang="bn"] h1,
@@ -70,7 +111,7 @@ html[lang="bn"] .font-hind {
 }
 
 .font-hind {
-  font-family: "Hind Siliguri", sans-serif;
+  font-family: "Noto Sans Bengali", "Hind Siliguri", sans-serif;
 }
 
 .font-mono {

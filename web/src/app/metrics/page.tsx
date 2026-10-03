@@ -65,8 +65,6 @@ export default function MetricsPage() {
         <header className="border-b border-rule pb-4 space-y-2">
           <div className="text-xs font-mono text-ink-muted uppercase tracking-wider flex items-center gap-2">
             <span>{tr("metrics.headerTag")}</span>
-            <span>•</span>
-            <Stamp variant="muted">{tr("stamp.verified")}</Stamp>
           </div>
           <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
             {tr("metrics.title")}
@@ -100,7 +98,7 @@ export default function MetricsPage() {
                 <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
                   {tr("metrics.forecast")}
                 </h2>
-                <Stamp variant="ink">{lang === "bn" ? "লাইটজিবিএম (১৪ দিন)" : "LightGBM (14d)"}</Stamp>
+                <Stamp variant="ink">{tr("metrics.forecastBadge")}</Stamp>
               </div>
 
               <div className="space-y-4 font-hind text-sm">
@@ -159,7 +157,7 @@ export default function MetricsPage() {
                 <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                   {tr("metrics.anomaly")}
                 </h3>
-                <Stamp variant="muted">{formatModelName("isolation_forest", lang)}</Stamp>
+                <Stamp variant="muted">{tr("metrics.anomalyBadge")}</Stamp>
               </div>
               <p className="text-xs text-ink-muted font-hind leading-relaxed">
                 {tr("metrics.anomalyDesc")}
@@ -185,11 +183,6 @@ export default function MetricsPage() {
                     <div className="font-serif-bn font-bold text-base text-ink text-right tabular-nums">
                       {formatMetricVal(anom.metric, anom.value)}
                     </div>
-                    {anom.baseline_value !== null && anom.baseline_value !== undefined && (
-                      <div className="text-[10px] text-ink-muted text-right tabular-nums">
-                        base: {formatMetricVal(anom.metric, anom.baseline_value)}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>

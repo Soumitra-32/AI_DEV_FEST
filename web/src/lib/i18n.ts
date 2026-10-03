@@ -264,17 +264,19 @@ const en = {
   "signal.step3": "3. Strong",
   "signal.logisticRegression": "Logistic Regression",
 
-  "metrics.headerTag": "Transparency & Model Evaluation",
+  "metrics.headerTag": "Transparency & Evaluation",
   "metrics.title": "Evidence, Metrics & Fairness",
   "metrics.subtitle": "Transparent model evaluation against simple baseline heuristics.",
   "metrics.loading": "Loading evaluation metrics…",
-  "metrics.forecast": "Cash-Flow Forecast (LightGBM)",
+  "metrics.forecast": "Smart Cash-Flow Forecast",
+  "metrics.forecastBadge": "14-Day Forecast",
   "metrics.model": "Model",
   "metrics.baseline": "Baseline",
   "metrics.mae": "MAE",
   "metrics.rmse": "RMSE",
   "metrics.improvement": "Improvement",
-  "metrics.anomaly": "Anomaly Detection (Isolation Forest)",
+  "metrics.anomaly": "Anomaly Detection",
+  "metrics.anomalyBadge": "Auto Detection",
   "metrics.anomalyDesc": "Detects volume anomalies (e.g. 4x normal withdrawal amount) and temporal outliers without circular data leakage.",
   "metrics.signal": "Consistency Model (Logistic Regression)",
   "metrics.fairness": "Fairness Across Cohorts",
@@ -564,17 +566,19 @@ const bn: Dictionary = {
   "signal.step3": "৩. দৃঢ়",
   "signal.logisticRegression": "লজিস্টিক রিগ্রেশন",
 
-  "metrics.headerTag": "স্বচ্ছতা ও মডেল মূল্যায়ন",
+  "metrics.headerTag": "স্বচ্ছতা ও মূল্যায়ন",
   "metrics.title": "মডেল মেট্রিক্স ও ন্যায্যতা",
   "metrics.subtitle": "সাধারণ বেসলাইন নিয়মের বিপরীতে মডেলের বাস্তব পারফরম্যান্স ও সমতা যাচাই।",
   "metrics.loading": "মেট্রিক্স লোড হচ্ছে…",
-  "metrics.forecast": "ক্যাশ-ফ্লো ফোরকাস্ট (LightGBM)",
+  "metrics.forecast": "স্মার্ট ক্যাশ-ফ্লো পূর্বাভাস",
+  "metrics.forecastBadge": "১৪ দিনের পূর্বাভাস",
   "metrics.model": "মডেল",
   "metrics.baseline": "বেসলাইন",
   "metrics.mae": "MAE",
   "metrics.rmse": "RMSE",
   "metrics.improvement": "উন্নতি",
-  "metrics.anomaly": "অস্বাভাবিকতা শনাক্তকরণ (Isolation Forest)",
+  "metrics.anomaly": "অস্বাভাবিক লেনদেন শনাক্তকরণ",
+  "metrics.anomalyBadge": "স্বয়ংক্রিয় শনাক্তকরণ",
   "metrics.anomalyDesc": "ব্যবহারকারীর নিজস্ব ঐতিহাসিক ব্যয়ের গড়ের চেয়ে ৪ গুণ বেশি ক্যাশ-আউট বা অস্বাভাবিক সময়ের লেনদেন নির্ভুলভাবে শনাক্তকরণ।",
   "metrics.signal": "ধারাবাহিকতা মডেল (লজিস্টিক রিগ্রেশন)",
   "metrics.fairness": "সবার জন্য নিরপেক্ষতা",
@@ -653,7 +657,7 @@ export function formatModelName(name: string | null | undefined, lang: Lang): st
     return lang === "bn" ? "সাধারণ গড়" : "Simple Average";
   }
   if (lower.includes("isolation")) {
-    return lang === "bn" ? "আইসোলেশন ফরেস্ট" : "Isolation Forest";
+    return lang === "bn" ? "স্বয়ংক্রিয় শনাক্তকরণ" : "Auto Detection";
   }
   if (lower.includes("logistic")) {
     return lang === "bn" ? "লজিস্টিক রিগ্রেশন" : "Logistic Regression";
@@ -836,8 +840,8 @@ export function formatStatusBadge(status: string | null | undefined, lang: Lang)
     "Rule Verified": "যাচাইকৃত",
     "Plain Language": "সহজ ব্যাখ্যা",
     "Logistic Regression": "লজিস্টিক রিগ্রেশন",
-    "Isolation Forest": "আইসোলেশন ফরেস্ট",
-    LightGBM: "লাইটজিবিএম",
+    "Isolation Forest": "স্বয়ংক্রিয় শনাক্তকরণ",
+    LightGBM: "আমাদের মডেল",
     Educational: "শিক্ষামূলক",
   };
   return map[status] ?? status;
