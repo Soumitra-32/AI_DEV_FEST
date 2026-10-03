@@ -120,17 +120,30 @@ Bangla sentences were tested for spoken rhythm and natural inflection:
 
 ---
 
-## Route-by-Route Before vs After Table (Phase 6)
+## Route-by-Route Register Lift Table (Phase 6)
 
-| Route | Before (Technical / Mixed) | After (Plain Language & Bangla First) |
-|---|---|---|
-| `/` (Home) | "Ledger Specification v1.0 • Flat Format", "API reachable: True", "Surplus: ৳30,000", English digits in Bangla | "খাতার পাতা • বাংলা-প্রথম আর্থিক সহায়ক", "সংযোগ সফল", "হাতে থাকা টাকা: ৳৩০,০০০", খাঁটি বাংলা সংখ্যা (০-৯) |
-| `/forecast` | "LightGBM 14-day Forecast", "MAE: ৳2,340", "trailing_average baseline", "SHAP Top Features" | "আগামী ১৪ দিনের আগাম হিসাব", "আমাদের মডেল: গড় ভুল ৳২,৩৪০", "সাধারণ গড়: গড় ভুল ৳৪,১২০", "যে কারণে হিসাব এমন হয়েছে" |
-| `/plan` | "LP Solver Optimization", "Adoption Range: 50%-80%", "Simulation", "Rule Verified" | "সঞ্চয় পরিকল্পনা", "কতজন ব্যবহার করতে পারে: ৫০% - ৮০%", "ভবিষ্যৎ পরিকল্পনা", "✓ যাচাই করা" |
-| `/spending` | "Cash Out Channel Anomaly", "MDR Minimum abolished", "IRF: 0.00%", "Isolation Forest" | "অস্বাভাবিক লেনদেন", "মার্চেন্ট ফি বাতিল — কিউআরে খরচ ০%", "ব্যাংকের প্রণোদনা ০.১০% + ০.২০%", "অস্বাভাবিক খোঁজার পদ্ধতি" |
-| `/tips` | "LLM Chat Explain", "Template fallback active", "Deterministic prompt response" | "খরচ কমানোর উপায়", "প্রস্তুত উত্তর — একই নির্ভরযোগ্য হিসাবের ওপর ভিত্তি করে উত্তর তৈরি করা হয়েছে।" |
-| `/signal` | "Logistic Regression Credit Readiness Signal", "Score: 0.78", "System Computed" | "ধারাবাহিকতার মান (অভ্যাসের ফল)", "মান: ০.৭৮ (দৃঢ়)", "স্বয়ংক্রিয় হিসাব — এটি কোনো ঋণের সিদ্ধান্ত নয়" |
-| `/metrics` | "ROC-AUC 0.82", "F1 0.74", "Precision 0.79", "Baseline Comparison", "Dataset: 3900000" | "কতটা সঠিক: ১০০টিতে ৮২টি", "শনাক্তকরণের মাত্রা: ১০০টিতে ৭৪টি", "নিয়মিত অভ্যাসের ফল", "তথ্য: ৩৯,০০,০০০" |
+| Route | Technical / Formal (Too High) | Casual Pass (Too Low) | Shipped Professional Register |
+|---|---|---|---|
+| **`/` (Home)** | "System computed ledger specification v1.0 • Flat format" | "A guess about the future. Nothing moves without you." | **"আপনার নিশ্চিতকরণ ছাড়া কোনো অর্থ স্থানান্তরিত হয় না।"** / **"No funds move without your confirmation."** |
+| **`/forecast`** | "LightGBM 14-day cash flow projection with SHAP feature attribution" | "Money in the next 14 days — our count vs a simple guess. No tight days here." | **"১৪ দিনের ক্যাশ ফ্লো পূর্বাভাস: আপনার যাচাইকৃত লেনদেনের ইতিহাসের ভিত্তিতে আনুমানিক জমা, খরচ এবং উদ্বৃত্তের হিসাব।"** / **"Projected inflows, outflows, and net cash balance based on your verified transaction history."** |
+| **`/plan`** | "LP solver optimal allocation constrained by liquid reserve buffer" | "We check what is left in your hands, not an average. Too big for right now." | **"জরুরি প্রয়োজনের অর্থ আলাদা রাখার পর আপনার প্রকৃত উদ্বৃত্ত থেকে সঞ্চয় পরিকল্পনা তৈরি করা হয়েছে।"** / **"Calculated from your actual cash surplus after reserving emergency safety funds."** |
+| **`/spending`** | "MDR abolition per BRPD Circular 12 with 20 bps interchange subsidy" | "Skip the fee! QR at shops: 0% fee. Cash out: 1.4% fee." | **"১ অক্টোবর ২০২৬ তারিখের নির্দেশনা অনুযায়ী দোকানে বাংলা কিউআরে অর্থ পরিশোধ করলে ক্যাশ-আউট ফি ০%। এতে মাসে আনুমানিক ফি সাশ্রয় হবে।"** / **"Under the 1 October 2026 regulation, merchant payments via Bangla QR incur 0% fee."** |
+| **`/tips`** | "Algorithmic decision tree heuristic coaching recommendations" | "Bills pile up in the last week. Putting ৳50 aside daily keeps month-end painless." | **"মাসের শেষ সপ্তাহে নিয়মিত বিল ও নগদ খরচের চাপ বাড়ে। মাসের মাঝামাঝি থেকে প্রতিদিন ৳৫০ আলাদা রাখলে মাস শেষে আর্থিক চাপ কমে।"** / **"Bills and cash expenses typically peak during the final week of the month. Setting aside ৳50 daily prevents month-end cash shortages."** |
+| **`/signal`** | "Multivariate logistic credit score estimation (unauthorized for underwriting)" | "One of three levels. The bank decides the loan, not us." | **"লেনদেনের ইতিহাসের ভিত্তিতে ধারাবাহিকতার মূল্যায়ন। ঋণের সিদ্ধান্ত সম্পূর্ণভাবে অনুমোদিত আর্থিক প্রতিষ্ঠানের ওপর নির্ভরশীল।"** / **"Payment consistency evaluation based on your transaction history. Loan decisions rest solely with licensed financial institutions."** |
+| **`/metrics`** | "LightGBM test set ROC-AUC 0.82 and F1 0.74 evaluation against naive baseline" | "How close we get, vs a simple guess. Counting finished." | **"মডেলের কার্যকারিতা পরিমাপ: সাধারণ গড়ের তুলনায় আমাদের মডেলের সঠিকতা ও ধারাবাহিকতা মূল্যায়ন।"** / **"Model performance metrics and regulatory evaluation notes."** |
+
+---
+
+## Pitch Note: Why the Professional Register Wins Judges
+When hackathon judges evaluate money and banking software, extremes instantly fail:
+1. **The Bank-Notice Bot Failure**: Copy filled with bureaucratic legalese, passive voice, or raw ML jargon (`ROC-AUC`, `SHAP`, `LP Solver`) sounds like an unintegrated research project that real people cannot use.
+2. **The Amateur Texting Bot Failure**: Slang, incomplete fragments, and chatty verbs ("It's a guess. Not a promise.", "গোনা হচ্ছে", "হালকা হবেন") sound like a toy made by students who don't take people's hard-earned livelihoods seriously.
+
+**The Golden Mean (The Accountant / Doctor Register)**:
+Shonchoy Copilot speaks with the calm, disciplined precision of a trusted accountant or doctor:
+- **Exact & Honest**: Clear subjects, complete sentences, respectful **আপনি** addressing.
+- **Zero Jargon, Zero Fluff**: Explains complex financial mechanisms (e.g. 1 Oct 2026 Bangla QR 0% fee, NPSB incentives, cash-out consolidations) in transparent, plain language without diluting regulatory or mathematical truth.
+- **Immediate Fiduciary Trust**: Judges immediately see software ready for national deployment across millions of micro-merchants and citizens.
 
 ---
 
@@ -147,6 +160,7 @@ Competitors in this hackathon will inevitably present generic AI dashboards fill
 - **D2: The Traditional Khata Metaphor**: Designed as a physical merchant ledger (paper `#F4EFE3`, ink `#1E1B16`, ruled borders `#D8CFBB`, dotted leaders, rubber stamps, no rounded plastic cards).
 - **D3: Responsible AI as Functional Furniture**: Every AI suggestion displays a 3-layer Provenance (Prediction, Assumption, Explanation), honest "Do-Nothing" counterfactuals, and explicit guardrails reminding users that estimates are not guarantees and readiness signals are not loan sanctions.
 - **D4: 1 Oct 2026 Bangladesh Bank Circular as Core Logic**: The revolutionary regulation (0% merchant MDR, 0% IRF, NPSB 0.10%+0.20% central-bank incentive, 2,000 BDT splitting vigilance) is front-and-center, demonstrating real-world financial literacy and ground-level utility for millions of Bangladeshi micro-merchants.
+
 
 
 
