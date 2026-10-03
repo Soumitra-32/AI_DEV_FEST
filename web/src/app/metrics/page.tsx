@@ -115,12 +115,12 @@ export default function MetricsPage() {
         {data && !loading && (
           <>
             {/* Forecast Model Evaluation */}
-            <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
+            <div className="bg-surface-block/40 border border-rule rounded-[6px] p-5 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-rule pb-2">
                 <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
                   {tr("metrics.forecast")}
                 </h2>
-                <Stamp variant="ink">{tr("metrics.forecastBadge")}</Stamp>
+                <Stamp variant="blue">{tr("metrics.forecastBadge")}</Stamp>
               </div>
 
               <div className="space-y-4 font-hind text-sm">
@@ -160,7 +160,7 @@ export default function MetricsPage() {
                         <span className="tab-leader" />
                         <span
                           className={`font-serif-bn font-bold text-lg text-right tabular-nums ${
-                            row.improvement_pct >= 0 ? "text-primaryGreen" : "text-brickRed"
+                            row.improvement_pct >= 0 ? "text-[#0054A6]" : "text-brickRed"
                           }`}
                         >
                           {row.improvement_pct >= 0 ? "+" : ""}
@@ -174,7 +174,7 @@ export default function MetricsPage() {
             </div>
 
             {/* Anomaly Detection Model Specs */}
-            <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
+            <div className="bg-surface-block/40 border border-rule rounded-[6px] p-5 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-rule pb-2">
                 <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                   {tr("metrics.anomaly")}
@@ -189,7 +189,7 @@ export default function MetricsPage() {
                 {data.anomaly.map((anom, idx) => (
                   <div
                     key={idx}
-                    className="border border-rule p-2.5 bg-paper/50 space-y-1"
+                    className="border border-rule rounded-[6px] p-2.5 bg-surface-white space-y-1"
                   >
                     <div className="text-[10px] text-ink-muted uppercase">
                       {anom.metric === "precision"
@@ -211,7 +211,7 @@ export default function MetricsPage() {
             </div>
 
             {/* Consistency Model Specs */}
-            <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
+            <div className="bg-surface-block/40 border border-rule rounded-[6px] p-5 md:p-6 space-y-4">
               <div className="flex items-center justify-between border-b border-rule pb-2">
                 <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                   {tr("metrics.signal")}
@@ -247,7 +247,7 @@ export default function MetricsPage() {
                         {tr("metrics.improvement")}
                       </span>
                       <span className="tab-leader" />
-                      <span className="font-serif-bn font-bold text-lg text-primaryGreen text-right tabular-nums">
+                      <span className="font-serif-bn font-bold text-lg text-[#0054A6] text-right tabular-nums">
                         +{formatDigits(sig.improvement_pct.toFixed(1), lang)}%
                       </span>
                     </div>
@@ -258,7 +258,7 @@ export default function MetricsPage() {
 
             {/* Realized Impact */}
             {data.impact && data.impact.length > 0 && (
-              <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
+              <div className="bg-surface-block/40 border border-rule rounded-[6px] p-5 md:p-6 space-y-4">
                 <div className="flex items-center justify-between border-b border-rule pb-2">
                   <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                     {tr("metrics.impactTitle")}
@@ -270,7 +270,7 @@ export default function MetricsPage() {
                   {data.impact
                     .filter((imp) => imp.metric === "avg_potential_fee_saving_bdt_per_month" || imp.metric === "observed_shortfall_days_per_month" || imp.metric === "requests")
                     .map((imp, idx) => (
-                      <div key={idx} className="border border-rule p-3 bg-paper/40 space-y-1">
+                      <div key={idx} className="border border-rule rounded-[6px] p-3 bg-surface-white space-y-1">
                         <div className="text-[10px] text-ink-muted uppercase">
                           {imp.metric === "avg_potential_fee_saving_bdt_per_month"
                             ? (lang === "bn" ? "মাসে বাঁচতে পারে এমন ফি" : "Fee you could save a month")
@@ -299,7 +299,7 @@ export default function MetricsPage() {
             )}
 
             {/* Fairness Audit Ledger Table */}
-            <div className="bg-surface/50 border-t border-b border-rule p-4 md:p-6 space-y-4">
+            <div className="bg-surface-block/40 border border-rule rounded-[6px] p-4 md:p-6 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 border-b border-rule pb-2">
                 <h3 className="font-serif-bn font-bold text-xl text-ink m-0">
                   {tr("metrics.fairnessTable")}
@@ -325,7 +325,7 @@ export default function MetricsPage() {
                   </thead>
                   <tbody className="divide-y divide-rule/60 font-hind text-xs">
                     {data.fairness.slice(0, 15).map((row, idx) => (
-                      <tr key={idx} className="hover:bg-paper/50">
+                      <tr key={idx} className="hover:bg-surface-block/50">
                         <td className="py-2 pr-3 font-mono text-ink-muted capitalize text-left">
                           {row.dimension === "persona"
                             ? (lang === "bn" ? "পেশা" : "Persona")
@@ -349,7 +349,7 @@ export default function MetricsPage() {
                         <td className="py-2 text-right font-serif-bn font-bold tabular-nums">
                           <span
                             className={
-                              row.relative_gap_pct >= 0 ? "text-primaryGreen" : "text-brickRed"
+                              row.relative_gap_pct >= 0 ? "text-[#0054A6]" : "text-brickRed"
                             }
                           >
                             {row.relative_gap_pct >= 0 ? "+" : ""}

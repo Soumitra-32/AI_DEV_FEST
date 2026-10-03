@@ -263,12 +263,12 @@ function PlanContent() {
                 step={500}
                 value={goal}
                 onChange={(e) => setGoal(e.target.value)}
-                className="w-full h-12 bg-surface border border-rule px-4 font-serif-bn text-xl font-bold text-ink focus:outline-none focus:border-ink transition-colors rounded-none"
+                className="w-full h-14 bg-[#F1F4F9] border border-[#D8CFBB] px-4 font-serif-bn text-xl font-bold text-[#1E1B16] rounded-[6px] focus:outline-none focus:border-[#0054A6] transition-colors"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label htmlFor="months-input" className="text-xs font-mono uppercase text-ink-muted block">
+              <label htmlFor="months-input" className="text-xs font-mono uppercase text-[#6A6355] block">
                 {tr("plan.months")}
               </label>
               <input
@@ -278,7 +278,7 @@ function PlanContent() {
                 max={36}
                 value={months}
                 onChange={(e) => setMonths(e.target.value)}
-                className="w-full h-12 bg-surface border border-rule px-4 font-mono text-lg text-ink focus:outline-none focus:border-ink transition-colors rounded-none"
+                className="w-full h-14 bg-[#F1F4F9] border border-[#D8CFBB] px-4 font-mono text-lg text-[#1E1B16] rounded-[6px] focus:outline-none focus:border-[#0054A6] transition-colors"
               />
             </div>
           </div>
@@ -286,7 +286,7 @@ function PlanContent() {
           <button
             type="submit"
             disabled={busy}
-            className="w-full h-12 bg-primaryGreen text-white text-[17px] font-medium rounded-none hover:opacity-95 transition"
+            className="w-full min-h-[48px] h-14 bg-[#0054A6] hover:bg-[#003E7E] text-white text-[17px] font-medium rounded-[6px] transition-colors cursor-pointer border-0"
           >
             {busy ? tr("plan.calculating") : tr("plan.submit")}
           </button>
@@ -349,7 +349,7 @@ function PlanContent() {
                       {tr("plan.feasibleMonthly")}
                     </span>
                     <span className="tab-leader" />
-                    <span className="font-serif-bn font-bold text-xl text-primaryGreen text-right tabular-nums">
+                    <span className="font-serif-bn font-bold text-xl text-[#0054A6] text-right tabular-nums">
                       {formatBDT(plan.feasible_monthly_bdt, lang)}
                     </span>
                   </div>
@@ -435,7 +435,7 @@ function PlanContent() {
               </span>
               <Link
                 href="/forecast"
-                className="text-sm font-semibold text-primaryGreen underline underline-offset-4 decoration-primaryGreen/60 hover:text-ink transition-colors font-hind"
+                className="text-sm font-semibold text-[#0054A6] hover:text-[#003E7E] underline underline-offset-4 decoration-[#0054A6]/60 transition-colors font-hind"
               >
                 {tr("nav.forecast")} →
               </Link>

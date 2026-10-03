@@ -2,13 +2,13 @@ import type { ReactNode } from "react";
 
 interface StampProps {
   children: ReactNode;
-  variant?: "ink" | "muted" | "warn";
+  variant?: "ink" | "muted" | "warn" | "blue";
   className?: string;
 }
 
 /**
- * Section 6 / D2: Traditional Bengali Khata Ink Stamp
- * 1px rectangular border, font-mono, slight -1.5deg rotation, transparent bg.
+ * Institutional Khata Ink Stamp
+ * 1px rectangular border, font-mono, 4px radius, transparent bg.
  * Never a modern solid filled pill badge or green badge.
  */
 export default function Stamp({
@@ -21,7 +21,9 @@ export default function Stamp({
       ? "stamp-ink"
       : variant === "warn"
         ? "stamp-warn"
-        : "stamp-muted";
+        : variant === "blue"
+          ? "stamp-blue"
+          : "stamp-muted";
 
   return (
     <span className={`stamp ${variantClass} ${className}`}>

@@ -1,41 +1,68 @@
 @import "tailwindcss";
 
 @theme {
-  --color-paper: #F4EFE3;
-  --color-surface: #FBF8F1;
+  --color-upay-blue: #0054A6;
+  --color-upay-blue-dark: #003E7E;
+  --color-surface-white: #FFFFFF;
+  --color-surface-block: #F1F4F9;
   --color-ink: #1E1B16;
-  --color-ink-muted: #6A6355;
-  --color-rule: #D8CFBB;
-  --color-primaryGreen: #1F4D36;
-  --color-brickRed: #B0431F;
+  --color-muted-ink: #6A6355;
+  --color-rule-line: #D8CFBB;
+  --color-brick-red: #B0431F;
 
-  --font-hind: "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  /* Aliases for backwards compatibility */
+  --color-paper: #FFFFFF;
+  --color-surface: #F1F4F9;
+  --color-rule: #D8CFBB;
+  --color-primaryGreen: #0054A6;
+  --color-brickRed: #B0431F;
+  --color-ink-muted: #6A6355;
+
+  --font-hind: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
   --font-serif-bn: "Noto Serif Bengali", serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  --radius-ledger: 0px;
-  --radius-stamp: 2px;
+  --radius-ledger: 6px;
+  --radius-stamp: 4px;
 }
 
 :root {
-  --paper: #F4EFE3;
-  --surface: #FBF8F1;
+  --upay-blue: #0054A6;
+  --upay-blue-dark: #003E7E;
+  --surface-white: #FFFFFF;
+  --surface-block: #F1F4F9;
   --ink: #1E1B16;
-  --ink-muted: #6A6355;
+  --muted-ink: #6A6355;
+  --rule-line: #D8CFBB;
+  --brick-red: #B0431F;
+
+  /* Aliases */
+  --paper: #FFFFFF;
+  --surface: #F1F4F9;
   --rule: #D8CFBB;
-  --primaryGreen: #1F4D36;
+  --primaryGreen: #0054A6;
   --brickRed: #B0431F;
+  --ink-muted: #6A6355;
 }
 
 * {
   box-sizing: border-box;
 }
 
+/* Zero elevation & no glow rule across the entire theme */
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
 body {
-  background-color: #F4EFE3;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.025'/%3E%3C/svg%3E");
+  background-color: #FFFFFF;
+  background-image: none;
   color: #1E1B16;
-  font-family: "Noto Sans Bengali", "Hind Siliguri", "Nirmala UI", sans-serif;
+  font-family: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
   font-size: 17px;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
@@ -43,9 +70,24 @@ body {
   padding: 0;
 }
 
-/* Bengali typographic pass scoped to html[lang="bn"] (synced by LangToggle).
-   Unlayered author CSS beats Tailwind v4's layered utilities, so these
-   minimums apply without !important and only in Bangla mode. */
+/* Material Symbols Outlined font styling */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Bengali typographic pass scoped to html[lang="bn"] */
 html[lang="bn"] body {
   font-size: 18.5px;
   line-height: 1.85;
@@ -57,9 +99,6 @@ html[lang="bn"] td {
   line-height: 1.85;
 }
 
-/* One-step-up minimums:
-   Bengali glyphs, conjuncts, and vowel diacritics require larger vertical
-   and horizontal room than Latin counterparts to prevent blurry or clipped text. */
 html[lang="bn"] .text-base {
   font-size: 1.125rem; /* ~18px */
   line-height: 1.8;
@@ -106,7 +145,7 @@ html[lang="bn"] .badge {
   line-height: 1.45;
   padding: 3px 8px;
   letter-spacing: 0.01em;
-  font-family: "JetBrains Mono", "Noto Sans Bengali", "Hind Siliguri", monospace;
+  font-family: "JetBrains Mono", "Hind Siliguri", monospace;
 }
 
 html[lang="bn"] .stamp {
@@ -114,7 +153,7 @@ html[lang="bn"] .stamp {
   line-height: 1.4;
   padding: 2px 8px;
   letter-spacing: 0.02em;
-  font-family: "JetBrains Mono", "Noto Sans Bengali", "Hind Siliguri", monospace;
+  font-family: "JetBrains Mono", "Hind Siliguri", monospace;
 }
 
 html[lang="bn"] button,
@@ -155,7 +194,7 @@ html[lang="bn"] .font-hind {
 }
 
 html[lang="bn"] .font-mono {
-  font-family: "JetBrains Mono", "Noto Sans Bengali", "Hind Siliguri", monospace;
+  font-family: "JetBrains Mono", "Hind Siliguri", monospace;
 }
 
 .font-serif-bn {
@@ -164,27 +203,37 @@ html[lang="bn"] .font-mono {
 }
 
 .font-hind {
-  font-family: "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  font-family: "Hind Siliguri", "Noto Sans Bengali", sans-serif;
 }
 
 .font-mono {
   font-family: "JetBrains Mono", monospace;
 }
 
-/* Double accounting rules */
+/* Accounting Double Rule (top/bottom 1px #D8CFBB, height 4px) */
+.ledger-double-rule {
+  border-top: 1px solid #D8CFBB;
+  border-bottom: 1px solid #D8CFBB;
+  height: 4px;
+}
+
 .ledger-double-top {
   border-top: 3px double #D8CFBB;
 }
 
 .ledger-double-bottom {
-  border-bottom: 3px double #1E1B16;
+  border-bottom: 3px double #0054A6;
 }
 
-/* Diagonal hatch for pressure calendar ledger indicator */
-.diagonal-hatch-pattern {
-  background-color: #FBF8F1;
+/* Pressure Day Marker: 3px brick-red left border, 45° red hatch pattern on left, no red background */
+.pressure-marker {
+  border-left: 3px solid #B0431F;
+  position: relative;
+}
+
+.pressure-hatch-left {
   background-image: repeating-linear-gradient(
-    -45deg,
+    45deg,
     transparent,
     transparent 5px,
     rgba(176, 67, 31, 0.28) 5px,
@@ -192,6 +241,17 @@ html[lang="bn"] .font-mono {
   );
 }
 
+.diagonal-hatch-pattern {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 5px,
+    rgba(176, 67, 31, 0.28) 5px,
+    rgba(176, 67, 31, 0.28) 7px
+  );
+}
+
+/* Dotted Leader Between Label and Amount */
 .dotted-leader,
 .tab-leader {
   border-bottom: 1.5px dotted #D8CFBB;
@@ -200,18 +260,18 @@ html[lang="bn"] .font-mono {
   height: 0px;
 }
 
-/* Classic ledger container shell */
+/* Institutional Shell (Max width: 1140px, responsive down to 360px) */
 .shell {
-  max-width: 920px;
+  max-width: 1140px;
   margin: 0 auto;
   padding: 16px 16px 88px;
 }
 
-/* Base Ledger Card (flat ruled box, 0px border radius) */
+/* Flat Ledger Cards (6px border radius, rule-line border, surface-block or surface-white bg) */
 .card {
-  background: #FBF8F1;
+  background: #F1F4F9;
   border: 1px solid #D8CFBB;
-  border-radius: 0px;
+  border-radius: 6px;
   padding: 18px 20px;
   margin-bottom: 18px;
 }
@@ -228,7 +288,7 @@ html[lang="bn"] .font-mono {
   color: #6A6355;
 }
 
-/* Rubber Stamp Badges - rectangular, 1px border, ink-muted or ink, rotated -1.5deg */
+/* Rubber Stamp Badges - flat, 1px border, 4px/6px radius, no shadow */
 .stamp {
   display: inline-block;
   border: 1px solid currentColor;
@@ -236,9 +296,8 @@ html[lang="bn"] .font-mono {
   font-size: 0.72rem;
   font-family: "JetBrains Mono", monospace;
   letter-spacing: 0.05em;
-  transform: rotate(-1.5deg);
   user-select: none;
-  border-radius: 2px;
+  border-radius: 4px;
   background: transparent;
   line-height: 1.3;
 }
@@ -253,80 +312,94 @@ html[lang="bn"] .font-mono {
   border-color: #1E1B16;
 }
 
+.stamp-blue {
+  color: #0054A6;
+  border-color: #0054A6;
+}
+
 .stamp-warn {
   color: #B0431F;
   border-color: #B0431F;
 }
 
+/* Badges: 6px radius, no green/purple/pastel. Brick red only for text/border. */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
   border: 1px solid #6A6355;
-  border-radius: 2px;
+  border-radius: 6px;
   font-size: 0.78rem;
   font-family: "JetBrains Mono", monospace;
-  background: #FBF8F1;
+  background: #FFFFFF;
   color: #1E1B16;
-  text-transform: uppercase;
 }
 
-.badge.warn {
+.badge.warn,
+.badge.danger,
+.badge.pressure {
   border-color: #B0431F;
   color: #B0431F;
-}
-
-.badge.danger {
-  border-color: #B0431F;
-  color: #B0431F;
+  background: transparent;
 }
 
 .badge.success {
-  border-color: #1E1B16;
-  color: #1E1B16;
+  border-color: #0054A6;
+  color: #0054A6;
+  background: transparent;
 }
 
-/* Warning Strip (3px brick-red left rule, no solid red background fill) */
-.banner {
-  border-left: 4px solid #B0431F;
-  border-top: 1px solid #D8CFBB;
-  border-right: 1px solid #D8CFBB;
-  border-bottom: 1px solid #D8CFBB;
-  background: #FBF8F1;
-  color: #1E1B16;
-  padding: 14px 16px;
-  border-radius: 0px;
-  margin-bottom: 18px;
-}
-
-/* Flat Ledger Buttons */
+/* Flat Ledger Buttons (6px radius, no shadow, min 48px tap target) */
 button,
 .button {
   font: inherit;
   padding: 9px 18px;
-  border-radius: 2px;
+  border-radius: 6px;
   border: 1px solid #D8CFBB;
-  background: #FBF8F1;
+  background: #FFFFFF;
   color: #1E1B16;
   cursor: pointer;
-  transition: all 0.15s ease;
+  min-height: 48px;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 
 button:hover,
 .button:hover {
-  border-color: #1E1B16;
+  border-color: #0054A6;
+  color: #0054A6;
 }
 
 button.primary {
-  background: #1F4D36;
-  border-color: #1F4D36;
-  color: #ffffff;
+  background: #0054A6;
+  border-color: #0054A6;
+  color: #FFFFFF;
   font-weight: 600;
 }
 
 button.primary:hover {
-  opacity: 0.95;
+  background: #003E7E;
+  border-color: #003E7E;
+  color: #FFFFFF;
+}
+
+/* Inputs (surface-block bg, rule-line border, 6px radius, min 48px tap height) */
+input,
+select,
+textarea {
+  border-radius: 6px;
+  border: 1px solid #D8CFBB;
+  background-color: #F1F4F9;
+  color: #1E1B16;
+  min-height: 48px;
+  padding: 10px 14px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: #0054A6 !important;
 }
 
 /* Table Ledger Formatting */
@@ -337,11 +410,10 @@ table {
 
 th {
   text-align: left;
-  padding: 8px 10px;
+  padding: 10px;
   border-bottom: 1px solid #D8CFBB;
   font-family: "JetBrains Mono", monospace;
   font-size: 0.8rem;
-  text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #6A6355;
 }
@@ -353,52 +425,36 @@ td {
   color: #1E1B16;
 }
 
-/* Suggestions - text-only with green underline, NO pills */
+/* Suggestions - Underlined text links only, no pills/chips */
 .suggestion-link {
-  color: #1F4D36;
+  color: #0054A6;
   text-decoration: underline;
   text-underline-offset: 4px;
-  text-decoration-color: rgba(31, 77, 54, 0.5);
+  text-decoration-color: #0054A6;
   font-weight: 500;
   background: none;
   border: none;
   padding: 0;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   cursor: pointer;
 }
 
 .suggestion-link:hover {
-  color: #1E1B16;
+  color: #003E7E;
+  text-decoration-color: #003E7E;
 }
 
-/* Focus-visible rings: clean 2px ink outline, no blue rings */
+/* Focus: border color change, no ring */
 :focus-visible {
-  outline: 2px solid #1E1B16;
+  outline: 2px solid #0054A6;
   outline-offset: 2px;
-}
-
-button:focus-visible,
-input:focus-visible,
-a:focus-visible {
-  outline: 2px solid #1E1B16;
-  outline-offset: 2px;
-}
-
-/* Ruled ledger skeleton */
-.ledger-skeleton {
-  background: repeating-linear-gradient(
-    90deg,
-    transparent,
-    transparent 20px,
-    rgba(216, 207, 187, 0.25) 20px,
-    rgba(216, 207, 187, 0.25) 40px
-  );
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @media print {
   body {
-    background-image: none !important;
-    background-color: #ffffff !important;
+    background-color: #FFFFFF !important;
     color: #000000 !important;
   }
 
@@ -410,8 +466,9 @@ a:focus-visible {
     display: none !important;
   }
 
-  .border-rule {
-    border-color: #aaaaaa !important;
+  .border-rule,
+  .border-rule-line {
+    border-color: #AAAAAA !important;
   }
 
   section,

@@ -153,16 +153,16 @@ export default function TipsPage() {
     <>
       <TopBar />
       <main className="space-y-6">
-        <header className="border-b border-rule pb-4 space-y-2">
-          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider flex items-center gap-2">
+        <header className="border-b border-[#D8CFBB] pb-4 space-y-2">
+          <div className="text-xs font-mono text-[#0054A6] uppercase tracking-wider flex items-center gap-2">
             <span>{tr("tips.headerTag")}</span>
             <span>•</span>
-            <Stamp variant="muted">{tr("stamp.easyExplain")}</Stamp>
+            <Stamp variant="blue">{tr("stamp.easyExplain")}</Stamp>
           </div>
-          <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
+          <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-[#1E1B16] tracking-tight">
             {tr("tips.title")}
           </h1>
-          <p className="text-base text-ink-muted leading-relaxed font-hind">
+          <p className="text-base text-[#6A6355] leading-relaxed font-hind">
             {tr("tips.subtitle")}
           </p>
         </header>
@@ -171,20 +171,20 @@ export default function TipsPage() {
 
         {/* Live Assistant Response if available */}
         {loading && (
-          <div className="bg-surface/50 border-t border-b border-rule p-6 text-center">
-            <p className="font-mono text-sm text-ink-muted animate-pulse">
+          <div className="bg-[#F1F4F9] border border-[#D8CFBB] rounded-[6px] p-6 text-center">
+            <p className="font-mono text-sm text-[#6A6355] animate-pulse">
               {tr("tips.loading")}
             </p>
           </div>
         )}
 
         {explainRes && !loading && (
-          <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-rule pb-2">
-              <span className="text-xs font-mono uppercase text-primaryGreen font-bold">
+          <div className="bg-[#F1F4F9] border border-[#D8CFBB] rounded-[6px] p-5 md:p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#D8CFBB] pb-2">
+              <span className="text-xs font-mono uppercase text-[#0054A6] font-bold">
                 {tr("tips.coachAdvice")}
               </span>
-              <Stamp variant="muted">
+              <Stamp variant="blue">
                 {explainRes.source === "llm"
                   ? (lang === "bn" ? "এআই লিখেছে" : "Written by AI")
                   : tr("stamp.computed")}

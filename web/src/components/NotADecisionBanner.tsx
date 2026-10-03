@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/LangToggle";
 import type { TranslationKey } from "@/lib/i18n";
+import MaterialIcon from "@/components/MaterialIcon";
 
 type BannerRoute = "home" | "forecast" | "plan" | "spending" | "tips" | "signal" | "metrics";
 
@@ -12,10 +13,9 @@ interface NotADecisionBannerProps {
 }
 
 export default function NotADecisionBanner({ route, contextNote }: NotADecisionBannerProps) {
-  const { tr } = useLanguage();
+  const { lang, tr } = useLanguage();
   const pathname = usePathname();
 
-  // Determine route key from prop or current pathname
   const detectedRoute: BannerRoute =
     route ??
     (pathname === "/forecast"
@@ -32,20 +32,30 @@ export default function NotADecisionBanner({ route, contextNote }: NotADecisionB
                 ? "metrics"
                 : "home");
 
+  const defaultLegal =
+    lang === "bn"
+      ? "এটি শুধু শিক্ষামূলক ইঙ্গিত, কোনো ঋণ বা আর্থিক সিদ্ধান্ত নয়। আপনার অনুমতি ছাড়া কোনো টাকা সরানো হবে না।"
+      : "This is educational guidance only, not a loan or financial decision. No money moves without your permission.";
+
   const routeKey = `banner.notADecision.${detectedRoute}` as TranslationKey;
-  const bannerText = contextNote || tr(routeKey) || tr("banner.notADecision");
+  const bannerText = contextNote || (detectedRoute === "home" ? defaultLegal : (tr(routeKey) || defaultLegal));
 
   return (
     <div
-      className="bg-surface/50 border-l-2 border-ink border-t border-r border-b border-rule/60 p-4 space-y-1 mb-6"
+      className="bg-[#F1F4F9] border-l-[3px] border-[#1E1B16] border-t border-r border-b border-[#D8CFBB] rounded-[6px] p-4 mb-6"
       role="note"
     >
-      <div className="text-xs font-mono uppercase tracking-wider text-ink font-bold flex items-center gap-1.5">
-        <span>{tr("banner.title")}</span>
+      <div className="flex items-start gap-2.5">
+        <MaterialIcon name="info" size={20} className="text-[#1E1B16] mt-0.5" />
+        <div className="space-y-1">
+          <div className="text-xs font-mono uppercase tracking-wider text-[#6A6355] font-bold">
+            {tr("banner.title")}
+          </div>
+          <p className="text-sm font-medium text-[#1E1B16] leading-relaxed font-hind m-0">
+            {bannerText}
+          </p>
+        </div>
       </div>
-      <p className="text-sm font-medium text-ink leading-relaxed font-hind">
-        &ldquo;{bannerText}&rdquo;
-      </p>
     </div>
   );
 }

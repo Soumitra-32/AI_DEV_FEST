@@ -92,10 +92,10 @@ export default function ForecastPage() {
                 type="button"
                 onClick={() => load("latest")}
                 disabled={loading}
-                className={`px-3 py-1.5 border text-xs font-hind ${
+                className={`min-h-[44px] px-3.5 py-1.5 border rounded-[6px] text-xs font-hind transition-colors cursor-pointer ${
                   preset === "latest"
-                    ? "border-primaryGreen text-primaryGreen font-bold"
-                    : "border-rule text-ink-muted"
+                    ? "border-[#0054A6] text-[#0054A6] font-bold bg-[#FFFFFF]"
+                    : "border-[#D8CFBB] text-[#6A6355] bg-[#F1F4F9] hover:border-[#1E1B16]"
                 }`}
               >
                 {tr("forecast.latestPreset")}
@@ -104,10 +104,10 @@ export default function ForecastPage() {
                 type="button"
                 onClick={() => load("monthend")}
                 disabled={loading}
-                className={`px-3 py-1.5 border text-xs font-hind ${
+                className={`min-h-[44px] px-3.5 py-1.5 border rounded-[6px] text-xs font-hind transition-colors cursor-pointer ${
                   preset === "monthend"
-                    ? "border-primaryGreen text-primaryGreen font-bold"
-                    : "border-rule text-ink-muted"
+                    ? "border-[#0054A6] text-[#0054A6] font-bold bg-[#FFFFFF]"
+                    : "border-[#D8CFBB] text-[#6A6355] bg-[#F1F4F9] hover:border-[#1E1B16]"
                 }`}
               >
                 {tr("forecast.monthEndPreset")}
@@ -198,7 +198,7 @@ export default function ForecastPage() {
                             </span>
                           )}
                         </td>
-                        <td className="py-2 font-serif-bn font-bold text-primaryGreen text-right tabular-nums">
+                        <td className="py-2 font-serif-bn font-bold text-[#0054A6] text-right tabular-nums">
                           {formatBDT(day.predicted_inflow_bdt, lang)}
                         </td>
                         <td className="py-2 font-serif-bn font-bold text-brickRed text-right tabular-nums">
@@ -228,27 +228,27 @@ export default function ForecastPage() {
 
             {/* Top SHAP Drivers */}
             {data.drivers && data.drivers.length > 0 && (
-              <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-3">
-                <div className="flex items-center justify-between border-b border-rule pb-2">
-                  <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
+              <div className="bg-[#F1F4F9] border border-[#D8CFBB] rounded-[6px] p-5 md:p-6 space-y-3">
+                <div className="flex items-center justify-between border-b border-[#D8CFBB] pb-2">
+                  <h3 className="font-serif-bn font-bold text-lg text-[#1E1B16] m-0">
                     {tr("forecast.driversTitle")}
                   </h3>
-                  <Stamp variant="muted">{tr("forecast.driversBadge")}</Stamp>
+                  <Stamp variant="blue">{tr("forecast.driversBadge")}</Stamp>
                 </div>
-                <div className="divide-y divide-rule font-hind text-sm">
+                <div className="divide-y divide-[#D8CFBB] font-hind text-sm">
                   {data.drivers.map((driver, idx) => (
                     <div key={idx} className="py-2.5 flex items-baseline justify-between gap-2">
                       <div className="space-y-0.5 text-left">
-                        <div className="font-bold text-ink">
+                        <div className="font-bold text-[#1E1B16]">
                           {formatFeatureName(driver.feature, lang)}
                         </div>
-                        <div className="text-xs text-ink-muted">
+                        <div className="text-xs text-[#6A6355]">
                           {driver.detail || (driver.direction === "increases" ? tr("forecast.increasesOutflow") : tr("forecast.decreasesOutflow"))}
                         </div>
                       </div>
                       <span className="tab-leader hidden sm:inline-block" />
                       <div className="font-serif-bn font-bold text-sm whitespace-nowrap text-right tabular-nums">
-                        <span className={driver.direction === "increases" ? "text-brickRed" : "text-primaryGreen"}>
+                        <span className={driver.direction === "increases" ? "text-brickRed" : "text-[#0054A6]"}>
                           {driver.direction === "increases" ? "+" : "-"}
                           {formatBDT(driver.impact_bdt, lang)}
                         </span>
@@ -265,13 +265,13 @@ export default function ForecastPage() {
             )}
 
             {/* Next Action Link */}
-            <div className="p-4 bg-surface/50 border-t border-b border-rule flex items-center justify-between">
-              <span className="font-hind text-sm text-ink-muted">
+            <div className="p-4 bg-[#F1F4F9] border border-[#D8CFBB] rounded-[6px] flex items-center justify-between">
+              <span className="font-hind text-sm text-[#6A6355]">
                 {tr("forecast.planSavingsPrompt")}
               </span>
               <Link
                 href="/plan"
-                className="text-sm font-semibold text-primaryGreen underline underline-offset-4 decoration-primaryGreen/60 hover:text-ink transition-colors font-hind"
+                className="text-sm font-semibold text-[#0054A6] hover:text-[#003E7E] underline underline-offset-4 decoration-[#0054A6]/60 transition-colors font-hind"
               >
                 {tr("nav.plan")} →
               </Link>

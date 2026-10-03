@@ -56,8 +56,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 }
 
 /**
- * Language switch.
- * Elegant ledger typographic switch with 2px solid primaryGreen underline under active language.
+ * Language switch: plain text “বাংলা · EN” with 2px upay-blue underline on active. No pill toggle.
  */
 export default function LangToggle() {
   const { lang, setLang, tr } = useLanguage();
@@ -66,25 +65,26 @@ export default function LangToggle() {
     <div
       role="group"
       aria-label={tr("lang.switchTo")}
-      className="text-xs font-mono flex items-center gap-1.5 select-none"
+      className="text-sm font-hind font-medium flex items-center gap-1.5 select-none"
     >
       <button
         type="button"
-        className={`px-2.5 py-1 text-xs font-mono cursor-pointer rounded-none transition-colors ${
+        className={`bg-transparent border-0 min-h-[48px] px-1.5 py-1 text-sm font-medium cursor-pointer transition-colors ${
           lang === "bn"
-            ? "bg-[#1E1B16] text-[#FBF8F1] border border-[#1E1B16] font-bold"
-            : "bg-transparent text-ink-muted hover:text-ink border border-rule"
+            ? "text-[#0054A6] font-bold border-b-2 border-[#0054A6]"
+            : "text-[#6A6355] hover:text-[#1E1B16] border-b-2 border-transparent"
         }`}
         onClick={() => setLang("bn")}
       >
         বাংলা
       </button>
+      <span className="text-[#6A6355] select-none text-xs">·</span>
       <button
         type="button"
-        className={`px-2.5 py-1 text-xs font-mono cursor-pointer rounded-none transition-colors ${
+        className={`bg-transparent border-0 min-h-[48px] px-1.5 py-1 text-sm font-medium cursor-pointer transition-colors ${
           lang === "en"
-            ? "bg-[#1E1B16] text-[#FBF8F1] border border-[#1E1B16] font-bold"
-            : "bg-transparent text-ink-muted hover:text-ink border border-rule"
+            ? "text-[#0054A6] font-bold border-b-2 border-[#0054A6]"
+            : "text-[#6A6355] hover:text-[#1E1B16] border-b-2 border-transparent"
         }`}
         onClick={() => setLang("en")}
       >

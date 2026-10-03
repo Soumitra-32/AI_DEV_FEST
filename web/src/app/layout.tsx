@@ -5,13 +5,13 @@ import { LanguageProvider } from "@/components/LangToggle";
 import BottomNav from "@/components/BottomNav";
 
 export const metadata: Metadata = {
-  title: "সঞ্চয় Copilot — খতিয়ান ও হিসাবের খাতা",
+  title: "সঞ্চয় Copilot — Institutional Khata (upay)",
   description:
-    "দোকানের খাঁটি লাল-বাঁধানো জাবেদা ও খতিয়ান খাতার নান্দনিকতা। সম্পূর্ণ ফ্ল্যাট, শান্ত, উচ্চ পঠনযোগ্যতা এবং শূন্য অলঙ্করণ সহ সাধারণ মানুষের জন্য নির্মিত ডিজিটাল লেজার।",
+    "A flat, zero-elevation, high-readability Bangladeshi fintech ledger UI inspired by upay. Calm, trustworthy, Bangla-first institutional digital khata.",
   openGraph: {
-    title: "সঞ্চয় Copilot — খতিয়ান ও হিসাবের খাতা",
+    title: "সঞ্চয় Copilot — Institutional Khata (upay)",
     description:
-      "Bangla-first financial coach and digital ledger system built for Bangladeshi shopkeepers and households.",
+      "Bangla-first institutional financial coach and digital ledger system inspired by upay.",
     locale: "bn_BD",
     type: "website",
   },
@@ -27,8 +27,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        />
       </head>
-      <body className="min-h-screen bg-paper text-ink font-hind antialiased">
+      <body className="min-h-screen bg-surface-white text-ink font-hind antialiased">
         <LanguageProvider>
           <div className="shell">{children}</div>
           <BottomNav />

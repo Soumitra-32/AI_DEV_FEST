@@ -34,9 +34,9 @@ const REASON_KEY: Record<PressureReason, TranslationKey> = {
 };
 
 /**
- * Khata Ledger Forecast Chart:
- * Authentic accounting palette: #1F4D36 (Inflow), #B0431F (Outflow), #1E1B16 (Balance).
- * Background #FBF8F1, Rule lines #D8CFBB, pressure days highlighted with diagonal hatch pattern.
+ * Institutional Khata Forecast Chart:
+ * Authentic upay accounting palette: #0054A6 (Inflow), #B0431F (Outflow), #1E1B16 (Balance).
+ * Zero gradients, flat zero elevation, #D8CFBB rule lines, 6px radius.
  */
 export default function ForecastChart({ days }: ForecastChartProps) {
   const { lang, tr } = useLanguage();
@@ -60,19 +60,9 @@ export default function ForecastChart({ days }: ForecastChartProps) {
 
   return (
     <div className="space-y-4">
-      <div style={{ width: "100%", height: 320 }} className="p-2 bg-surface">
+      <div style={{ width: "100%", height: 320 }} className="p-3 bg-[#FFFFFF] border border-[#D8CFBB] rounded-[6px]">
         <ResponsiveContainer>
           <AreaChart data={points} margin={{ top: 12, right: 12, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id="inflowFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#1F4D36" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#1F4D36" stopOpacity={0.02} />
-              </linearGradient>
-              <linearGradient id="outflowFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#B0431F" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#B0431F" stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#D8CFBB" />
             <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#6A6355" }} />
             <YAxis
@@ -82,9 +72,9 @@ export default function ForecastChart({ days }: ForecastChartProps) {
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "#FBF8F1",
+                backgroundColor: "#FFFFFF",
                 border: "1px solid #D8CFBB",
-                borderRadius: "4px",
+                borderRadius: "6px",
                 fontFamily: "Hind Siliguri, sans-serif",
                 color: "#1E1B16",
                 boxShadow: "none",
@@ -97,23 +87,26 @@ export default function ForecastChart({ days }: ForecastChartProps) {
             />
             <Legend
               formatter={(value) => (
-                <span className="text-xs font-mono text-ink uppercase">
+                <span className="text-xs font-mono text-[#1E1B16] uppercase">
                   {seriesName(String(value))}
                 </span>
               )}
             />
+            {/* Flat fills, NO gradients */}
             <Area
               type="monotone"
               dataKey="inflow"
-              stroke="#1F4D36"
-              fill="url(#inflowFill)"
+              stroke="#0054A6"
+              fill="#0054A6"
+              fillOpacity={0.1}
               strokeWidth={2}
             />
             <Area
               type="monotone"
               dataKey="outflow"
               stroke="#B0431F"
-              fill="url(#outflowFill)"
+              fill="#B0431F"
+              fillOpacity={0.1}
               strokeWidth={2}
             />
             <Line
@@ -136,7 +129,7 @@ export default function ForecastChart({ days }: ForecastChartProps) {
                     cy={cy}
                     r={6}
                     fill="#B0431F"
-                    stroke="#FBF8F1"
+                    stroke="#FFFFFF"
                     strokeWidth={2}
                   />
                 ) : (
@@ -149,23 +142,23 @@ export default function ForecastChart({ days }: ForecastChartProps) {
         </ResponsiveContainer>
       </div>
 
-      {/* Section 8: Diagonal Hatch Strip for Pressure Days */}
+      {/* Pressure Days Strip: 3px brick-red left border, 45° red hatch pattern, 6px radius */}
       {pressureDays.length > 0 && (
-        <div className="bg-surface/50 border-t border-b border-rule p-4 space-y-2">
-          <div className="flex items-center justify-between text-xs font-mono text-ink-muted">
-            <span>{tr("forecast.pressureTitle")}</span>
-            <span className="text-brickRed font-bold">
+        <div className="bg-[#F1F4F9] border-l-[3px] border-[#B0431F] border border-[#D8CFBB] rounded-[6px] p-4 space-y-2">
+          <div className="flex items-center justify-between text-xs font-mono text-[#6A6355]">
+            <span className="font-bold">{tr("forecast.pressureTitle")}</span>
+            <span className="text-[#B0431F] font-bold">
               {pressureDays.map((d) => formatDigits(d.date.slice(8, 10), lang)).join(" · ")} {lang === "bn" ? "তারিখ" : ""}
             </span>
           </div>
 
-          <div className="h-10 w-full border border-rule diagonal-hatch-pattern flex items-center justify-center">
-            <span className="bg-surface px-2.5 py-0.5 border border-rule text-xs font-mono font-bold text-brickRed">
+          <div className="h-10 w-full border border-[#D8CFBB] rounded-[6px] diagonal-hatch-pattern flex items-center justify-center">
+            <span className="bg-[#FFFFFF] px-3 py-1 border border-[#D8CFBB] rounded-[6px] text-xs font-mono font-bold text-[#B0431F]">
               {pressureDays.map((d) => formatDigits(d.date.slice(8, 10), lang)).join(" · ")} [{tr("forecast.pressureBadge")}]
             </span>
           </div>
 
-          <p className="text-xs text-ink-muted leading-relaxed font-hind">
+          <p className="text-xs text-[#6A6355] leading-relaxed font-hind m-0">
             {pressureDays
               .map((d) => `${formatWrittenDate(d.date, lang)}: ${tr(REASON_KEY[d.pressure_reason ?? "both"])}`)
               .join(" · ")}

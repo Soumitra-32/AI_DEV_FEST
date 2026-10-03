@@ -22,49 +22,40 @@ export default function SuggestionChips({ onSelectQuery }: SuggestionChipsProps)
       href: "/plan",
     },
     {
-      labelBn: "আগামী ১৪ দিন দেখাও",
-      labelEn: "See the next 14 days",
+      labelBn: "আগামী ১৪ দিনের পূর্বাভাস দেখাও",
+      labelEn: "Show 14-day cash forecast",
       href: "/forecast",
-    },
-    {
-      labelBn: "৬ মাসে ৳৩০,০০০ জমাতে চাই",
-      labelEn: "Save ৳30,000 in 6 months",
-      href: "/plan?goal=30000&months=6",
-      isQuery: true,
-      queryBn: "৬ মাসে ৳৩০,০০০ জমাতে চাই",
-      queryEn: "Save ৳30,000 in 6 months",
     },
   ];
 
   return (
-    <div className="space-y-2 pt-2 border-t border-rule">
-      <span className="text-xs font-mono uppercase text-ink-muted block">
+    <div className="space-y-2 pt-3 border-t border-[#D8CFBB]">
+      <span className="text-xs font-mono uppercase text-[#6A6355] block">
         {tr("voice.suggestedTitle")}
       </span>
-      <div className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-2 text-sm font-medium">
+      <div className="flex flex-wrap items-center gap-x-5 md:gap-x-8 gap-y-2">
         {suggestions.map((item, idx) => {
           const label = lang === "bn" ? item.labelBn : item.labelEn;
-          const query = lang === "bn" ? item.queryBn : item.queryEn;
           return (
-            <span key={item.labelBn} className="inline-flex items-center gap-x-4 md:gap-x-6">
-              {item.isQuery && onSelectQuery ? (
+            <span key={item.labelBn} className="inline-flex items-center gap-x-5 md:gap-x-8">
+              {onSelectQuery ? (
                 <button
                   type="button"
-                  onClick={() => onSelectQuery(query ?? label)}
-                  className="bg-transparent border-0 p-0 text-primaryGreen underline underline-offset-4 decoration-primaryGreen/50 hover:text-ink cursor-pointer text-sm font-medium font-hind"
+                  onClick={() => onSelectQuery(label)}
+                  className="min-h-[48px] inline-flex items-center bg-transparent border-0 p-0 text-[#0054A6] hover:text-[#003E7E] underline underline-offset-4 decoration-[#0054A6] cursor-pointer text-sm font-medium font-hind transition-colors"
                 >
                   {label}
                 </button>
               ) : (
                 <Link
                   href={item.href}
-                  className="text-primaryGreen underline underline-offset-4 decoration-primaryGreen/50 hover:text-ink transition-colors font-hind"
+                  className="min-h-[48px] inline-flex items-center text-[#0054A6] hover:text-[#003E7E] underline underline-offset-4 decoration-[#0054A6] transition-colors text-sm font-medium font-hind"
                 >
                   {label}
                 </Link>
               )}
               {idx < suggestions.length - 1 && (
-                <span className="text-rule select-none">/</span>
+                <span className="text-[#D8CFBB] select-none">/</span>
               )}
             </span>
           );

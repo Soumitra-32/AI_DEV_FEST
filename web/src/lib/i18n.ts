@@ -16,18 +16,18 @@ export const LANGUAGES: ReadonlyArray<{ code: Lang; label: string }> = [
 
 const en = {
   appName: "Shonchoy Copilot",
-  subTitle: "Simple money guidance • Bangla first",
-  subTitleBadge: "Simple ledger-book style",
+  subTitle: "Simple money guidance • First in Bangla",
+  subTitleBadge: "Institutional Khata v2.0",
   tagline:
-    "A Bangla-first coach that explains your transactions, plans a realistic saving goal, and warns you before the month-end squeeze — without selling you anything.",
+    "Your personal money coach in your own language. Track your spending, reach your savings goals, and never worry about month-end cash crunches again.",
 
   "nav.home": "Home",
+  "nav.forecast": "Forecast",
   "nav.plan": "Savings",
-  "nav.forecast": "Coming days",
-  "nav.spending": "Spending",
-  "nav.tips": "Tips",
-  "nav.signal": "Steady habits",
-  "nav.metrics": "Results",
+  "nav.spending": "Expenditure",
+  "nav.tips": "Suggestions",
+  "nav.signal": "Transactions",
+  "nav.metrics": "Metrics",
   "nav.more": "More",
 
   "lang.switchTo": "Switch language",
@@ -212,7 +212,7 @@ const en = {
   "spending.banglaQrAntiMisuseTitle": "Compliance Notice",
   "spending.banglaQrAntiMisuseText": "Splitting payments near ৳2,000 or conducting unauthorized cash-outs through merchant QR is strictly prohibited under payment regulations.",
 
-  "voice.label": "Enter your savings goal",
+  "voice.label": "Type your question or speak",
   "voice.speak": "Speak",
   "voice.listening": "Listening…",
   "voice.unsupported": "Voice does not work on this phone. Please type.",
@@ -224,7 +224,7 @@ const en = {
   "voice.confirm": "Calculate",
   "voice.retry": "Speak again",
   "voice.needBoth": "Enter both the amount and the timeline, then calculate.",
-  "voice.placeholder": "For example: I want to save ৳30,000 in 6 months",
+  "voice.placeholder": "e.g. Want to save ৳30,000 in 6 months",
   "voice.suggestedTitle": "Examples:",
 
   "tips.headerTag": "Guidance",
@@ -312,8 +312,8 @@ const en = {
   "forecast.increasesOutflow": "Increases spending",
   "forecast.decreasesOutflow": "Decreases spending",
 
-  "footer.ledgerSystem": "Shonchoy Copilot",
-  "footer.demoDisclaimer": "Practice data — all figures are synthetic.",
+  "footer.ledgerSystem": "সঞ্চয় Copilot × upaybd.com",
+  "footer.demoDisclaimer": "Institutional Khata v2.0",
 
   "error.title": "An error occurred",
   "error.retry": "Try again",
@@ -324,18 +324,18 @@ type Dictionary = Record<TranslationKey, string>;
 
 const bn: Dictionary = {
   appName: "সঞ্চয় Copilot",
-  subTitle: "সহজ টাকার হিসাব • বাংলা আগে",
-  subTitleBadge: "সহজ খতিয়ান ধরন",
+  subTitle: "সহজ টাকার হিসাব • বাংলায় এই প্রথম",
+  subTitleBadge: "Institutional Khata v2.0",
   tagline:
-    "দোকানের খাঁটি লাল-বাঁধানো জাবেদা ও খতিয়ান খাতার নান্দনিকতা। সম্পূর্ণ ফ্ল্যাট, শান্ত, উচ্চ পঠনযোগ্যতা এবং শূন্য অলঙ্করণ সহ সাধারণ মানুষের জন্য নির্মিত খাঁটি ডিজিটাল লেজার।",
+    "আপনার আয়-ব্যয়ের সঠিক হিসাব, এখন আপনার ভাষায়। সঞ্চয়ের লক্ষ্য ঠিক করুন এবং মাসের শেষে টাকা নিয়ে আর চিন্তা করতে হবে না।",
 
   "nav.home": "হোম",
+  "nav.forecast": "পূর্বাভাস",
   "nav.plan": "সঞ্চয়",
-  "nav.forecast": "আগাম হিসাব",
   "nav.spending": "খরচ",
   "nav.tips": "পরামর্শ",
-  "nav.signal": "নিয়মিত অভ্যাস",
-  "nav.metrics": "ফলাফল",
+  "nav.signal": "লেনদেন",
+  "nav.metrics": "মেট্রিক্স",
   "nav.more": "আরও",
 
   "lang.switchTo": "ভাষা নির্বাচন",
@@ -520,7 +520,7 @@ const bn: Dictionary = {
   "spending.banglaQrAntiMisuseTitle": "নিয়ম মেনে QR ব্যবহার করুন",
   "spending.banglaQrAntiMisuseText": "২,০০০ টাকার কাছাকাছি লেনদেন ভাগ করা বা দোকান থেকে অননুমোদিত নগদ গ্রহণ আইনত দণ্ডনীয়।",
 
-  "voice.label": "আপনার সঞ্চয় লক্ষ্য লিখুন",
+  "voice.label": "আপনার প্রশ্ন লিখুন বা মুখে বলুন",
   "voice.speak": "বলুন",
   "voice.listening": "শোনা হচ্ছে…",
   "voice.unsupported": "এই ফোনে ভয়েস কাজ করে না। লিখে দিন।",
@@ -532,7 +532,7 @@ const bn: Dictionary = {
   "voice.confirm": "হিসাব করুন",
   "voice.retry": "আবার বলুন",
   "voice.needBoth": "টাকার পরিমাণ ও সময়সীমা দুটোই উল্লেখ করুন, তারপর হিসাব করুন।",
-  "voice.placeholder": "উদাহরণ: ৬ মাসে ৳৩০,০০০ জমাতে চাই",
+  "voice.placeholder": "যেমন: ৬ মাসে ৳৩০,০০০ জমাতে চাই",
   "voice.suggestedTitle": "উদাহরণসমূহ:",
 
   "tips.headerTag": "দিকনির্দেশনা",
@@ -620,8 +620,8 @@ const bn: Dictionary = {
   "forecast.increasesOutflow": "খরচ বাড়ায়",
   "forecast.decreasesOutflow": "খরচ কমায়",
 
-  "footer.ledgerSystem": "সঞ্চয় Copilot",
-  "footer.demoDisclaimer": "অনুশীলনের তথ্য — সব সংখ্যা কৃত্রিম।",
+  "footer.ledgerSystem": "সঞ্চয় Copilot × upaybd.com",
+  "footer.demoDisclaimer": "Institutional Khata v2.0",
 
   "error.title": "ত্রুটি ঘটেছে",
   "error.retry": "পুনরায় চেষ্টা করুন",

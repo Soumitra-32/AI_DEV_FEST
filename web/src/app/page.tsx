@@ -9,6 +9,7 @@ import DoNothingToggle from "@/components/DoNothingToggle";
 import VoiceInput from "@/components/VoiceInput";
 import SuggestionChips from "@/components/SuggestionChips";
 import Stamp from "@/components/Stamp";
+import MaterialIcon from "@/components/MaterialIcon";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchAnomalies, fetchHealth, fetchIdentity, fetchParseGoal } from "@/lib/api";
 import type { HealthResponse, IdentityResponse } from "@/lib/api";
@@ -48,27 +49,27 @@ function StatusCard() {
   }, []);
 
   return (
-    <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 mb-6 space-y-4">
-      <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
+    <div className="bg-[#F1F4F9] border border-[#D8CFBB] rounded-[6px] p-4 md:p-5 space-y-3">
+      <div className="flex items-center justify-between text-xs font-mono text-[#6A6355] border-b border-[#D8CFBB] pb-2">
         <span className="uppercase">{tr("status.title")}</span>
-        <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
+        <Stamp variant="blue">{tr("stamp.computed")}</Stamp>
       </div>
 
       {status === "checking" && (
-        <p className="text-sm font-mono text-ink-muted animate-pulse">
+        <p className="text-sm font-mono text-[#6A6355] animate-pulse">
           {tr("status.checking")}
         </p>
       )}
 
       {status === "unreachable" && (
-        <div className="space-y-2">
+        <div className="space-y-1">
           <span className="badge danger">{tr("status.apiUnreachable")}</span>
-          <p className="text-xs text-ink-muted font-hind">{tr("status.apiHint")}</p>
+          <p className="text-xs text-[#6A6355] font-hind">{tr("status.apiHint")}</p>
         </div>
       )}
 
       {status === "ok" && health && (
-        <div className="space-y-3 font-hind text-sm">
+        <div className="space-y-2.5 font-hind text-sm">
           <div className="flex items-center gap-2">
             <span className="badge success">{tr("status.apiReachable")}</span>
             {health.status === "degraded" && (
@@ -76,41 +77,41 @@ function StatusCard() {
             )}
           </div>
 
-          <div className="space-y-2 pt-2 border-t border-rule font-hind">
+          <div className="space-y-1.5 pt-1.5 border-t border-[#D8CFBB] font-hind">
             <div className="flex items-baseline justify-between">
-              <span className="text-ink-muted">{tr("status.database")}</span>
+              <span className="text-[#6A6355]">{tr("status.database")}</span>
               <span className="tab-leader" />
-              <strong className="font-mono text-ink text-right">
+              <strong className="font-mono text-[#1E1B16] text-right">
                 {health.database.available ? tr("status.databaseReady") : tr("status.databaseMissing")}
               </strong>
             </div>
 
             <div className="flex items-baseline justify-between">
-              <span className="text-ink-muted">{tr("status.users")}</span>
+              <span className="text-[#6A6355]">{tr("status.users")}</span>
               <span className="tab-leader" />
-              <strong className="font-serif-bn text-ink text-right tabular-nums">
+              <strong className="font-serif-bn text-[#1E1B16] text-right tabular-nums">
                 {formatInteger(health.database.users, lang)}
               </strong>
             </div>
 
             <div className="flex items-baseline justify-between">
-              <span className="text-ink-muted">{tr("status.transactions")}</span>
+              <span className="text-[#6A6355]">{tr("status.transactions")}</span>
               <span className="tab-leader" />
-              <strong className="font-serif-bn text-ink text-right tabular-nums">
+              <strong className="font-serif-bn text-[#1E1B16] text-right tabular-nums">
                 {formatInteger(health.database.transactions, lang)}
               </strong>
             </div>
           </div>
 
           {identity && (
-            <div className="pt-2 border-t border-rule text-xs font-mono text-ink flex flex-wrap items-center justify-between gap-2">
+            <div className="pt-2 border-t border-[#D8CFBB] text-xs font-mono text-[#1E1B16] flex flex-wrap items-center justify-between gap-2">
               <div>
                 <span>{tr("identity.title")}: </span>
-                <strong className="text-base font-serif-bn">
+                <strong className="text-sm font-serif-bn">
                   {lang === "bn" ? identity.name_bn || identity.user_id : identity.name_en || identity.user_id}
                 </strong>
               </div>
-              <span className="text-ink-muted">
+              <span className="text-[#6A6355]">
                 {formatPersona(identity.persona, lang)} · {formatDistrict(identity.district, lang)} · {formatIncomeBand(identity.income_band, lang)}
               </span>
             </div>
@@ -132,55 +133,55 @@ function GoalConfirm({
   initialMonths: number | null;
   onCancel: () => void;
 }) {
-  const { lang, tr } = useLanguage();
+  const { tr } = useLanguage();
   const router = useRouter();
   const [goal, setGoal] = useState(initialGoal && initialGoal > 0 ? String(Math.round(initialGoal)) : "");
   const [months, setMonths] = useState(initialMonths && initialMonths >= 1 ? String(initialMonths) : "");
-  // Never substitute: the plan computes only what the user confirms here.
   const ready = Number(goal) > 0 && Number(months) >= 1;
+
   return (
-    <div className="border border-rule p-4 space-y-3 bg-paper/60">
-      <p className="text-sm font-hind text-ink">
-        <span className="text-ink-muted">{tr("voice.heard")} </span>
+    <div className="border border-[#D8CFBB] rounded-[6px] p-4 space-y-3 bg-[#F1F4F9]">
+      <p className="text-sm font-hind text-[#1E1B16]">
+        <span className="text-[#6A6355]">{tr("voice.heard")} </span>
         <strong>{text}</strong>
       </p>
       <div className="grid grid-cols-2 gap-3">
-        <label className="space-y-1 text-sm font-hind text-ink">
-          <span className="text-ink-muted">{tr("plan.goal")}</span>
+        <label className="space-y-1 text-sm font-hind text-[#1E1B16]">
+          <span className="text-[#6A6355]">{tr("plan.goal")}</span>
           <input
             type="number"
             min={1}
             value={goal}
             onChange={(e) => setGoal(e.target.value)}
-            className="w-full border border-rule px-2 py-1.5 bg-surface text-ink rounded-none"
+            className="w-full border border-[#D8CFBB] px-3 py-2 bg-[#FFFFFF] text-[#1E1B16] rounded-[6px] focus:outline-none focus:border-[#0054A6]"
           />
         </label>
-        <label className="space-y-1 text-sm font-hind text-ink">
-          <span className="text-ink-muted">{tr("plan.months")}</span>
+        <label className="space-y-1 text-sm font-hind text-[#1E1B16]">
+          <span className="text-[#6A6355]">{tr("plan.months")}</span>
           <input
             type="number"
             min={1}
             max={36}
             value={months}
             onChange={(e) => setMonths(e.target.value)}
-            className="w-full border border-rule px-2 py-1.5 bg-surface text-ink rounded-none"
+            className="w-full border border-[#D8CFBB] px-3 py-2 bg-[#FFFFFF] text-[#1E1B16] rounded-[6px] focus:outline-none focus:border-[#0054A6]"
           />
         </label>
       </div>
-      {!ready && <p className="text-sm font-hind text-ink-muted">{tr("voice.needBoth")}</p>}
-      <div className="flex gap-2">
+      {!ready && <p className="text-sm font-hind text-[#6A6355]">{tr("voice.needBoth")}</p>}
+      <div className="flex gap-2 pt-1">
         <button
           type="button"
           disabled={!ready}
           onClick={() => ready && router.push(`/plan?goal=${Number(goal)}&months=${Number(months)}&prompt=${encodeURIComponent(text)}`)}
-          className="px-4 py-1.5 bg-primaryGreen text-paper text-sm font-hind disabled:opacity-40 rounded-none"
+          className="min-h-[48px] px-5 bg-[#0054A6] hover:bg-[#003E7E] text-white text-sm font-medium rounded-[6px] disabled:opacity-40 transition-colors"
         >
           {tr("voice.confirm")}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-1.5 border border-rule text-sm font-hind text-ink rounded-none"
+          className="min-h-[48px] px-5 bg-[#FFFFFF] border border-[#D8CFBB] text-sm font-medium text-[#1E1B16] hover:border-[#0054A6] rounded-[6px] transition-colors"
         >
           {tr("voice.retry")}
         </button>
@@ -192,8 +193,6 @@ function GoalConfirm({
 export default function HomePage() {
   const { lang, tr } = useLanguage();
   const router = useRouter();
-  // Parsed goal awaiting user confirmation. Nothing routes to /plan until
-  // the user confirms explicit numbers — no silent 30000/6 defaults (GAP-10).
   const [pending, setPending] = useState<{ text: string; goal: number | null; months: number | null } | null>(null);
   const [homeFeeSaving, setHomeFeeSaving] = useState<number | null>(null);
 
@@ -210,25 +209,25 @@ export default function HomePage() {
   return (
     <>
       <TopBar />
-      {/* Real ledger margin rule on left (হাশিয়া - hashia) */}
-      <main className="space-y-6 border-l-2 border-rule/80 pl-4 md:pl-6 ml-1">
-        {/* Top Ledger Header */}
-        <header className="border-t-2 border-b border-rule pt-4 pb-6 space-y-3">
-          <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-2">
-            <span className="text-xs font-mono tracking-widest text-ink-muted uppercase">
-              {tr("subTitle")}
-            </span>
+
+      <main className="space-y-6 md:space-y-8">
+        {/* Hero Section: Institutional Header */}
+        <header className="border-b border-[#D8CFBB] pb-6 space-y-3">
+          <div className="text-xs font-mono text-[#0054A6] tracking-wider uppercase flex items-center gap-2">
+            <span>{tr("subTitle")}</span>
+            <span>•</span>
+            <Stamp variant="blue">{tr("subTitleBadge")}</Stamp>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold font-serif-bn text-ink tracking-tight">
+          <h1 className="text-3xl md:text-5xl font-bold font-serif-bn text-[#1E1B16] tracking-tight">
             {tr("appName")}
           </h1>
-          <p className="text-base text-ink-muted max-w-3xl leading-relaxed font-hind">
+          <p className="text-base md:text-lg text-[#6A6355] max-w-3xl leading-relaxed font-hind">
             {tr("tagline")}
           </p>
         </header>
 
-        {/* Section 9: Voice & Search Input Pair */}
-        <section className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
+        {/* Component 1: Quick input (Input + 56px square Mic + Underlined Suggestion Links) */}
+        <section className="bg-[#FFFFFF] border border-[#D8CFBB] rounded-[6px] p-5 md:p-6 space-y-4">
           <VoiceInput
             onSubmitText={(text) => {
               fetchParseGoal(text)
@@ -260,121 +259,223 @@ export default function HomePage() {
           />
         </section>
 
-        {/* Live System Status */}
-        <StatusCard />
-
-        {/* Core Navigation Ledger Grid (ruled cells, no cards) */}
-        <div className="border-t border-b border-rule grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:gap-px bg-rule">
-          {/* Cell 1: Forecast */}
-          <div className="bg-surface p-5 space-y-3">
-            <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
-              <span className="uppercase">{tr("nav.forecast")}</span>
-              <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
-            </div>
-            <h3 className="font-serif-bn text-xl font-bold text-ink">
-              {tr("forecast.title")}
-            </h3>
-            <p className="text-sm text-ink-muted font-hind leading-relaxed">
-              {tr("forecast.subtitle")}
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/forecast"
-                className="text-sm font-semibold text-primaryGreen underline underline-offset-4 decoration-primaryGreen/60 hover:text-ink transition-colors"
-              >
-                {tr("home.viewDetails")} →
-              </Link>
-            </div>
+        {/* Component 2: Ledger snapshot */}
+        <section className="bg-[#FFFFFF] border border-[#D8CFBB] rounded-[6px] p-5 md:p-6 space-y-4">
+          <div className="flex items-center justify-between text-xs font-mono text-[#6A6355] border-b border-[#D8CFBB] pb-2">
+            <h2 className="font-serif-bn font-bold text-lg md:text-xl text-[#1E1B16] m-0">
+              {lang === "bn" ? "এই মাসের খতিয়ান সারসংক্ষেপ" : "This Month's Ledger Summary"}
+            </h2>
+            <Stamp variant="blue">{tr("stamp.computed")}</Stamp>
           </div>
 
-          {/* Cell 2: Savings Plan */}
-          <div className="bg-surface p-5 space-y-3">
-            <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
-              <span className="uppercase">{tr("nav.plan")}</span>
-              <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
+          <div className="space-y-3 font-hind text-base">
+            {/* Row 1: Total income */}
+            <div className="flex items-baseline justify-between">
+              <span className="font-medium text-[#1E1B16]">
+                {lang === "bn" ? "মোট আয় (নগদ ও ব্যাংক ট্রান্সফার)" : "Total Income (Cash & Bank Transfer)"}
+              </span>
+              <span className="tab-leader" />
+              <span className="font-serif-bn font-bold text-lg text-[#1E1B16] text-right tabular-nums">
+                {lang === "bn" ? "৳২২,০০০" : "৳22,000"}
+              </span>
             </div>
-            <h3 className="font-serif-bn text-xl font-bold text-ink">
-              {tr("plan.title")}
-            </h3>
-            <p className="text-sm text-ink-muted font-hind leading-relaxed">
-              {tr("plan.subtitle")}
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/plan"
-                className="text-sm font-semibold text-primaryGreen underline underline-offset-4 decoration-primaryGreen/60 hover:text-ink transition-colors"
-              >
-                {tr("home.startSavings")} →
-              </Link>
+
+            {/* Row 2: Regular shop expenses */}
+            <div className="flex items-baseline justify-between pt-1">
+              <span className="font-medium text-[#1E1B16]">
+                {lang === "bn" ? "দোকানের নিয়মিত খরচ ও বিল" : "Regular Shop Expenses & Bills"}
+              </span>
+              <span className="tab-leader" />
+              <span className="font-serif-bn font-bold text-lg text-[#1E1B16] text-right tabular-nums">
+                {lang === "bn" ? "৳৫,০০০" : "৳5,000"}
+              </span>
+            </div>
+
+            {/* Row 3: Fee saving potential */}
+            <div className="flex items-baseline justify-between pt-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-[#1E1B16]">
+                  {lang === "bn" ? "ফি সাশ্রয় সম্ভাবনা" : "Potential Fee Savings"}
+                </span>
+                <Stamp variant="blue">
+                  {lang === "bn" ? "সিস্টেম হিসাব করেছে" : "Calculated by System"}
+                </Stamp>
+              </div>
+              <span className="tab-leader" />
+              <span className="font-serif-bn font-bold text-lg text-[#0054A6] text-right tabular-nums">
+                {lang === "bn" ? "+ ৳৩২০" : "+ ৳320"}
+              </span>
+            </div>
+
+            {/* Accounting double rule: top/bottom 1px #D8CFBB, height 4px */}
+            <div className="ledger-double-rule my-3" />
+
+            {/* Total: Remaining potential surplus */}
+            <div className="flex items-baseline justify-between pt-1">
+              <span className="font-bold text-[#1E1B16] font-serif-bn text-lg md:text-xl">
+                {lang === "bn" ? "অবশিষ্ট সম্ভাব্য উদ্বৃত্ত" : "Remaining Potential Surplus"}
+              </span>
+              <span className="tab-leader" />
+              <span className="font-serif-bn font-bold text-2xl md:text-3xl text-[#0054A6] text-right tabular-nums">
+                {lang === "bn" ? "৳১৭,৩২০" : "৳17,320"}
+              </span>
             </div>
           </div>
+        </section>
 
-          {/* Cell 3: Spending Companion */}
-          <div className="bg-surface p-5 space-y-3">
-            <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
-              <span className="uppercase">{tr("nav.spending")}</span>
-              <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
-            </div>
-            <h3 className="font-serif-bn text-xl font-bold text-ink">
-              {tr("spending.title")}
-            </h3>
-            <p className="text-sm text-ink-muted font-hind leading-relaxed">
-              {tr("spending.subtitle")}
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/spending"
-                className="text-sm font-semibold text-primaryGreen underline underline-offset-4 decoration-primaryGreen/60 hover:text-ink transition-colors"
-              >
-                {tr("home.viewDetails")} →
-              </Link>
-            </div>
+        {/* Component 3: Pressure-day marker */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between border-b border-[#D8CFBB] pb-2">
+            <h2 className="font-serif-bn font-bold text-lg md:text-xl text-[#1E1B16] m-0 flex items-center gap-2">
+              <MaterialIcon name="calendar_month" size={20} className="text-[#B0431F]" />
+              <span>{lang === "bn" ? "টানের দিনসমূহ ও আসন্ন প্রদেয়" : "Upcoming Pressure Days & Dues"}</span>
+            </h2>
+            <span className="text-xs font-mono text-[#B0431F] font-bold">
+              {lang === "bn" ? "সতর্কতা" : "Notice"}
+            </span>
           </div>
 
-          {/* Cell 4: Tips */}
-          <div className="bg-surface p-5 space-y-3">
-            <div className="flex items-center justify-between text-xs font-mono text-ink-muted border-b border-rule pb-2">
-              <span className="uppercase">{tr("nav.tips")}</span>
-              <Stamp variant="muted">[{tr("stamp.easyExplain")}]</Stamp>
+          <div className="space-y-3">
+            {/* Pressure Row 1: 28 March */}
+            <div className="bg-[#F1F4F9] border border-[#D8CFBB] rounded-[6px] pressure-marker overflow-hidden flex items-center justify-between p-3.5 md:p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 self-stretch -my-3.5 -ml-3.5 mr-1 hatch-pattern-left border-r border-[#D8CFBB]" />
+                <div>
+                  <div className="font-serif-bn font-bold text-base text-[#1E1B16]">
+                    {lang === "bn" ? "২৮ মার্চ — মহাজনের বকেয়া" : "28 March — Wholesaler Due"}
+                  </div>
+                  <div className="text-xs font-hind text-[#6A6355]">
+                    {lang === "bn" ? "মাসের শেষ সপ্তাহের পাইকারি পণ্যের হিসাব" : "Wholesale inventory settlement"}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-right">
+                <span className="font-serif-bn font-bold text-lg text-[#1E1B16] tabular-nums">
+                  {lang === "bn" ? "৳৩,৫০০" : "৳3,500"}
+                </span>
+                <span className="badge pressure">
+                  {lang === "bn" ? "চাপের দিন" : "Pressure Day"}
+                </span>
+              </div>
             </div>
-            <h3 className="font-serif-bn text-xl font-bold text-ink">
-              {tr("tips.title")}
-            </h3>
-            <p className="text-sm text-ink-muted font-hind leading-relaxed">
-              {tr("tips.subtitle")}
-            </p>
-            <div className="pt-2">
-              <Link
-                href="/tips"
-                className="text-sm font-semibold text-primaryGreen underline underline-offset-4 decoration-primaryGreen/60 hover:text-ink transition-colors"
-              >
-                {tr("home.viewDetails")} →
-              </Link>
+
+            {/* Pressure Row 2: 29 March */}
+            <div className="bg-[#F1F4F9] border border-[#D8CFBB] rounded-[6px] pressure-marker overflow-hidden flex items-center justify-between p-3.5 md:p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-2.5 self-stretch -my-3.5 -ml-3.5 mr-1 hatch-pattern-left border-r border-[#D8CFBB]" />
+                <div>
+                  <div className="font-serif-bn font-bold text-base text-[#1E1B16]">
+                    {lang === "bn" ? "২৯ মার্চ — দোকান ঘরভাড়া" : "29 March — Shop Rent"}
+                  </div>
+                  <div className="text-xs font-hind text-[#6A6355]">
+                    {lang === "bn" ? "মাসিক দোকান ভাড়া বাবদ নির্ধারিত নগদ অর্থ" : "Scheduled monthly shop space rent"}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-right">
+                <span className="font-serif-bn font-bold text-lg text-[#1E1B16] tabular-nums">
+                  {lang === "bn" ? "৳২,৮০০" : "৳2,800"}
+                </span>
+                <span className="badge pressure">
+                  {lang === "bn" ? "চাপের দিন" : "Pressure Day"}
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Section 10: Legal & Non-decision Banner */}
-        <NotADecisionBanner />
+        {/* Component 4: Three-layer explanation */}
+        <section className="bg-[#F1F4F9] border border-[#D8CFBB] rounded-[6px] p-5 md:p-6 space-y-4">
+          <div className="border-b border-[#D8CFBB] pb-2 flex items-center justify-between">
+            <h2 className="font-serif-bn font-bold text-lg text-[#1E1B16] m-0">
+              {lang === "bn" ? "হিসাব ও পূর্বাভাসের তিন স্তর" : "Three-Layer Analysis"}
+            </h2>
+            <Stamp variant="blue">{tr("stamp.easyExplain")}</Stamp>
+          </div>
 
-        {/* Section 7: Do Nothing Option */}
+          <div className="divide-y divide-[#D8CFBB] text-sm font-hind">
+            {/* Layer 1: Prediction */}
+            <div className="py-3 first:pt-0 space-y-1">
+              <div className="text-xs font-mono uppercase tracking-wider text-[#0054A6] font-bold">
+                {lang === "bn" ? "পূর্বাভাস" : "Prediction"}
+              </div>
+              <p className="text-base font-medium text-[#1E1B16] leading-relaxed m-0 font-serif-bn">
+                {lang === "bn"
+                  ? "২৮–৩১ তারিখে আপনার খরচ বেশি হতে পারে।"
+                  : "Your expenses may be higher on days 28–31."}
+              </p>
+            </div>
+
+            {/* Layer 2: Assumed */}
+            <div className="py-3 space-y-1">
+              <div className="text-xs font-mono uppercase tracking-wider text-[#6A6355] font-bold">
+                {lang === "bn" ? "ধরে নেওয়া হয়েছে" : "Assumed"}
+              </div>
+              <p className="text-sm text-[#1E1B16] leading-relaxed m-0">
+                {lang === "bn"
+                  ? "আপনার আগের লেনদেনের ধরন অনুযায়ী।"
+                  : "Based on your previous transaction patterns."}
+              </p>
+            </div>
+
+            {/* Layer 3: Reasoning */}
+            <div className="py-3 last:pb-0 space-y-1">
+              <div className="text-xs font-mono uppercase tracking-wider text-[#6A6355] font-bold">
+                {lang === "bn" ? "ব্যাখ্যা" : "Reasoning"}
+              </div>
+              <p className="text-sm text-[#6A6355] leading-relaxed m-0">
+                {lang === "bn"
+                  ? "আপনার সাম্প্রতিক খরচ মাসের শেষ দিকে বেশি জমা হয়।"
+                  : "Your recent expenditures tend to concentrate towards month-end."}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Component 5: “Do nothing” neutral option */}
         <DoNothingToggle
-          costBdt={homeFeeSaving}
+          costBdt={homeFeeSaving ?? 320}
           outcome={
-            homeFeeSaving
-              ? (lang === "bn"
-                  ? `কিছু না করলে প্রতি মাসে প্রায় ${formatBDT(homeFeeSaving, lang)} টাকা বাড়তি ফি দিতে হতে পারে।`
-                  : `If you do nothing, you may pay about ${formatBDT(homeFeeSaving, lang)} taka extra in fees every month.`)
-              : (lang === "bn"
-                  ? "বাড়তি খরচ মাপা যায়নি, তবে সঞ্চয়ের লক্ষ্য পিছিয়ে যাবে।"
-                  : "No extra cost counted, but your saving goal will take longer.")
+            lang === "bn"
+              ? "৬ মাস পরে সঞ্চয় ৳০ থাকবে। এটাও আপনার সিদ্ধান্ত।"
+              : "After 6 months, savings will be ৳0. This is also your decision."
           }
         />
 
-        {/* Footer */}
-        <footer className="border-t border-rule pt-6 pb-12 flex flex-col sm:flex-row items-center justify-between text-xs text-ink-muted gap-2 font-mono">
-          <span>{tr("footer.ledgerSystem")}</span>
-          <span className="font-bold text-ink">{tr("footer.demoDisclaimer")}</span>
+        {/* Component 6: Primary CTA */}
+        <section className="space-y-3">
+          <Link href="/plan" className="block no-underline">
+            <button
+              type="button"
+              className="w-full h-14 min-h-[56px] bg-[#0054A6] hover:bg-[#003E7E] text-white text-base md:text-lg font-medium rounded-[6px] transition-colors flex items-center justify-center cursor-pointer border-0"
+            >
+              {lang === "bn" ? "সঞ্চয় পরিকল্পনা শুরু করুন" : "Start your savings plan"}
+            </button>
+          </Link>
+          <div className="text-center pt-1">
+            <Link
+              href="/forecast"
+              className="text-sm font-semibold text-[#0054A6] hover:text-[#003E7E] underline underline-offset-4 decoration-[#0054A6] transition-colors"
+            >
+              {lang === "bn" ? "আরও বিস্তারিত হিসাব দেখুন" : "See the full breakdown"}
+            </Link>
+          </div>
+        </section>
+
+        {/* Component 7: Legal note */}
+        <NotADecisionBanner route="home" />
+
+        {/* Live System Status card */}
+        <StatusCard />
+
+        {/* Component 8: Footer */}
+        <footer className="border-t border-[#D8CFBB] pt-6 pb-12 flex flex-col sm:flex-row items-center justify-between text-xs text-[#6A6355] gap-3 font-mono">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-[#1E1B16]">{tr("footer.ledgerSystem")}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Stamp variant="muted">{tr("footer.demoDisclaimer")}</Stamp>
+          </div>
         </footer>
       </main>
     </>

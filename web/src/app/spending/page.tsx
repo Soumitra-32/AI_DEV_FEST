@@ -44,15 +44,15 @@ export default function SpendingPage() {
       <main className="space-y-6">
         {/* Header */}
         <header className="border-b border-rule pb-4 space-y-2">
-          <div className="text-xs font-mono text-ink-muted uppercase tracking-wider flex items-center gap-2">
+          <div className="text-xs font-mono text-[#0054A6] uppercase tracking-wider flex items-center gap-2">
             <span>{tr("spending.headerTag")}</span>
             <span>•</span>
-            <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
+            <Stamp variant="blue">{tr("stamp.computed")}</Stamp>
           </div>
-          <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-ink tracking-tight">
+          <h1 className="font-serif-bn font-bold text-3xl md:text-4xl text-[#1E1B16] tracking-tight">
             {tr("spending.title")}
           </h1>
-          <p className="text-base text-ink-muted leading-relaxed font-hind">
+          <p className="text-base text-[#6A6355] leading-relaxed font-hind">
             {tr("spending.subtitle")}
           </p>
         </header>
@@ -60,11 +60,11 @@ export default function SpendingPage() {
         <NotADecisionBanner />
 
         {/* Warning strip */}
-        <div className="bg-surface/50 border-l-2 border-brickRed border-t border-r border-b border-rule/60 p-4 space-y-1">
-          <div className="text-xs font-mono uppercase tracking-wider text-brickRed font-bold">
+        <div className="bg-[#F1F4F9] border-l-[3px] border-[#B0431F] border border-[#D8CFBB] rounded-[6px] p-4 space-y-1">
+          <div className="text-xs font-mono uppercase tracking-wider text-[#B0431F] font-bold">
             {tr("spending.warningStripTitle")}
           </div>
-          <p className="text-sm font-medium text-ink leading-relaxed font-hind">
+          <p className="text-sm font-medium text-[#1E1B16] leading-relaxed font-hind m-0">
             {tr("spending.warningStripText")}
           </p>
         </div>

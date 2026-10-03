@@ -196,14 +196,14 @@ export default function InsightCard({
     : "";
 
   return (
-    <section className="border-t border-b border-rule bg-surface/50 mb-6">
+    <section className="border border-[#D8CFBB] bg-[#F1F4F9] rounded-[6px] mb-6 overflow-hidden">
       {/* Title & Main Content */}
       {(title || children) && (
-        <div className="p-4 md:p-6 space-y-3">
+        <div className="p-4 md:p-6 space-y-3 bg-[#FFFFFF]">
           {title && (
-            <div className="flex items-baseline justify-between border-b border-rule pb-2">
-              <h2 className="font-serif-bn font-bold text-xl text-ink m-0">{title}</h2>
-              <Stamp variant="muted">{tr("stamp.verified")}</Stamp>
+            <div className="flex items-baseline justify-between border-b border-[#D8CFBB] pb-2">
+              <h2 className="font-serif-bn font-bold text-xl text-[#1E1B16] m-0">{title}</h2>
+              <Stamp variant="blue">{tr("stamp.verified")}</Stamp>
             </div>
           )}
           {children}
@@ -212,26 +212,26 @@ export default function InsightCard({
 
       {/* 3-Layer Explanation Block */}
       {provenance && (
-        <div className="border-t border-rule divide-y divide-rule/60 bg-surface/30">
+        <div className="border-t border-[#D8CFBB] divide-y divide-[#D8CFBB] bg-[#F1F4F9]">
           {/* Layer 1: Prediction */}
           <div className="p-4 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-ink-muted font-semibold">
+              <span className="text-xs font-mono uppercase tracking-wider text-[#0054A6] font-semibold">
                 {tr("common.prediction")}
               </span>
-              <Stamp variant="muted">{tr("stamp.computed")}</Stamp>
+              <Stamp variant="blue">{tr("stamp.computed")}</Stamp>
             </div>
-            <p className="font-serif-bn text-base md:text-lg font-bold text-ink leading-snug">
+            <p className="font-serif-bn text-base md:text-lg font-bold text-[#1E1B16] leading-snug m-0">
               {renderedPrediction}
             </p>
           </div>
 
           {/* Layer 2: Assumption */}
           <div className="p-4 space-y-1">
-            <div className="text-xs font-mono uppercase tracking-wider text-ink-muted font-semibold">
+            <div className="text-xs font-mono uppercase tracking-wider text-[#6A6355] font-semibold">
               {tr("common.assumption")}
             </div>
-            <p className="text-[15px] text-ink leading-relaxed font-hind">
+            <p className="text-[15px] text-[#1E1B16] leading-relaxed font-hind m-0">
               {renderedAssumption}
             </p>
           </div>
@@ -239,12 +239,12 @@ export default function InsightCard({
           {/* Layer 3: Explanation */}
           <div className="p-4 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono uppercase tracking-wider text-ink-muted font-semibold">
+              <span className="text-xs font-mono uppercase tracking-wider text-[#6A6355] font-semibold">
                 {tr("common.explanation")}
               </span>
-              <Stamp variant="muted">{tr("stamp.easyExplain")}</Stamp>
+              <Stamp variant="blue">{tr("stamp.easyExplain")}</Stamp>
             </div>
-            <p className="text-[15px] text-ink-muted leading-relaxed font-hind">
+            <p className="text-[15px] text-[#6A6355] leading-relaxed font-hind m-0">
               {renderedExplanation}
             </p>
           </div>

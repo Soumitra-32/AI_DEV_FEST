@@ -94,8 +94,8 @@ export default function SignalPage() {
                   key={key}
                   className={
                     live && idx === activeStep
-                      ? "p-2 border-2 border-primaryGreen bg-surface font-bold text-primaryGreen rounded-none"
-                      : "p-2 border border-rule bg-paper/60 text-ink-muted rounded-none"
+                      ? "p-2 border-2 border-[#0054A6] bg-[#FFFFFF] font-bold text-[#0054A6] rounded-[6px]"
+                      : "p-2 border border-[#D8CFBB] bg-[#F1F4F9] text-[#6A6355] rounded-[6px]"
                   }
                 >
                   {tr(key)}
@@ -106,26 +106,26 @@ export default function SignalPage() {
         </div>
 
         {/* Contributing Factors Ledger */}
-        <div className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4">
-          <div className="border-b border-rule pb-2 flex items-center justify-between">
-            <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
+        <div className="bg-[#F1F4F9] border border-[#D8CFBB] rounded-[6px] p-5 md:p-6 space-y-4">
+          <div className="border-b border-[#D8CFBB] pb-2 flex items-center justify-between">
+            <h3 className="font-serif-bn font-bold text-lg text-[#1E1B16] m-0">
               {tr("signal.factors")}
             </h3>
-            <Stamp variant="muted">{tr("signal.logisticRegression")}</Stamp>
+            <Stamp variant="blue">{tr("signal.logisticRegression")}</Stamp>
           </div>
 
-          <div className="divide-y divide-rule/60 font-hind">
+          <div className="divide-y divide-[#D8CFBB] font-hind">
             {live && live.factors.length > 0 ? (
               live.factors.map((f, idx) => (
                 <div key={idx} className="py-3 space-y-1">
                   <div className="flex items-baseline justify-between">
-                    <span className="font-bold text-sm text-ink text-left">
+                    <span className="font-bold text-sm text-[#1E1B16] text-left">
                       {formatDigits(f.plain_language, lang)}
                     </span>
                     <span className="tab-leader" />
                     <span
                       className={`font-serif-bn text-sm font-bold text-right tabular-nums ${
-                        f.direction === "improves" ? "text-primaryGreen" : "text-brickRed"
+                        f.direction === "improves" ? "text-[#0054A6]" : "text-[#B0431F]"
                       }`}
                     >
                       {f.direction === "improves" ? "+ " : "− "}

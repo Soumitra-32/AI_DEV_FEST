@@ -101,39 +101,39 @@ export default function AnomalyCard({ item }: AnomalyCardProps) {
   const { lang, tr } = useLanguage();
 
   return (
-    <div className="border-l-2 border-brickRed border-b border-rule/60 bg-surface/40 px-3.5 py-3 hover:bg-surface/80 transition-colors space-y-1.5">
+    <div className="border-l-[3px] border-[#B0431F] border border-[#D8CFBB] bg-[#F1F4F9] rounded-[6px] p-3.5 md:p-4 hover:bg-[#FFFFFF] transition-colors space-y-2">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-ink-muted uppercase">
+          <span className="text-xs font-mono text-[#6A6355] uppercase">
             {CHANNEL_MAP[item.channel]?.[lang] ?? item.channel}
           </span>
-          <span className="text-xs font-mono text-ink-muted">
+          <span className="text-xs font-mono text-[#6A6355]">
             {item.timestamp ? formatWrittenDate(item.timestamp.slice(0, 10), lang) : ""}
           </span>
-          <Stamp variant="muted">
+          <Stamp variant="blue">
             {(item.anomaly_type && ANOMALY_TYPE_MAP[item.anomaly_type]?.[lang]) ||
               (item.anomaly_type ? item.anomaly_type.replace(/_/g, " ") : tr("spending.anomalies"))}
           </Stamp>
         </div>
 
         <div className="flex items-baseline gap-2">
-          <span className="font-serif-bn font-bold text-lg text-brickRed tabular-nums">
+          <span className="font-serif-bn font-bold text-lg text-[#B0431F] tabular-nums">
             {formatBDT(item.amount_bdt, lang)}
           </span>
         </div>
       </div>
 
       <div className="text-sm font-hind">
-        <p className="text-ink leading-relaxed font-medium">
+        <p className="text-[#1E1B16] leading-relaxed font-medium m-0">
           {formatAnomalyReason(item.reason, lang)}
         </p>
-        <div className="text-xs font-mono text-ink-muted flex items-center gap-2 pt-1">
+        <div className="text-xs font-mono text-[#6A6355] flex items-center gap-2 pt-1.5 border-t border-[#D8CFBB]/60 mt-1.5">
           <span>{tr("spending.action")}:</span>
-          <strong className="text-primaryGreen uppercase tracking-wide">
+          <strong className="text-[#0054A6] uppercase tracking-wide">
             {formatSuggestedAction(item.suggested_action, lang)}
           </strong>
           {item.suggested_channel && (
-            <span className="text-ink">
+            <span className="text-[#1E1B16]">
               ({formatSuggestedChannel(item.suggested_channel, lang)})
             </span>
           )}
