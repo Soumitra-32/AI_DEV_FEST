@@ -269,6 +269,22 @@ export default function HomePage() {
         {/* Live System Status */}
         <StatusCard />
 
+        {/* 1 Oct 2026 Bangladesh Bank Policy Changelog Strip */}
+        <div className="bg-surface/50 border-t border-b border-rule py-2.5 px-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-ink-muted -mt-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Stamp variant="ink">{tr("home.reformChangelogTag")}</Stamp>
+            <span className="font-hind text-xs text-ink leading-relaxed">
+              {tr("home.reformChangelog")}
+            </span>
+          </div>
+          <Link
+            href="/spending"
+            className="text-xs font-semibold text-primaryGreen underline underline-offset-2 whitespace-nowrap shrink-0 hover:text-ink"
+          >
+            {tr("spending.title")} →
+          </Link>
+        </div>
+
         {/* Core Navigation Ledger Grid (ruled cells, no cards) */}
         <div className="border-t border-b border-rule grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:gap-px bg-rule">
           {/* Cell 1: Forecast */}

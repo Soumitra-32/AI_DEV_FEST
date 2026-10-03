@@ -271,6 +271,13 @@ export default function MetricsPage() {
                       </div>
                     ))}
                 </div>
+
+                {/* Macroeconomic Context Line (1 Oct 2026 Bangladesh Bank Reform) */}
+                <div className="border-t border-rule/60 pt-3">
+                  <p className="text-xs text-ink-muted leading-relaxed font-hind">
+                    {tr("metrics.macroContext")}
+                  </p>
+                </div>
               </div>
             )}
 
@@ -336,6 +343,13 @@ export default function MetricsPage() {
                     : `... and ${data.fairness.length - 15} more audited slices`}
                 </div>
               )}
+
+              {/* Institutional Caveat on Central Bank Incentive */}
+              <div className="border-t border-rule/60 pt-3">
+                <p className="text-xs text-ink-muted leading-relaxed font-hind italic">
+                  {tr("metrics.institutionalCaveat")}
+                </p>
+              </div>
             </div>
 
             {/* Notes & Caveats */}

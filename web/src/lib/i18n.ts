@@ -111,6 +111,9 @@ const en = {
     "The 14-day cash-flow forecast, savings plan solver, and spending companion are live. Explore below.",
   "home.startSavings": "Start Savings Plan",
   "home.viewDetails": "View Detailed Breakdown",
+  "home.reformChangelog":
+    "Policy update · 1 Oct 2026: Bangladesh Bank abolished the 1% minimum MDR on Bangla QR. 0% user fee applies to merchant purchases.",
+  "home.reformChangelogTag": "1 OCT 2026 DIRECTIVE",
 
   "comingSoon.title": "Coming Soon",
   "comingSoon.phase5": "Spending companion (Phase 5)",
@@ -289,6 +292,10 @@ const en = {
   "metrics.inflow": "Inflow (14d)",
   "metrics.outflow": "Outflow (14d)",
   "metrics.net": "Net Flow (14d)",
+  "metrics.macroContext":
+    "Macro market context: Since 1 July, Bangla QR transaction count grew 3.5× and value surged 5× to ৳143.54 crore daily (Source: Bangladesh Bank September 2026 Report).",
+  "metrics.institutionalCaveat":
+    "Institutional caveat: The 0.20% central-bank incentive applies strictly to transactions up to ৳2,000 routed via NPSB. Transactions above this cap follow standard commercial terms.",
   "metrics.notesTitle": "Audit Notes & Methodology",
   "forecast.driversTitle": "Top Forecast Factors (SHAP Drivers)",
   "forecast.increasesOutflow": "Increases predicted outflow",
@@ -401,6 +408,9 @@ const bn: Dictionary = {
     "১৪ দিনের ক্যাশ-ফ্লো পূর্বাভাস, সঞ্চয় পরিকল্পনাকারী এবং খরচ সহযোগী প্রস্তুত। বিস্তারিত জানতে নিচে দেখুন।",
   "home.startSavings": "সঞ্চয় শুরু করুন",
   "home.viewDetails": "বিস্তারিত হিসাব দেখুন",
+  "home.reformChangelog":
+    "নীতি আপডেট · ১ অক্টোবর ২০২৬: বাংলাদেশ ব্যাংক বাংলা কিউআর লেনদেনে ন্যূনতম ১% এমডিআর বাতিল করেছে। দোকানে কেনাকাটায় ০% ফি প্রযোজ্য।",
+  "home.reformChangelogTag": "১ অক্টোবর ২০২৬ নির্দেশনা",
 
   "comingSoon.title": "শীঘ্রই আসছে",
   "comingSoon.phase5": "খরচ সহযোগী (পঞ্চম ধাপ)",
@@ -579,6 +589,10 @@ const bn: Dictionary = {
   "metrics.inflow": "আয় (১৪ দিন)",
   "metrics.outflow": "ব্যয় (১৪ দিন)",
   "metrics.net": "উদ্বৃত্ত (১৪ দিন)",
+  "metrics.macroContext":
+    "বাজারের প্রেক্ষাপট: ১ জুলাই থেকে বাংলা কিউআর লেনদেন সংখ্যা ৩.৫ গুণ এবং মূল্য ৫ গুণ বৃদ্ধি পেয়ে দৈনিক ৳১৪৩.৫৪ কোটিতে পৌঁছেছে (সূত্র: বাংলাদেশ ব্যাংক সেপ্টেম্বর ২০২৬ প্রতিবেদন)।",
+  "metrics.institutionalCaveat":
+    "প্রতিষ্ঠানগত বিবেচনা: ০.২০% কেন্দ্রীয় ব্যাংক প্রণোদনা শুধুমাত্র এনপিএসবি (NPSB) নেটওয়ার্কে ২,০০০ টাকা পর্যন্ত লেনদেনে প্রযোজ্য। এর উপরের লেনদেনে সাধারণ বাণিজ্যিক হার কার্যকর।",
   "metrics.notesTitle": "নিরীক্ষা নোট ও পদ্ধতি",
   "forecast.driversTitle": "পূর্বাভাস নির্ধারণকারী প্রধান কারণ (SHAP Drivers)",
   "forecast.increasesOutflow": "পূর্বাভাসকৃত ব্যয় বাড়ায়",
