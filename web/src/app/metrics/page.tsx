@@ -7,7 +7,7 @@ import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchMetrics } from "@/lib/api";
 import type { MetricsResponse, ModelMetric, FairnessRow } from "@/lib/api";
-import { formatBDT, formatDigits, formatInteger } from "@/lib/i18n";
+import { formatBDT, formatDigits, formatInteger, formatModelName, formatPersona, formatDistrict } from "@/lib/i18n";
 
 export default function MetricsPage() {
   const { lang, tr } = useLanguage();
@@ -100,7 +100,7 @@ export default function MetricsPage() {
                 <h2 className="font-serif-bn font-bold text-xl text-ink m-0">
                   {tr("metrics.forecast")}
                 </h2>
-                <Stamp variant="ink">LightGBM (14d)</Stamp>
+                <Stamp variant="ink">{lang === "bn" ? "লাইটজিবিএম (১৪ দিন)" : "LightGBM (14d)"}</Stamp>
               </div>
 
               <div className="space-y-4 font-hind text-sm">
@@ -108,11 +108,11 @@ export default function MetricsPage() {
                   <div key={idx} className="border-b border-rule/60 pb-3 space-y-1.5 last:border-b-0 last:pb-0">
                     <div className="flex items-baseline justify-between text-xs font-mono text-ink-muted uppercase">
                       <span>{getFlowLabel(idx * 2)}</span>
-                      <span>{row.baseline_name ? `vs ${row.baseline_name}` : ""}</span>
+                      <span>{row.baseline_name ? `vs ${formatModelName(row.baseline_name, lang)}` : ""}</span>
                     </div>
                     <div className="flex items-baseline justify-between">
                       <span className="text-ink-muted">
-                        {tr("metrics.model")} ({row.model_name})
+                        {formatModelName(row.model_name, lang)}
                       </span>
                       <span className="tab-leader" />
                       <strong className="font-serif-bn text-ink text-base text-right tabular-nums">
@@ -123,7 +123,7 @@ export default function MetricsPage() {
                     {row.baseline_value !== null && row.baseline_value !== undefined && (
                       <div className="flex items-baseline justify-between">
                         <span className="text-ink-muted">
-                          {tr("metrics.baseline")} ({row.baseline_name})
+                          {formatModelName(row.baseline_name, lang)}
                         </span>
                         <span className="tab-leader" />
                         <strong className="font-serif-bn text-ink-muted text-base text-right tabular-nums">
@@ -159,7 +159,7 @@ export default function MetricsPage() {
                 <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
                   {tr("metrics.anomaly")}
                 </h3>
-                <Stamp variant="muted">Isolation Forest</Stamp>
+                <Stamp variant="muted">{formatModelName("isolation_forest", lang)}</Stamp>
               </div>
               <p className="text-xs text-ink-muted font-hind leading-relaxed">
                 {tr("metrics.anomalyDesc")}
@@ -208,7 +208,7 @@ export default function MetricsPage() {
                 <div key={idx} className="space-y-2 font-hind text-sm">
                   <div className="flex items-baseline justify-between">
                     <span className="text-ink-muted">
-                      {tr("metrics.auc")} ({sig.model_name})
+                      {tr("metrics.auc")} ({formatModelName(sig.model_name, lang)})
                     </span>
                     <span className="tab-leader" />
                     <strong className="font-serif-bn text-ink text-base text-right tabular-nums">
@@ -218,7 +218,7 @@ export default function MetricsPage() {
                   {sig.baseline_value !== null && sig.baseline_value !== undefined && (
                     <div className="flex items-baseline justify-between">
                       <span className="text-ink-muted">
-                        {tr("metrics.baseline")} ({sig.baseline_name})
+                        {tr("metrics.baseline")} ({formatModelName(sig.baseline_name, lang)})
                       </span>
                       <span className="tab-leader" />
                       <strong className="font-serif-bn text-ink-muted text-base text-right tabular-nums">
@@ -310,10 +310,18 @@ export default function MetricsPage() {
                     {data.fairness.slice(0, 15).map((row, idx) => (
                       <tr key={idx} className="hover:bg-paper/50">
                         <td className="py-2 pr-3 font-mono text-ink-muted capitalize text-left">
-                          {row.dimension}
+                          {row.dimension === "persona"
+                            ? (lang === "bn" ? "পেশা" : "Persona")
+                            : row.dimension === "district"
+                            ? (lang === "bn" ? "জেলা" : "District")
+                            : (lang === "bn" ? "আয়ের স্তর" : "Income")}
                         </td>
                         <td className="py-2 pr-3 font-bold text-ink capitalize text-left">
-                          {row.group}
+                          {row.dimension === "persona"
+                            ? formatPersona(row.group, lang)
+                            : row.dimension === "district"
+                            ? formatDistrict(row.group, lang)
+                            : formatDigits(row.group, lang)}
                         </td>
                         <td className="py-2 pr-3 font-mono text-ink-muted text-[11px] text-left">
                           {row.metric}

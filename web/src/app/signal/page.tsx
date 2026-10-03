@@ -8,7 +8,7 @@ import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchCreditReadiness } from "@/lib/api";
 import type { ConsistencySignalResponse } from "@/lib/api";
-import { formatBDT } from "@/lib/i18n";
+import { formatBDT, formatDigits } from "@/lib/i18n";
 
 const BAND_INDEX: Record<string, number> = {
   Building: 0,
@@ -120,7 +120,7 @@ export default function SignalPage() {
                 <div key={idx} className="py-3 space-y-1">
                   <div className="flex items-baseline justify-between">
                     <span className="font-bold text-sm text-ink text-left">
-                      {f.plain_language}
+                      {formatDigits(f.plain_language, lang)}
                     </span>
                     <span className="tab-leader" />
                     <span

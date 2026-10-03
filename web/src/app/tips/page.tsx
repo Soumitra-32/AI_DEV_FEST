@@ -9,7 +9,7 @@ import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchExplain, fetchAnomalies, fetchSavingsPlan } from "@/lib/api";
 import type { ExplainResponse, FeeSwitchSuggestion, SavingsPlanResponse } from "@/lib/api";
-import { formatBDT, formatDigits } from "@/lib/i18n";
+import { formatBDT, formatDigits, sanitizeBullet } from "@/lib/i18n";
 
 export default function TipsPage() {
   const { lang, tr } = useLanguage();
@@ -192,14 +192,14 @@ export default function TipsPage() {
             </div>
 
             <p className="font-serif-bn text-base md:text-lg font-bold text-ink leading-snug">
-              {lang === "bn" ? explainRes.answer_bn : explainRes.answer_en}
+              {sanitizeBullet(lang === "bn" ? explainRes.answer_bn : explainRes.answer_en, lang)}
             </p>
 
             {((lang === "bn" ? explainRes.bullets_bn : explainRes.bullets_en) || []).length > 0 && (
               <ul className="space-y-1.5 pt-2 border-t border-rule font-hind text-sm text-ink-muted list-disc list-inside">
                 {(lang === "bn" ? explainRes.bullets_bn : explainRes.bullets_en).map((bullet, idx) => (
                   <li key={idx} className="leading-relaxed">
-                    {bullet}
+                    {sanitizeBullet(bullet, lang)}
                   </li>
                 ))}
               </ul>

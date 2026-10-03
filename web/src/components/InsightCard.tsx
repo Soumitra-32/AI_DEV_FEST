@@ -6,6 +6,7 @@ import { useLanguage } from "@/components/LangToggle";
 import type { Provenance } from "@/lib/api";
 import Stamp from "@/components/Stamp";
 import type { TranslationKey } from "@/lib/i18n";
+import { formatBDT, formatDigits, formatInteger } from "@/lib/i18n";
 
 interface InsightCardProps {
   title?: string;
@@ -85,15 +86,42 @@ function formatProvenanceContent(
     return "এই সময়ে কোনো অতিরিক্ত চাপের দিন নেই — ব্যালেন্স নিরাপদ সীমার উপরে থাকবে।";
   }
 
+  // Plan Service prediction string:
+  // e.g. "Feasible: 30,000 in 6 months needs 5,000/month; you can keep about 7,765/month after the buffer."
+  const planMatch = raw.match(/([\d,]+)\s+in\s+(\d+)\s+months\s+needs\s+([\d,]+)\/month;\s+you\s+can\s+keep\s+about\s+([\d,]+)\/month\s+after\s+the\s+buffer/i);
+  if (planMatch) {
+    const [, goal, months, req, keep] = planMatch;
+    const isFeas = !raw.toLowerCase().includes("not feasible");
+    if (lang === "bn") {
+      const verdict = isFeas ? "পরিকল্পনা বাস্তবসম্মত:" : "পরিকল্পনা এখনই সম্ভব নয়:";
+      return `${verdict} ${formatDigits(months, "bn")} মাসে ${formatBDT(Number(goal.replace(/,/g, "")), "bn")} জমাতে মাসে ${formatBDT(Number(req.replace(/,/g, "")), "bn")} লাগবে; বাফার বাদে আপনি মাসে ${formatBDT(Number(keep.replace(/,/g, "")), "bn")} রাখতে পারবেন।`;
+    } else {
+      const verdict = isFeas ? "Feasible:" : "Not feasible as stated:";
+      return `${verdict} ৳${goal} in ${months} months needs ৳${req}/month; you can keep about ৳${keep}/month after the buffer.`;
+    }
+  }
+
   // Plan
-  if (raw.includes("Plan feasible")) {
+  if (raw.includes("Plan feasible") || raw.includes("Feasible:")) {
     return "পরিকল্পনা বাস্তবসম্মত: নিয়মিত উদ্বৃত্ত থেকে লক্ষ্যটি অর্জন করা সম্ভব।";
   }
-  if (raw.includes("Plan not feasible")) {
+  if (raw.includes("Plan not feasible") || raw.includes("Not feasible as stated")) {
     return "বর্তমান উদ্বৃত্ত অনুযায়ী লক্ষ্যটি অর্জন করতে সময়সীমা বা জমার পরিমাণ সমন্বয় করতে হতে পারে।";
   }
   if (raw.includes("Monthly surplus is the 14-day forecast scaled")) {
     return "মাসিক উদ্বৃত্ত ১৪ দিনের পূর্বাভাসের ভিত্তিতে নির্ণীত; ওয়ালেটে নিয়মিত খরচের বাফার রাখা হয়েছে।";
+  }
+  if (raw.includes("The forecast covers the goal with the safety buffer kept")) {
+    return "নিরাপত্তা বাফার অক্ষত রেখেই পূর্বাভাস অনুযায়ী লক্ষ্য পূরণ সম্ভব।";
+  }
+  if (raw.includes("Pick a trade-off below") || raw.includes("free up monthly cash")) {
+    return "নিচে বিকল্প উপায় বেছে নিন, অথবা লক্ষ্য পূরণে মাসিক খরচ কমানোর পরিকল্পনা করুন।";
+  }
+  if (raw.includes("A goal amount and a horizon")) {
+    return "আপনার বার্তা থেকে লক্ষ্য ও সময়সীমা উভয়ের ভিত্তিতে হিসাবকৃত।";
+  }
+  if (raw.includes("The solver never runs on a guessed number")) {
+    return "অনুমান নয়, শুধুমাত্র নিশ্চিত তথ্যের ভিত্তিতে সমাধান তৈরি হয়।";
   }
 
   // Spending / Anomalies
@@ -158,13 +186,13 @@ export default function InsightCard({
       : (fallbackAssumption || routeDefaultAssumption);
 
   const renderedPrediction = provenance
-    ? formatProvenanceContent(provenance.prediction, "prediction", lang, "")
+    ? formatDigits(formatProvenanceContent(provenance.prediction, "prediction", lang, ""), lang)
     : "";
   const renderedAssumption = provenance
-    ? formatProvenanceContent(effectiveAssumption, "assumption", lang, routeDefaultAssumption)
+    ? formatDigits(formatProvenanceContent(effectiveAssumption, "assumption", lang, routeDefaultAssumption), lang)
     : "";
   const renderedExplanation = provenance
-    ? formatProvenanceContent(provenance.explanation, "explanation", lang, "")
+    ? formatDigits(formatProvenanceContent(provenance.explanation, "explanation", lang, ""), lang)
     : "";
 
   return (

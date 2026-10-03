@@ -33,24 +33,51 @@ const ACTION_LABEL: Record<TradeOffAction, { bn: string; en: string }> = {
 };
 
 function formatTradeOffDescription(desc: string, lang: "bn" | "en"): string {
-  if (lang === "en" || !desc) return desc;
+  if (!desc) return "";
+  if (lang === "en") return desc;
+
+  // 1. Keep months, aim for goal
+  const m1 = desc.match(/Keep\s+(\d+)\s+months,\s*aim\s+for\s*৳?([\d,]+)/i);
+  if (m1) {
+    return `${formatDigits(m1[1], "bn")} মাস সময় ঠিক রেখে লক্ষ্য ${formatBDT(Number(m1[2].replace(/,/g, "")), "bn")} নির্ধারণ করুন (আপনার উদ্বৃত্ত যতটুকু সমর্থন করে)।`;
+  }
+
+  // 2. Keep target, extend months
+  const m2 = desc.match(/Keep\s*৳?([\d,]+)\s+target,\s*extend\s+to\s*(\d+)\s+months/i);
+  if (m2) {
+    return `লক্ষ্য ${formatBDT(Number(m2[1].replace(/,/g, "")), "bn")} ঠিক রেখে সময়সীমা ${formatDigits(m2[2], "bn")} মাস পর্যন্ত বাড়ান।`;
+  }
+
+  // 3. Free up cuts
+  const m3 = desc.match(/Free\s+up\s*৳?([\d,]+)\/month/i);
+  if (m3) {
+    return `খরচ বা ক্যাশ-আউট ফি থেকে মাসে ${formatBDT(Number(m3[1].replace(/,/g, "")), "bn")} সাশ্রয় করে সঞ্চয়ে যোগ করুন।`;
+  }
+
+  // 4. Avoid fees
+  const m4 = desc.match(/Avoid\s+up\s+to\s*৳?([\d,]+)\/month\s+in\s+cash-out\s+fees/i);
+  if (m4) {
+    return `ক্যাশ-আউটের ফি থেকে প্রতি মাসে ${formatBDT(Number(m4[1].replace(/,/g, "")), "bn")} পর্যন্ত সাশ্রয় করে সঞ্চয়ের ঘাটতি পূরণ করুন।`;
+  }
+
+  // 5. Do nothing
+  const m5 = desc.match(/After\s+(\d+)\s+months\s+you\s+have\s*৳?0\s+saved\s+and\s+paid\s+about\s*৳?([\d,]+)/i);
+  if (m5) {
+    return `কোনো সঞ্চয় হবে না। ${formatDigits(m5[1], "bn")} মাস পর সঞ্চয় ৳০ থাকবে এবং প্রায় ${formatBDT(Number(m5[2].replace(/,/g, "")), "bn")} ক্যাশ-আউট ফি চলে যাবে।`;
+  }
+
   if (desc.includes("already fits") || desc.includes("fits in")) {
     return desc.includes("no extra time")
       ? "লক্ষ্যটি বর্তমান মেয়াদেই অর্জন সম্ভব — বাড়তি সময়ের প্রয়োজন নেই।"
       : "বর্তমান মাসিক উদ্বৃত্তেই পুরো সঞ্চয় লক্ষ্যটি পূরণ করা সম্ভব।";
   }
   if (desc.includes("Free up") || desc.includes("spending cut")) {
-    return "মাসে অপ্রয়োজনীয় খরচ (যেমন: অতিরিক্ত ক্যাশ-আউট) কমিয়ে লক্ষ্যটি অর্জন করা সম্ভব।";
-  }
-  if (desc.includes("Keep") && desc.includes("months")) {
-    return desc.includes("aim for")
-      ? "সময় ঠিক রেখে মাসিক উদ্বৃত্তের সাথে সামঞ্জস্য রেখে সঞ্চয়ের লক্ষ্য কিছুটা কমান।"
-      : "লক্ষ্য ও সময়সীমা সমন্বয় করে সঞ্চয় বাস্তবায়ন করুন।";
+    return "মাসে অপ্রয়োজনীয় খরচ কমিয়ে লক্ষ্যটি অর্জন করা সম্ভব।";
   }
   if (desc.includes("Change nothing and keep paying")) {
     return "কোনো পরিবর্তন না করলে প্রতি মাসে ক্যাশ-আউট ফি বাবদ অপচয় হতে থাকবে।";
   }
-  return desc;
+  return formatDigits(desc, "bn");
 }
 
 function formatArithmeticStep(step: string, lang: "bn" | "en"): string {

@@ -641,3 +641,205 @@ export function formatDigits(text: string, lang: Lang): string {
   if (lang === "en") return text;
   return text.replace(/[0-9]/g, (digit) => BN_DIGITS[Number(digit)]);
 }
+
+/** User-facing model name translations (no internal technical identifiers exposed). */
+export function formatModelName(name: string | null | undefined, lang: Lang): string {
+  if (!name) return "—";
+  const lower = name.toLowerCase();
+  if (lower.includes("lightgbm")) {
+    return lang === "bn" ? "আমাদের মডেল" : "Smart Forecast";
+  }
+  if (lower.includes("trailing_average") || lower.includes("baseline") || lower.includes("average")) {
+    return lang === "bn" ? "সাধারণ গড়" : "Simple Average";
+  }
+  if (lower.includes("isolation")) {
+    return lang === "bn" ? "আইসোলেশন ফরেস্ট" : "Isolation Forest";
+  }
+  if (lower.includes("logistic")) {
+    return lang === "bn" ? "লজিস্টিক রিগ্রেশন" : "Logistic Regression";
+  }
+  return name;
+}
+
+/** Human-friendly feature labels for SHAP drivers, metrics, and triggers. */
+export function formatFeatureName(name: string | null | undefined, lang: Lang): string {
+  if (!name) return "";
+  const lower = name.toLowerCase();
+  if (lower.includes("cash_out_count_per_month")) {
+    return lang === "bn" ? "মাসে ক্যাশ-আউট সংখ্যা" : "Cash-Outs Per Month";
+  }
+  if (lower.includes("cash_out_share_of_outflow")) {
+    return lang === "bn" ? "ক্যাশ-আউটের অনুপাত" : "Cash-Out Share of Outflow";
+  }
+  if (lower.includes("cash_out_volume_per_month_bdt")) {
+    return lang === "bn" ? "মাসিক ক্যাশ-আউট পরিমাণ" : "Monthly Cash-Out Volume";
+  }
+  if (lower.includes("trailing_14d_outflow")) {
+    return lang === "bn" ? "১৪ দিনের গড় খরচ" : "14-Day Average Outflow";
+  }
+  if (lower.includes("fee_share_of_income")) {
+    return lang === "bn" ? "আয়ের ফিতে ব্যয় অনুপাত" : "Fee Share of Income";
+  }
+  if (lower.includes("shortfall_days_per_month")) {
+    return lang === "bn" ? "মাসে টানাটানির দিন" : "Shortfall Days Per Month";
+  }
+  if (lower.includes("balance_min_bdt")) {
+    return lang === "bn" ? "সর্বনিম্ন ব্যালেন্স" : "Minimum Balance";
+  }
+  if (lower.includes("weekend_spend_ratio")) {
+    return lang === "bn" ? "সপ্তাহ শেষের খরচের অনুপাত" : "Weekend Spend Ratio";
+  }
+  if (lower.includes("month_end_spend_ratio")) {
+    return lang === "bn" ? "মাস শেষের খরচের অনুপাত" : "Month-End Spend Ratio";
+  }
+  if (lower.includes("income_days_per_month")) {
+    return lang === "bn" ? "মাসে আয়ের দিন" : "Income Days Per Month";
+  }
+  if (lower.includes("income_cv")) {
+    return lang === "bn" ? "আয়ের তারতম্য" : "Income Variability";
+  }
+  if (lower.includes("spend_cv")) {
+    return lang === "bn" ? "খরচের তারতম্য" : "Spending Variability";
+  }
+  return name.replace(/_/g, " ");
+}
+
+/**
+ * Sanitizes coach bullets and backend triggers so raw variable names
+ * like `cash_out_count_per_month >= 3.0 (observed 5.0)` become friendly text.
+ */
+export function sanitizeBullet(bullet: string, lang: Lang): string {
+  if (!bullet) return "";
+  let clean = bullet;
+
+  if (clean.includes("cash_out_count_per_month")) {
+    const match = clean.match(/cash_out_count_per_month\s*([><!=]+)\s*([\d.]+)\s*\(observed\s*([\d.]+)\)/i);
+    if (match) {
+      const [, , thresh, obs] = match;
+      const tNum = Math.round(Number(thresh));
+      const oNum = Math.round(Number(obs));
+      const replacement =
+        lang === "bn"
+          ? `মাসে ক্যাশ-আউট সংখ্যা ${formatDigits(String(oNum), "bn")} বার (সাধারণত ${formatDigits(String(tNum), "bn")} বারের বেশি হলে ফি বাড়ে)`
+          : `Cash-out count ~${oNum} times/month (typically above ${tNum})`;
+      clean = clean.replace(match[0], replacement);
+    } else {
+      clean = clean.replace(/cash_out_count_per_month/g, lang === "bn" ? "মাসে ক্যাশ-আউট সংখ্যা" : "cash-out count per month");
+    }
+  }
+
+  if (clean.includes("cash_out_share_of_outflow")) {
+    const match = clean.match(/cash_out_share_of_outflow\s*([><!=]+)\s*([\d.]+)\s*\(observed\s*([\d.]+)\)/i);
+    if (match) {
+      const [, , thresh, obs] = match;
+      const tPct = Math.round(Number(thresh) * 100);
+      const oPct = Math.round(Number(obs) * 100);
+      const replacement =
+        lang === "bn"
+          ? `খরচের ${formatDigits(String(oPct), "bn")}% ক্যাশে হয় (সাধারণত ${formatDigits(String(tPct), "bn")}% এর বেশি হলে ফি বাড়ে)`
+          : `${oPct}% of spending is in cash (typically above ${tPct}%)`;
+      clean = clean.replace(match[0], replacement);
+    } else {
+      clean = clean.replace(/cash_out_share_of_outflow/g, lang === "bn" ? "ক্যাশ-আউটের অনুপাত" : "cash-out share of outflow");
+    }
+  }
+
+  if (clean.includes("cash_out_volume_per_month_bdt")) {
+    const match = clean.match(/cash_out_volume_per_month_bdt\s*([><!=]+)\s*([\d.]+)\s*\(observed\s*([\d.]+)\)/i);
+    if (match) {
+      const [, , thresh, obs] = match;
+      const tVal = Math.round(Number(thresh));
+      const oVal = Math.round(Number(obs));
+      const replacement =
+        lang === "bn"
+          ? `মাসিক ক্যাশ-আউট পরিমাণ ${formatBDT(oVal, "bn")} (${formatBDT(tVal, "bn")} এর বেশি)`
+          : `Monthly cash-out volume ~${formatBDT(oVal, "en")} (above ${formatBDT(tVal, "en")})`;
+      clean = clean.replace(match[0], replacement);
+    } else {
+      clean = clean.replace(/cash_out_volume_per_month_bdt/g, lang === "bn" ? "মাসিক ক্যাশ-আউট পরিমাণ" : "monthly cash-out volume");
+    }
+  }
+
+  if (clean.includes("fee_share_of_income")) {
+    clean = clean.replace(/fee_share_of_income/g, lang === "bn" ? "আয়ের ফিতে ব্যয় অনুপাত" : "fee share of income");
+  }
+  if (clean.includes("shortfall_days_per_month")) {
+    clean = clean.replace(/shortfall_days_per_month/g, lang === "bn" ? "মাসে টানাটানির দিন" : "shortfall days per month");
+  }
+  if (clean.includes("balance_min_bdt")) {
+    clean = clean.replace(/balance_min_bdt/g, lang === "bn" ? "সর্বনিম্ন ব্যালেন্স" : "minimum balance");
+  }
+
+  clean = clean.replace(/\(trigger:\s*([^)]+)\)/gi, (m, content) => {
+    return lang === "bn" ? `(কারণ: ${formatDigits(content, "bn")})` : m;
+  });
+
+  if (lang === "bn") {
+    clean = formatDigits(clean, "bn");
+  }
+
+  return clean;
+}
+
+/** Demographic and persona localization. */
+export function formatPersona(persona: string | null | undefined, lang: Lang): string {
+  if (!persona) return "—";
+  if (lang === "en") return persona.replace(/_/g, " ");
+  const map: Record<string, string> = {
+    shopkeeper: "দোকানদার",
+    daily_earner: "দৈনিক মজুর",
+    salaried: "চাকরিজীবী",
+    gig_rider: "গিগ রাইডার",
+    student: "শিক্ষার্থী",
+  };
+  return map[persona] ?? persona.replace(/_/g, " ");
+}
+
+export function formatDistrict(district: string | null | undefined, lang: Lang): string {
+  if (!district) return "—";
+  if (lang === "en") return district;
+  const map: Record<string, string> = {
+    Dhaka: "ঢাকা",
+    Chattogram: "চট্টগ্রাম",
+    Sylhet: "সিলেট",
+    Rajshahi: "রাজশাহী",
+    Khulna: "খুলনা",
+    Barishal: "বরিশাল",
+    Rangpur: "রংপুর",
+    Mymensingh: "ময়মনসিংহ",
+    Cumilla: "কুমিল্লা",
+    Bogura: "বগুড়া",
+  };
+  return map[district] ?? district;
+}
+
+export function formatIncomeBand(band: string | null | undefined, lang: Lang): string {
+  if (!band) return "—";
+  if (lang === "en") return band;
+  const map: Record<string, string> = {
+    low: "স্বল্প আয়",
+    middle: "মধ্যম আয়",
+    variable: "অনিয়মিত আয়",
+    affluent: "উচ্চ আয়",
+  };
+  return map[band] ?? formatDigits(band, "bn");
+}
+
+export function formatStatusBadge(status: string | null | undefined, lang: Lang): string {
+  if (!status) return "";
+  if (lang === "en") return status;
+  const map: Record<string, string> = {
+    Strong: "দৃঢ়",
+    Building: "চলমান",
+    Steady: "স্থিতিশীল",
+    "System Computed": "সিস্টেম গণনা",
+    "Rule Verified": "যাচাইকৃত",
+    "Plain Language": "সহজ ব্যাখ্যা",
+    "Logistic Regression": "লজিস্টিক রিগ্রেশন",
+    "Isolation Forest": "আইসোলেশন ফরেস্ট",
+    LightGBM: "লাইটজিবিএম",
+    Educational: "শিক্ষামূলক",
+  };
+  return map[status] ?? status;
+}
+

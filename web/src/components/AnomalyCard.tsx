@@ -28,6 +28,64 @@ interface AnomalyCardProps {
  * A ruled row with a 2px left brick-red indicator rule, dotted leader to amount,
  * tabular numerals, and authentic ink-muted stamp. No card boxes.
  */
+function formatAnomalyReason(reason: string, lang: "bn" | "en"): string {
+  if (!reason) return "";
+  if (lang === "en") return reason;
+
+  const m1 = reason.match(/Rapid repeat near ৳([\d,]+)\s*\(([\d,]+)\s*BDT\)\s*—\s*potential transaction splitting under Payment & Settlement Systems Act,\s*2024 monitoring/i);
+  if (m1) {
+    return `২,০০০ টাকা প্রণোদনা সীমার কাছাকাছি ঘন ঘন লেনদেন (${formatBDT(Number(m1[2].replace(/,/g, "")), "bn")}) — পেমেন্ট অ্যান্ড সেটেলমেন্ট সিস্টেমস আইন, ২০২৪ অনুযায়ী অপব্যবহার প্রতিরোধে নিরীক্ষাধীন।`;
+  }
+
+  const m2 = reason.match(/High-value merchant payment\s*\(([\d,]+)\s*BDT\)\s*flagged for unauthorised cash-out review/i);
+  if (m2) {
+    return `মার্চেন্ট পেমেন্টে বড় অংকের লেনদেন (${formatBDT(Number(m2[1].replace(/,/g, "")), "bn")}) — কিউআর অপব্যবহার বা অননুমোদিত ক্যাশ-আউট প্রতিরোধে সতর্কবার্তা।`;
+  }
+
+  const m3 = reason.match(/Another very similar payment within\s*(\d+)\s*minutes/i);
+  if (m3) {
+    return `${formatDigits(m3[1], "bn")} মিনিটের মধ্যে একই ধরনের আরেকটি লেনদেন।`;
+  }
+
+  const m4 = reason.match(/Happened at\s*(\d{2}:\d{2}),\s*outside your usual hours/i);
+  if (m4) {
+    return `আপনার নিয়মিত সময়ের বাইরে ${formatDigits(m4[1], "bn")} ঘটিকায় এই লেনদেনটি হয়েছে।`;
+  }
+
+  const m5 = reason.match(/About\s*([\d.]+)x\s*your own average payment/i);
+  if (m5) {
+    return `আপনার নিজস্ব গড় লেনদেনের পরিমাণের চেয়ে প্রায় ${formatDigits(m5[1], "bn")} গুণ বেশি।`;
+  }
+
+  const m6 = reason.match(/Timing is unusual for you\s*\(([^)]+)\s*is not one of your usual hours\)/i);
+  if (m6) {
+    return `সময়টি আপনার জন্য অস্বাভাবিক (${formatDigits(m6[1], "bn")} আপনার স্বাভাবিক লেনদেনের সময় নয়)।`;
+  }
+
+  return formatDigits(reason, "bn");
+}
+
+function formatSuggestedAction(action: string | null | undefined, lang: "bn" | "en"): string {
+  if (!action) return "";
+  if (lang === "en") return action;
+  const lower = action.toLowerCase();
+  if (lower.includes("review")) return "পর্যালোচনা করুন";
+  if (lower.includes("bangla_qr") || lower.includes("bangla qr")) return "দোকানে বাংলা কিউআরে দিন";
+  if (lower.includes("app transfer") || lower.includes("p2p")) return "অ্যাপ ট্রান্সফার করুন";
+  if (lower.includes("none")) return "কোনো পদক্ষেপের প্রয়োজন নেই";
+  return action;
+}
+
+function formatSuggestedChannel(ch: string | null | undefined, lang: "bn" | "en"): string {
+  if (!ch) return "";
+  if (lang === "en") return ch;
+  const lower = ch.toLowerCase();
+  if (lower.includes("bangla_qr") || lower.includes("bangla qr")) return "বাংলা কিউআর";
+  if (lower.includes("p2p") || lower.includes("app transfer")) return "অ্যাপ ট্রান্সফার";
+  if (lower.includes("cash_out") || lower.includes("cash out")) return "ক্যাশ-আউট";
+  return ch;
+}
+
 export default function AnomalyCard({ item }: AnomalyCardProps) {
   const { lang, tr } = useLanguage();
 
@@ -56,16 +114,16 @@ export default function AnomalyCard({ item }: AnomalyCardProps) {
 
       <div className="text-sm font-hind">
         <p className="text-ink leading-relaxed font-medium">
-          {item.reason}
+          {formatAnomalyReason(item.reason, lang)}
         </p>
         <div className="text-xs font-mono text-ink-muted flex items-center gap-2 pt-1">
           <span>{tr("spending.action")}:</span>
           <strong className="text-primaryGreen uppercase tracking-wide">
-            {item.suggested_action}
+            {formatSuggestedAction(item.suggested_action, lang)}
           </strong>
           {item.suggested_channel && (
             <span className="text-ink">
-              ({item.suggested_channel})
+              ({formatSuggestedChannel(item.suggested_channel, lang)})
             </span>
           )}
         </div>

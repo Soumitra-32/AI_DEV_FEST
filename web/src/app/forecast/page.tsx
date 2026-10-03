@@ -10,7 +10,7 @@ import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchForecast } from "@/lib/api";
 import type { ForecastResponse } from "@/lib/api";
-import { formatBDT, formatDigits } from "@/lib/i18n";
+import { formatBDT, formatDigits, formatModelName, formatFeatureName } from "@/lib/i18n";
 
 export default function ForecastPage() {
   const { lang, tr } = useLanguage();
@@ -142,17 +142,17 @@ export default function ForecastPage() {
               {data.metrics ? (
                 <div className="text-sm font-hind text-ink flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span>
-                    {data.metrics.model_name}: MAE{" "}
+                    {formatModelName(data.metrics.model_name, lang)}: MAE{" "}
                     <strong className="font-serif-bn tabular-nums">{formatBDT(data.metrics.mae_bdt, lang)}</strong>
                   </span>
                   <span className="text-rule">·</span>
                   <span>
-                    {data.metrics.baseline_name}: MAE{" "}
+                    {formatModelName(data.metrics.baseline_name, lang)}: MAE{" "}
                     <strong className="font-serif-bn tabular-nums">{formatBDT(data.metrics.baseline_mae_bdt, lang)}</strong>
                   </span>
                   <span className="text-rule">·</span>
                   <Stamp variant="ink">
-                    +{data.metrics.improvement_pct}% {tr("metrics.improvement")}
+                    +{formatDigits(String(data.metrics.improvement_pct), lang)}% {tr("metrics.improvement")}
                   </Stamp>
                 </div>
               ) : (
@@ -216,7 +216,7 @@ export default function ForecastPage() {
                   <tfoot>
                     <tr className="border-t border-rule ledger-double-bottom text-xs font-mono text-ink-muted">
                       <td colSpan={5} className="py-2 text-right">
-                        {data.days.length} {lang === "bn" ? "দিনের হিসাবকৃত খতিয়ান" : "days projected in ledger"}
+                        {formatDigits(String(data.days.length), lang)} {lang === "bn" ? "দিনের হিসাবকৃত খতিয়ান" : "days projected in ledger"}
                       </td>
                     </tr>
                   </tfoot>
@@ -238,7 +238,7 @@ export default function ForecastPage() {
                     <div key={idx} className="py-2.5 flex items-baseline justify-between gap-2">
                       <div className="space-y-0.5 text-left">
                         <div className="font-bold text-ink">
-                          {driver.feature}
+                          {formatFeatureName(driver.feature, lang)}
                         </div>
                         <div className="text-xs text-ink-muted">
                           {driver.detail || (driver.direction === "increases" ? tr("forecast.increasesOutflow") : tr("forecast.decreasesOutflow"))}
