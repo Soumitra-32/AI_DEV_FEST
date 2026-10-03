@@ -120,5 +120,36 @@ Bangla sentences were tested for spoken rhythm and natural inflection:
 - "টানের দিন" — Immediately resonates with everyday Bangladeshi shopkeepers for tight-budget periods.
 - "নিয়মিত লেনদেনের অভ্যাস" — Dignified and encouraging tone rather than punitive credit-scoring jargon.
 
+---
+
+## Route-by-Route Before vs After Table (Phase 6)
+
+| Route | Before (Technical / Mixed) | After (Plain Language & Bangla First) |
+|---|---|---|
+| `/` (Home) | "Ledger Specification v1.0 • Flat Format", "API reachable: True", "Surplus: ৳30,000", English digits in Bangla | "খাতার পাতা • বাংলা-প্রথম আর্থিক সহায়ক", "সংযোগ সফল", "হাতে থাকা টাকা: ৳৩০,০০০", খাঁটি বাংলা সংখ্যা (০-৯) |
+| `/forecast` | "LightGBM 14-day Forecast", "MAE: ৳2,340", "trailing_average baseline", "SHAP Top Features" | "আগামী ১৪ দিনের আগাম হিসাব", "আমাদের মডেল: গড় ভুল ৳২,৩৪০", "সাধারণ গড়: গড় ভুল ৳৪,১২০", "যে কারণে হিসাব এমন হয়েছে" |
+| `/plan` | "LP Solver Optimization", "Adoption Range: 50%-80%", "Simulation", "Rule Verified" | "সঞ্চয় পরিকল্পনা", "কতজন ব্যবহার করতে পারে: ৫০% - ৮০%", "ভবিষ্যৎ পরিকল্পনা", "✓ যাচাই করা" |
+| `/spending` | "Cash Out Channel Anomaly", "MDR Minimum abolished", "IRF: 0.00%", "Isolation Forest" | "অস্বাভাবিক লেনদেন", "মার্চেন্ট ফি বাতিল — কিউআরে খরচ ০%", "ব্যাংকের প্রণোদনা ০.১০% + ০.২০%", "অস্বাভাবিক খোঁজার পদ্ধতি" |
+| `/tips` | "LLM Chat Explain", "Template fallback active", "Deterministic prompt response" | "খরচ কমানোর উপায়", "প্রস্তুত উত্তর — একই নির্ভরযোগ্য হিসাবের ওপর ভিত্তি করে উত্তর তৈরি করা হয়েছে।" |
+| `/signal` | "Logistic Regression Credit Readiness Signal", "Score: 0.78", "System Computed" | "ধারাবাহিকতার মান (অভ্যাসের ফল)", "মান: ০.৭৮ (দৃঢ়)", "স্বয়ংক্রিয় হিসাব — এটি কোনো ঋণের সিদ্ধান্ত নয়" |
+| `/metrics` | "ROC-AUC 0.82", "F1 0.74", "Precision 0.79", "Baseline Comparison", "Dataset: 3900000" | "কতটা সঠিক: ১০০টিতে ৮২টি", "শনাক্তকরণের মাত্রা: ১০০টিতে ৭৪টি", "নিয়মিত অভ্যাসের ফল", "তথ্য: ৩৯,০০,০০০" |
+
+---
+
+## Differentiation Note (Why This Wins)
+
+Competitors in this hackathon will inevitably present generic AI dashboards filled with:
+1. English-centric cards with dark gradients and donut charts.
+2. Ungrounded LLM chatbots claiming to "give financial advice".
+3. Exposed data science jargon (ROC-AUC, SHAP, LightGBM, API endpoints) designed to impress judges rather than serve actual users.
+4. Ignorance of local regulatory realities (such as the Bangladesh Bank 1 Oct 2026 Bangla QR circular).
+
+**Shonchoy Copilot completely separates itself through four hard differentiators**:
+- **D1: Authentic Bangla-First Experience**: Not an afterthought toggle. Bangla typography is scaled for natural eye-flow (`18.5px+`, `1.85 line-height`, unclipped conjuncts and matras). All numerals render natively in Bengali (`০-৯`).
+- **D2: The Traditional Khata Metaphor**: Designed as a physical merchant ledger (paper `#F4EFE3`, ink `#1E1B16`, ruled borders `#D8CFBB`, dotted leaders, rubber stamps, no rounded plastic cards).
+- **D3: Responsible AI as Functional Furniture**: Every AI suggestion displays a 3-layer Provenance (Prediction, Assumption, Explanation), honest "Do-Nothing" counterfactuals, and explicit guardrails reminding users that estimates are not guarantees and readiness signals are not loan sanctions.
+- **D4: 1 Oct 2026 Bangladesh Bank Circular as Core Logic**: The revolutionary regulation (0% merchant MDR, 0% IRF, NPSB 0.10%+0.20% central-bank incentive, 2,000 BDT splitting vigilance) is front-and-center, demonstrating real-world financial literacy and ground-level utility for millions of Bangladeshi micro-merchants.
+
+
 
 
