@@ -473,6 +473,72 @@ def both_languages(intent: str, context: Mapping[str, Any] | None) -> dict[str, 
 _GOAL_HINT = re.compile(r"(save|জমা|জমানো|জমাতে|goal|টাকা)", re.IGNORECASE)
 _MONTH_PATTERN = re.compile(r"(\d+)\s*(month|months|মাস|মাসে|মাসের)")
 
+#: English number words (speech recognition returns words, not digits:
+#: "thirty thousand" instead of "30000"). A lone scale word counts once
+#: ("thousand" alone is 1000), so "a"/"an" are deliberately NOT words —
+#: "five thousand a month" must stay 5000, and "a month" must never parse.
+_ONES = {
+    "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14,
+    "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18,
+    "nineteen": 19,
+}
+_TENS = {
+    "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50,
+    "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
+}
+_SCALES = {
+    "hundred": 100, "thousand": 1000,
+    "lakh": 100000, "lac": 100000, "million": 1000000,
+}
+_NUMBER_WORDS = frozenset(_ONES) | frozenset(_TENS) | frozenset(_SCALES)
+
+
+def _word_run_value(tokens: list) -> tuple | None:
+    """Evaluate a run of number words: (value, has_scale_word).
+
+    Returns None when any token is not a number word. A lone scale word
+    counts once ("thousand" alone is 1000, "a thousand" is 1 x 1000).
+    """
+    total, current, saw_scale = 0.0, 0.0, False
+    for token in tokens:
+        if token in _ONES:
+            current += _ONES[token]
+        elif token in _TENS:
+            current += _TENS[token]
+        elif token in _SCALES:
+            saw_scale = True
+            magnitude = _SCALES[token]
+            if magnitude == 100:
+                current = (current or 1.0) * 100.0
+            else:
+                total += (current or 1.0) * magnitude
+                current = 0.0
+        else:
+            return None
+    return (total + current, saw_scale)
+
+
+def _word_amounts(normalised: str) -> list:
+    """(value, has_scale) for every maximal number-word run in the text."""
+    found = []
+    run: list = []
+    for token in re.findall(r"[a-z]+", normalised):
+        if token in _NUMBER_WORDS:
+            run.append(token)
+        else:
+            if run:
+                parsed = _word_run_value(run)
+                if parsed is not None:
+                    found.append(parsed)
+                run = []
+    if run:
+        parsed = _word_run_value(run)
+        if parsed is not None:
+            found.append(parsed)
+    return found
+
 #: Bounds mirror ``SavingsPlanRequest`` so a parsed goal always validates.
 MIN_MONTHS = 1
 MAX_MONTHS = 36
@@ -525,6 +591,13 @@ def parse_goal(message: str) -> GoalRequest:
             candidate = float(parsed) * multiplier
             if candidate > 0 and (goal is None or candidate > goal):
                 goal = candidate
+    if goal is None:
+        # Spoken English has no digits ("thirty thousand", not "30000"), so
+        # also read number-word runs — but only runs with a scale word, the
+        # same conservatism as the digit rules (a bare "six" is never a goal).
+        for value, has_scale in _word_amounts(normalised):
+            if has_scale and value > 0 and (goal is None or value > goal):
+                goal = value
     if goal is None and _GOAL_HINT.search(normalised):
         # No taka sign: only trust a bare number when a goal word is present,
         # so "6 months" is never read as a 6 taka goal.
@@ -542,6 +615,25 @@ def parse_goal(message: str) -> GoalRequest:
         parsed = guardrails.parse_number(month_match.group(1))
         if parsed is not None and MIN_MONTHS <= float(parsed) <= MAX_MONTHS:
             months = int(float(parsed))
+    if months is None:
+        # Spoken months ("six months"): longest trailing number-word run
+        # before each month word. A lone "a"/"an" never counts ("a month" is
+        # a rate, not a horizon).
+        for match in re.finditer(r"months?|মাস\w*", normalised):
+            preceding = re.findall(r"[a-z]+", normalised[: match.start()])[-3:]
+            for start in range(len(preceding)):
+                run = preceding[start:]
+                if len(run) == 1 and run[0] in ("a", "an"):
+                    continue
+                parsed = _word_run_value(run)
+                if parsed is None:
+                    continue
+                value, _ = parsed
+                if value.is_integer() and MIN_MONTHS <= value <= MAX_MONTHS:
+                    months = int(value)
+                    break
+            if months is not None:
+                break
     return GoalRequest(goal_bdt=goal, months=months)
 
 

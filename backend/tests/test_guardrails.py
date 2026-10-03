@@ -268,6 +268,10 @@ def test_missing_context_still_answers_something_useful() -> None:
         # Bangla groups in lakh: ৳১,২০,০০০ is 120,000.
         ("১২ মাসে ৳১,২০,০০০ জমাতে চাই", 120000.0, 12),
         ("save ৳৫০,০০০ in 3 months", 50000.0, 3),
+        # Spoken English has words, not digits (speech recognition output).
+        ("I want to save thirty thousand taka in six months", 30000.0, 6),
+        ("save fifty thousand in twelve months", 50000.0, 12),
+        ("save one lakh in ten months", 100000.0, 10),
     ],
 )
 def test_goal_parsing_reads_the_demo_sentence(message: str, goal: float, months: int) -> None:

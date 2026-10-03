@@ -58,3 +58,17 @@ def test_metrics_serves_model_scoreboard() -> None:
     body = response.json()
     assert {"forecast", "anomaly", "signal", "fairness", "notes"} <= set(body)
     assert body["generated_at"]
+
+
+@pytest.mark.parametrize(
+    ("message", "goal", "months"),
+    [
+        ("save thirty thousand in six months", 30000.0, 6),
+        ("save fifty thousand in twelve months", 50000.0, 12),
+    ],
+)
+def test_parse_goal_reads_spoken_english(client: TestClient, message: str, goal: float, months: int) -> None:
+    body = client.post("/parse-goal", json={"message": message}).json()
+    assert body["goal_bdt"] == goal
+    assert body["months"] == months
+    assert body["is_complete"] is True
