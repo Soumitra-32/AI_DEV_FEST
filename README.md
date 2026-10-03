@@ -154,6 +154,10 @@ The repository includes a ready-to-deploy [`render.yaml`](./render.yaml) bluepri
    - `NEXT_PUBLIC_DEMO_TOKEN`: Same token configured in Render.
 3. Deploy.
 
+> Full click-by-click runbook, smoke-test commands and first-deploy failure
+> table: [`docs/DEPLOYMENT.md`](./docs/DEPLOYMENT.md) §4a. Deploy the API first,
+> then copy its URL into Vercel's `NEXT_PUBLIC_API_URL`.
+
 ---
 
 ## 🧪 Testing

@@ -262,9 +262,7 @@ def tips_context(user_id: str, db_path: str | Path | None = None, limit: int = 3
     """
     path = Path(db_path) if db_path is not None else user_features.default_db_path()
     try:
-        frame = user_features.user_features(
-            user_features.load_config(), user_features.load_transactions(path)
-        )
+        frame = user_features.user_features_cached(path)
         row = user_features.feature_row(frame, user_id)
     except Exception as exc:
         logger.warning("tips retrieval failed for %s: %s", user_id, type(exc).__name__)
@@ -285,9 +283,7 @@ def health_context(
     """
     path = db_path if db_path is not None else user_features.default_db_path()
     try:
-        frame = user_features.user_features(
-            user_features.load_config(), user_features.load_transactions(path)
-        )
+        frame = user_features.user_features_cached(path)
         row = user_features.feature_row(frame, user_id)
         graded = health_score.score_features(frame, user_id)
     except Exception as exc:  # unknown user or no transactions

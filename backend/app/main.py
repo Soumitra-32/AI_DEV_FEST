@@ -8,11 +8,15 @@ and Phase 8 the evaluation surface (``/metrics``).
 """
 from __future__ import annotations
 
+import logging
 import os
+from contextlib import asynccontextmanager
 from typing import Dict, Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from backend.data import features as user_features
 
 from .config import Settings, get_settings
 from .middleware import add_request_logging
@@ -30,6 +34,26 @@ from .routers import (
     savings_plan,
 )
 
+logger = logging.getLogger("shonchoy.main")
+
+
+def _warm_user_features(active: Settings) -> None:
+    """Build the user feature matrix once at startup, off the request path.
+
+    The first call to a feature-backed endpoint otherwise pays the whole
+    dataset build (~10s here: read 176k transactions, recompute 501 users)
+    while the browser's 12s abort ticks. Doing it here moves that cost into
+    boot, so the demo's first click is as fast as the hundredth.
+
+    Best-effort by design: a missing or broken dataset must surface as the
+    endpoint's own 503/404, never stop the app from starting.
+    """
+    try:
+        frame = user_features.user_features_cached(active.db_path)
+        logger.info("warmed user features: %d users", len(frame))
+    except Exception as exc:  # pragma: no cover - degraded start
+        logger.warning("could not warm user features: %s", type(exc).__name__)
+
 
 def create_app(settings: Optional[Settings] = None) -> FastAPI:
     """Build the application (a factory keeps tests free of global state)."""
@@ -43,9 +67,17 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 "refusing to boot with a placeholder DEMO_AUTH_TOKEN; "
                 "set a real token (ALLOW_DEFAULT_TOKEN=1 bypasses locally)"
             )
+    @asynccontextmanager
+    async def lifespan(_: FastAPI):
+        # Warm the shared feature matrix before the first request arrives, so no
+        # user-visible request ever pays the one-off dataset build.
+        _warm_user_features(active)
+        yield
+
     app = FastAPI(
         title=active.app_name,
         version=active.api_version,
+        lifespan=lifespan,
         description=(
             "Bangla-first financial coach API. Synthetic data only, no PII, and the "
             "LLM never invents numbers — it only verbalises structured results."

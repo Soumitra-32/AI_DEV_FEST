@@ -187,7 +187,7 @@ def build_signal(
     404 rather than an empty card pretending to be an answer.
     """
     path = Path(db_path) if db_path is not None else user_features.default_db_path()
-    frame = user_features.user_features(user_features.load_config(), user_features.load_transactions(path))
+    frame = user_features.user_features_cached(path)
     rows = frame.loc[frame["user_id"].eq(user_id)]
     if rows.empty:
         raise KeyError(f"no features for user {user_id}")

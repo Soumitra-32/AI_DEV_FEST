@@ -63,9 +63,7 @@ def build_health(
     404 instead of a 200 with a meaningless score.
     """
     path = db_path if db_path is not None else user_features.default_db_path()
-    frame = user_features.user_features(
-        user_features.load_config(), user_features.load_transactions(path)
-    )
+    frame = user_features.user_features_cached(path)
     graded = health_score.score_features(frame, user_id)
 
     best, worst = _biggest(graded)

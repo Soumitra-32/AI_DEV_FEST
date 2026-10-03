@@ -12,6 +12,7 @@ fairness analysis only and are excluded from :data:`FEATURE_COLUMNS`.
 from __future__ import annotations
 
 import sqlite3
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
@@ -69,6 +70,56 @@ DERIVED_COLUMNS: List[str] = ["fee_per_month_bdt"]
 NUMERIC_FEATURE_COLUMNS: List[str] = ["months_observed"] + FEATURE_COLUMNS + DERIVED_COLUMNS
 
 USER_FEATURE_COLUMNS = ID_COLUMNS + DEMOGRAPHIC_COLUMNS + NUMERIC_FEATURE_COLUMNS
+
+
+def _db_fingerprint(db_path: str | Path) -> tuple[str, int, int]:
+    """Identity of a dataset file: its resolved path, size and mtime.
+
+    Part of the cache key so regenerating the dataset invalidates the cache
+    instead of serving features built from the previous ledger.
+    """
+    path = Path(db_path)
+    try:
+        stat = path.stat()
+        return (str(path.resolve()), stat.st_size, stat.st_mtime_ns)
+    except OSError:
+        # No file yet (the router turns the missing dataset into a 503). Key on
+        # the path alone so the failure is not cached as a permanent empty result.
+        return (str(path), -1, -1)
+
+
+@lru_cache(maxsize=4)
+def _user_features_cached(fingerprint: tuple[str, int, int]) -> pd.DataFrame:
+    """Build the full user feature matrix once per dataset version."""
+    return user_features(load_config(), load_transactions(fingerprint[0]))
+
+
+def user_features_cached(db_path: str | Path | None = None) -> pd.DataFrame:
+    """The cached user feature matrix for a dataset -- the online read path.
+
+    Every online service needs "the feature frame for this database", and
+    rebuilding it re-reads all ~176k transactions and recomputes all ~501 users
+    (~6.3s) on *every request*, only to pick out one user's row. That is a
+    per-user question paying a whole-cohort price, and it is what pushed
+    ``/goal-templates``, ``/credit-readiness`` and ``/health-coach`` past 6
+    seconds -- uncomfortably close to the frontend's 12s abort on slower
+    hardware. One build per dataset version answers all of them in ~0ms.
+
+    Safe to share because every consumer only *reads* the frame (``feature_row``
+    and ``score_features`` filter with ``.loc``). Do not mutate the result; call
+    :func:`backend.data.features.clear_user_features_cache` if the dataset is
+    replaced underneath a running process.
+
+    The cache key is the dataset's path, size and mtime, so re-running
+    ``generate_data.py`` transparently rebuilds rather than serving stale rows.
+    """
+    path = Path(db_path) if db_path is not None else default_db_path()
+    return _user_features_cached(_db_fingerprint(path))
+
+
+def clear_user_features_cache() -> None:
+    """Drop the cached feature matrix (after replacing the dataset file)."""
+    _user_features_cached.cache_clear()
 
 
 def default_db_path() -> Path:

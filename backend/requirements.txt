@@ -28,3 +28,9 @@ httpx==0.28.1
 
 # Tests
 pytest==9.1.1
+
+# Type checking (editor/CI only -- nothing here is imported at runtime).
+# Without pandas-stubs, Pylance cannot see that ``Series * float`` and
+# ``.loc[mask, col] *= float`` are valid pandas, and flags them as
+# reportOperatorIssue even though both run correctly.
+pandas-stubs==3.0.5.260914

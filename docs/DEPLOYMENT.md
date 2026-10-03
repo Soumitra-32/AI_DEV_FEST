@@ -46,6 +46,96 @@ Web (`web/.env.local`, gitignored): `NEXT_PUBLIC_API_URL` (local:
 3. Vercel rebuilds `web/` with its env vars.
 4. Verify: `<render-url>/health` → `"status": "ok"`; open the Vercel URL and run one voice sentence end to end.
 
+## 4a. First deploy, click by click (do the API before the web)
+
+### Step 1 — Push the branch Render will build
+
+```bash
+git add -A && git commit -m "chore: deployable state"
+git push origin dev
+```
+
+Render builds the **root** of the repo, so `render.yaml` must stay at
+`f:\shonchoy-copilot\render.yaml` and `backend/`, `backend/data/config.yaml`
+and `backend/ml/artifacts/` must be committed (the DB is generated, the
+trained artifacts are tracked). Verify nothing important is missing:
+
+```bash
+git ls-files backend/data backend/ml/artifacts
+```
+
+### Step 2 — Create the API on Render (Blueprint)
+
+1. <https://dashboard.render.com> → **New +** → **Blueprint** (not "Web Service"
+   — the Blueprint reads `render.yaml` for you).
+2. Connect the repo `Soumitra-32/AI_DEV_FEST`, branch `dev`.
+3. Render shows one service, `shonchoy-copilot-api` (Python, Singapore, `$PORT`,
+   health check `/health`). Accept, create.
+4. In the service → **Environment**, set the values the YAML cannot know:
+
+   | Key | Value |
+   |---|---|
+   | `DEMO_AUTH_TOKEN` | a new random string (`python -c "import secrets;print(secrets.token_urlsafe(24))"`) |
+   | `CORS_ORIGINS` | `https://<your-vercel-domain>` (add your localhost while testing) |
+   | `LLM_API_KEY` / `LLM_MODEL` | optional; leave blank for template mode |
+
+   `DEMO_AUTH_TOKEN` has `sync: false` in the YAML on purpose: the boot guard in
+   `backend/app/main.py` refuses to start on a placeholder token, so the deploy
+   will crash-loop until you replace it here. Same token → Vercel later.
+5. **Save, then Manual Deploy** (or wait for the push auto-deploy).
+6. Watch the deploy log; the build line must show
+   `python backend/scripts/generate_data.py` finishing, then uvicorn binding
+   `$PORT`. Free instances sleep after 15 min idle → the first request is slow;
+   that is normal, `/health` wakes it.
+7. Verify: `https://shonchoy-copilot-api.onrender.com/health` → `"status": "ok"`,
+   and `/docs` renders Swagger.
+
+### Step 3 — Create the web app on Vercel
+
+1. <https://vercel.com/new> → import `Soumitra-32/AI_DEV_FEST`.
+2. Framework Preset **Next.js**, **Root Directory = `web`** (the app lives in
+   `web/`, not the repo root — this is the only setting that is easy to miss).
+   Leave Install `npm ci`, Build `npm run build`, Output default.
+3. Before the first deploy, add **Settings → Environment Variables** (Production,
+   Preview *and* Development so previews work):
+
+   | Name | Value |
+   |---|---|
+   | `NEXT_PUBLIC_API_URL` | `https://shonchoy-copilot-api.onrender.com` (no trailing slash) |
+   | `NEXT_PUBLIC_DEMO_TOKEN` | the **same** string as Render's `DEMO_AUTH_TOKEN` |
+
+4. Deploy. `NEXT_PUBLIC_*` values are inlined at **build** time, so if you edit
+   them later you must redeploy (Deployments → ⋯ → Redeploy) for the change to
+   reach the browser bundle.
+5. Copy your domain, e.g. `https://shonchoy-copilot.vercel.app`, then go back to
+   Render → Environment → `CORS_ORIGINS` and add it, then re-trigger the Render
+   deploy so the new origin is applied. (CORS is read at import time.)
+
+### Step 4 — Smoke-test the deployed pair
+
+```bash
+curl https://shonchoy-copilot-api.onrender.com/health
+curl -H "X-Demo-Token: <same token>" https://shonchoy-copilot-api.onrender.com/me
+curl -H "X-Demo-Token: <same token>" https://shonchoy-copilot-api.onrender.com/metrics
+```
+
+Open the Vercel URL, send one Bangla sentence, and confirm the dashboard fills
+in. Check the browser console + DevTools Network tab for CORS errors — a CORS
+failure almost always means `CORS_ORIGINS` is missing the exact Vercel origin
+(`https`, no trailing slash, no path).
+
+### Common first-deploy failures
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Crash loop, "refusing to boot with a placeholder DEMO_AUTH_TOKEN" | YAML placeholder never replaced | set `DEMO_AUTH_TOKEN` in the Render dashboard, redeploy |
+| Render build: `ModuleNotFoundError` / missing seed | builds from a branch without the latest commit | push `dev`, redeploy |
+| `/health` 503 or empty data | `generate_data.py` failed or DB wiped on restart | read the build log; the deploy re-generates with fixed seeds |
+| Vercel build fails on `recharts`/`tailwind` | wrong root directory (building repo root) | set Root Directory = `web` |
+| Page loads, requests fail CORS | `CORS_ORIGINS` not updated / wrong scheme | set it to the exact Vercel origin, redeploy Render |
+| 401/403 from the web app | tokens differ between Render and Vercel | make both strings identical |
+| First click feels frozen | free instance spun down | hit `/health` first, or upgrade the plan |
+
 ## 5. Local verification (the full gate before pushing)
 
 ```bash

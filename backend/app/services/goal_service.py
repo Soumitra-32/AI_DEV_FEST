@@ -27,9 +27,7 @@ def build_templates(
 ) -> dict[str, Any]:
     """Every Goal Copilot template, with its goal scaled to the user's income."""
     path = db_path if db_path is not None else user_features.default_db_path()
-    frame = user_features.user_features(
-        user_features.load_config(), user_features.load_transactions(path)
-    )
+    frame = user_features.user_features_cached(path)
     row = user_features.feature_row(frame, user_id)
     monthly_income = float(row.get(INCOME_FEATURE, 0.0))
     return {
