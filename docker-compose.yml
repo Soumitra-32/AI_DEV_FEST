@@ -1,0 +1,36 @@
+# Local reproducible demo: API + web, no venv wrestling.
+# Production uses Render (API) + Vercel (web); see docs/DEPLOYMENT.md.
+# No secrets here: the API reads AI_DEV_FEST/.env, the web its own env below.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - .env
+    environment:
+      PORT: 8000
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 90s
+
+  web:
+    image: node:20-slim
+    working_dir: /web
+    volumes:
+      - ./web:/web
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_DEMO_TOKEN: ${DEMO_AUTH_TOKEN:-change-me}
+    ports:
+      - "3000:3000"
+    command: ["sh", "-c", "npm install --no-audit --no-fund && npm run dev -- --port 3000"]
+    depends_on:
+      api:
+        condition: service_healthy
