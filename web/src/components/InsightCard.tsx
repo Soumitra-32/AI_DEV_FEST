@@ -1,14 +1,17 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { useLanguage } from "@/components/LangToggle";
 import type { Provenance } from "@/lib/api";
 import Stamp from "@/components/Stamp";
+import type { TranslationKey } from "@/lib/i18n";
 
 interface InsightCardProps {
   title?: string;
   children?: ReactNode;
   provenance?: Provenance | null;
+  fallbackAssumption?: string;
 }
 
 /**
@@ -16,8 +19,30 @@ interface InsightCardProps {
  * Separates Prediction / Assumption / Explanation with rubber stamps.
  * Pure flat design on #FBF8F1 surface with #D8CFBB rule borders.
  */
-export default function InsightCard({ title, children, provenance }: InsightCardProps) {
+export default function InsightCard({
+  title,
+  children,
+  provenance,
+  fallbackAssumption,
+}: InsightCardProps) {
   const { tr } = useLanguage();
+  const pathname = usePathname();
+
+  const routeDefaultAssumption =
+    pathname === "/forecast"
+      ? tr("assumption.forecast")
+      : pathname === "/plan"
+        ? tr("assumption.plan")
+        : pathname === "/spending"
+          ? tr("assumption.spending")
+          : pathname === "/tips"
+            ? tr("assumption.tips")
+            : tr("assumption.forecast");
+
+  const effectiveAssumption =
+    provenance?.assumption && provenance.assumption.trim().length > 0
+      ? provenance.assumption
+      : (fallbackAssumption || routeDefaultAssumption);
 
   return (
     <section className="border-t border-b border-rule bg-surface/50 mb-6">
@@ -50,13 +75,13 @@ export default function InsightCard({ title, children, provenance }: InsightCard
             </p>
           </div>
 
-          {/* Layer 2: Assumption */}
+          {/* Layer 2: Assumption (guaranteed non-empty via route-aware fallbacks) */}
           <div className="p-4 space-y-1">
             <div className="text-xs font-mono uppercase tracking-wider text-ink-muted font-semibold">
               {tr("common.assumption")}
             </div>
             <p className="text-[15px] text-ink leading-relaxed font-hind">
-              {provenance.assumption}
+              {effectiveAssumption}
             </p>
           </div>
 

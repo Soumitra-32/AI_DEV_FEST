@@ -250,7 +250,18 @@ export default function TipsPage() {
           </div>
         </div>
 
-        <DoNothingToggle />
+        <DoNothingToggle
+          costBdt={feeSwitch?.potential_saving_bdt ?? null}
+          outcome={
+            feeSwitch
+              ? (lang === "bn"
+                  ? `পরামর্শ অনুযায়ী ফি সাশ্রয় না করলে মাসে প্রায় ${formatBDT(feeSwitch.potential_saving_bdt, lang)} অপ্রয়োজনীয় খরচ হতে থাকবে।`
+                  : `Ignoring fee-saving recommendations will continue to cost ~${formatBDT(feeSwitch.potential_saving_bdt, lang)}/month in avoidable fees.`)
+              : (lang === "bn"
+                  ? "কোনো আর্থিক ক্ষতি হিসাব করা যায়নি, তবে সঞ্চয়ের অভ্যাস তৈরি পিছিয়ে যাবে।"
+                  : "No direct monetary loss computed, but financial habit building will be delayed.")
+          }
+        />
       </main>
     </>
   );

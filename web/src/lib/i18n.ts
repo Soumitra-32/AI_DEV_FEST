@@ -82,6 +82,29 @@ const en = {
   "banner.title": "Clarification & Safeguard Commitment",
   "banner.notADecision":
     "This is an educational guide, not a credit or lending decision. upay and lenders make no automated decisions from this. No money moves without your explicit consent.",
+  "banner.notADecision.home":
+    "This is an educational financial guide, not a credit or transaction decision. No money moves without your explicit consent.",
+  "banner.notADecision.forecast":
+    "This forecast is not a financial guarantee or commitment — it is projected from historical transaction patterns.",
+  "banner.notADecision.plan":
+    "This plan is purely an arithmetic projection — there is no obligation to save or invest.",
+  "banner.notADecision.spending":
+    "This summary is strictly analytical — no transaction has been modified, held, or reversed.",
+  "banner.notADecision.tips":
+    "These tips provide general informational guidance and do not constitute professional financial advice.",
+  "banner.notADecision.signal":
+    "This consistency signal is not a credit score or loan approval — it is an educational consistency assessment only.",
+  "banner.notADecision.metrics":
+    "These metrics measure offline model performance and calibration — they do not represent commercial guarantees.",
+
+  "assumption.forecast":
+    "Assumes the past 60 days of inflow/outflow transaction patterns and baseline living expenses continue.",
+  "assumption.plan":
+    "Assumes monthly safety buffer remains intact and no major unplanned emergency expenses occur.",
+  "assumption.spending":
+    "Assumes cash withdrawal habits remain constant and Bangla QR merchant payment channels are accessible.",
+  "assumption.tips":
+    "Assumes past spending patterns and rules-based financial coaching heuristics apply.",
 
   "home.next.title": "Available Modules",
   "home.next.body":
@@ -349,6 +372,29 @@ const bn: Dictionary = {
   "banner.title": "স্পষ্টকরণ ও সুরক্ষা অঙ্গীকার",
   "banner.notADecision":
     "এটি শুধু শিক্ষামূলক ইঙ্গিত, কোনো ঋণ বা আর্থিক সিদ্ধান্ত নয়। আপনার অনুমতি ছাড়া কোনো টাকা সরানো হবে না।",
+  "banner.notADecision.home":
+    "এটি একটি শিক্ষামূলক আর্থিক সহায়িকা, কোনো ঋণ বা লেনদেনের সিদ্ধান্ত নয়। আপনার স্পষ্ট সম্মতি ছাড়া কোনো অর্থ স্থানান্তর হয় না।",
+  "banner.notADecision.forecast":
+    "এই পূর্বাভাস কোনো আর্থিক প্রতিশ্রুতি বা নিশ্চয়তা নয় — অতীত তথ্যের উপর ভিত্তি করে তৈরি।",
+  "banner.notADecision.plan":
+    "এই পরিকল্পনা একটি হিসাব মাত্র — সঞ্চয় বা বিনিয়োগের কোনো বাধ্যবাধকতা নেই।",
+  "banner.notADecision.spending":
+    "এই তথ্য শুধুমাত্র বিশ্লেষণের জন্য — কোনো লেনদেন বাতিল বা পরিবর্তন করা হয়নি।",
+  "banner.notADecision.tips":
+    "এই পরামর্শ সাধারণ তথ্যের জন্য — কোনো পেশাদার আর্থিক উপদেষ্টার বিকল্প নয়।",
+  "banner.notADecision.signal":
+    "এই ধারাবাহিকতা সংকেত কোনো ক্রেডিট স্কোর বা লোন অনুমোদন নয় — এটি শুধুমাত্র অভ্যন্তরীণ বিশ্লেষণের জন্য।",
+  "banner.notADecision.metrics":
+    "এই মেট্রিক্স মডেলের কর্মক্ষমতা মূল্যায়নের জন্য — এটি কোনো বাণিজ্যিক প্রতিশ্রুতি নয়।",
+
+  "assumption.forecast":
+    "ধরে নেওয়া হয়েছে বিগত ৬০ দিনের লেনদেনের ধারা বজায় থাকবে এবং নিয়মিত খরচ অপরিবর্তিত থাকবে।",
+  "assumption.plan":
+    "ধরে নেওয়া হয়েছে মাসিক বাফার অপরিবর্তিত থাকবে এবং নতুন কোনো বড় অপ্রত্যাশিত খরচ আসবে না।",
+  "assumption.spending":
+    "ধরে নেওয়া হয়েছে নগদ তোলার ধরণ অপরিবর্তিত থাকবে এবং কিউআর গ্রহণকারী মার্চেন্ট সেবা চালু থাকবে।",
+  "assumption.tips":
+    "ধরে নেওয়া হয়েছে বিগত মাসের ক্যাশ খরচ ও সঞ্চয় পরিকল্পনার নিয়মাবলী প্রযোজ্য।",
 
   "home.next.title": "সক্রিয় খতিয়ান মডিউল",
   "home.next.body":

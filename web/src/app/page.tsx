@@ -10,9 +10,9 @@ import VoiceInput from "@/components/VoiceInput";
 import SuggestionChips from "@/components/SuggestionChips";
 import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
-import { fetchHealth, fetchIdentity, fetchParseGoal } from "@/lib/api";
+import { fetchAnomalies, fetchHealth, fetchIdentity, fetchParseGoal } from "@/lib/api";
 import type { HealthResponse, IdentityResponse } from "@/lib/api";
-import { formatInteger } from "@/lib/i18n";
+import { formatBDT, formatInteger } from "@/lib/i18n";
 
 type Status = "checking" | "ok" | "unreachable";
 
@@ -198,6 +198,17 @@ export default function HomePage() {
   // Parsed goal awaiting user confirmation. Nothing routes to /plan until
   // the user confirms explicit numbers — no silent 30000/6 defaults (GAP-10).
   const [pending, setPending] = useState<{ text: string; goal: number | null; months: number | null } | null>(null);
+  const [homeFeeSaving, setHomeFeeSaving] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetchAnomalies({ window_days: 30, limit: 1 })
+      .then((res) => {
+        if (res.fee_switch?.potential_saving_bdt) {
+          setHomeFeeSaving(res.fee_switch.potential_saving_bdt);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
 
   return (
     <>
@@ -353,7 +364,18 @@ export default function HomePage() {
         <NotADecisionBanner />
 
         {/* Section 7: Do Nothing Option */}
-        <DoNothingToggle />
+        <DoNothingToggle
+          costBdt={homeFeeSaving}
+          outcome={
+            homeFeeSaving
+              ? (lang === "bn"
+                  ? `কোনো পদক্ষেপ না নিলে মাসে প্রায় ${formatBDT(homeFeeSaving, lang)} পর্যন্ত সম্ভাব্য ফি সাশ্রয় হাতছাড়া হতে পারে।`
+                  : `Taking no action may forfeit up to ${formatBDT(homeFeeSaving, lang)}/month in potential fee savings.`)
+              : (lang === "bn"
+                  ? "কোনো আর্থিক ক্ষতি হিসাব করা যায়নি, তবে সঞ্চয়ের লক্ষ্য পিছিয়ে যাবে।"
+                  : "No direct penalty computed, but financial savings goals will remain deferred.")
+          }
+        />
 
         {/* Footer */}
         <footer className="border-t border-rule pt-6 pb-12 flex flex-col sm:flex-row items-center justify-between text-xs text-ink-muted gap-2 font-mono">

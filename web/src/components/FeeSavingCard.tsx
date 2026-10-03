@@ -30,6 +30,11 @@ export default function FeeSavingCard({ feeSwitch }: FeeSavingCardProps) {
         <p className="text-sm text-ink-muted leading-relaxed font-hind">
           {tr("spending.feeSwitchDesc")}
         </p>
+        <p className="text-xs text-ink-muted font-hind">
+          {lang === "bn"
+            ? `বাস্তবসম্মত রূপান্তর সীমার হিসাব (${feeSwitch.adoption_range || "৩০%–৭০%"}): মাসে আনুমানিক ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.3), lang)} থেকে ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.7), lang)} পর্যন্ত সাশ্রয় সম্ভব।`
+            : `Realistic adoption range (${feeSwitch.adoption_range || "30%–70%"}): estimated saving of ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.3), lang)} to ${formatBDT(Math.round(feeSwitch.potential_saving_bdt * 0.7), lang)}/month.`}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-2 text-xs font-mono">

@@ -300,7 +300,11 @@ function PlanContent() {
             )}
 
             {/* Do Nothing Option */}
-            <DoNothingToggle costBdt={plan.do_nothing?.estimated_cost_bdt} months={plan.months} />
+            <DoNothingToggle
+              costBdt={plan.do_nothing?.estimated_cost_bdt ?? (plan.required_monthly_bdt * plan.months)}
+              months={plan.months}
+              outcome={plan.do_nothing?.description}
+            />
 
             <div className="p-4 bg-surface/50 border-t border-b border-rule flex items-center justify-between">
               <span className="font-hind text-sm text-ink-muted">

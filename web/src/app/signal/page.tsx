@@ -155,7 +155,14 @@ export default function SignalPage() {
           </p>
         </div>
 
-        <DoNothingToggle />
+        <DoNothingToggle
+          costBdt={null}
+          outcome={
+            lang === "bn"
+              ? "নিয়মিত ডিজিটাল লেনদেন না করলে ধারাবাহিকতা রেটিং অপরিবর্তিত থাকবে বা কমতে পারে, যা ভবিষ্যতের আর্থিক প্রোফাইলকে দুর্বল রাখবে।"
+              : "Without consistent digital transactions, your consistency rating will stagnate or decrease, keeping future profile building on hold."
+          }
+        />
       </main>
     </>
   );
