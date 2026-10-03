@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     database_path: str = str(DEFAULT_DATABASE)
 
     # --- web ---
-    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
+    cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000,*"
 
     # --- LLM (Phase 4; the template fallback works without a key) ---
     # One primary key plus two backups. They are tried in this order and the
@@ -114,8 +114,17 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> List[str]:
-        """Allowed browser origins, parsed from the comma-separated env value."""
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        """Allowed browser origins, parsed from the comma-separated env value.
+
+        Permits configured origins. For local dev and LAN testing (e.g. mobile/other device),
+        if localhost, 127.0.0.1, or wildcard is configured, wildcard access is enabled so
+        browsers on LAN IPs (like 192.168.x.x) are never blocked by CORS preflight.
+        """
+        origins = [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        if any("localhost" in o or "127.0.0.1" in o or o == "*" for o in origins):
+            if "*" not in origins:
+                origins.append("*")
+        return origins
 
     @property
     def llm_enabled(self) -> bool:
