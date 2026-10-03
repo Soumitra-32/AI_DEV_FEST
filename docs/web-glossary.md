@@ -6,44 +6,42 @@ forecast is not a promise, tips are not advice, signal is not a loan decision,
 "Source: Bangladesh Bank" labels) are unaffected — this glossary renames
 mechanisms only, never figures.
 
-## Prescribed mappings
+## Register Ladder Calibration (Phase 1)
 
-| Technical | বাংলা | English |
+Every term calibrated across the three registers:
+- **Formal (too high)**: Bank circular, passive voice, unnecessary bureaucratic ceremony.
+- **Casual (too low)**: Text message register, sentence fragments, chatty verbs ("guess", "lighter", "গোনা", "নাড়বে").
+- **Target (Professional)**: The register of a competent accountant, doctor, or lawyer. Plain words, complete sentences, respectful, professional clarity.
+
+| Technical / Formal (Too high) | Casual Pass (Too low) | **Target Register (Professional)** |
 |---|---|---|
-| LightGBM | স্মার্ট হিসাব | Smart estimate |
-| Isolation Forest | অস্বাভাবিক খোঁজার পদ্ধতি | Unusual-activity finder |
-| Logistic Regression | ধারাবাহিকতা যাচাই | Consistency check |
-| ROC-AUC | কতটা সঠিক | How accurate |
-| F1 | শনাক্তকরণের মাত্রা | How much it catches |
-| MAE | গড় ভুল | Average miss |
-| baseline (random) | সাধারণ অনুমান | A simple guess |
-| simulation | ভবিষ্যৎ পরিকল্পনা | Future plan |
-| SHAP / driver | কারণ | Reason |
-| anomaly | অস্বাভাবিক লেনদেন | Unusual transaction |
-| API reachable | সংযোগ সফল | Connected |
-| system computed | স্বয়ংক্রিয় হিসাব | Calculated automatically |
-| rule verified | ✓ যাচাই করা | ✓ Checked |
-| template | প্রস্তুত উত্তর | Ready answer |
-| not_attempted | পরীক্ষা করা হয়নি | Not checked |
-| fallback | সাধারণ হিসাব | Simple estimate |
-| provenance | এই তথ্য কোথা থেকে | Where this came from |
-| adoption range | কতজন ব্যবহার করতে পারে | How many may use it |
-| fee switch | ক্যাশ-আউট ছেড়ে QR | Cash-out → QR |
-
-## Audit-forced additions (signed off with Phase 1)
-
-| Technical | বাংলা | English |
-|---|---|---|
-| RMSE | গড় ভুল (বড় ভুলে জোর) | Average miss (big misses count more) |
-| precision / recall | ঠিক ধরা / ধরতে পারা | Rightly caught / Able to catch |
-| degraded | ধীরে চলছে | Running slowly |
-| dataset / users / transactions (status card) | তথ্য / ব্যবহারকারী / লেনদেন | Data / Users / Transactions |
-| surplus / buffer / pressure days | হাতে থাকা টাকা / নিরাপদ সীমা / টানের দিন | Money left / Safety limit / Tight days |
-| forecast (noun, nav/tabs) | আগাম হিসাব | Coming-days estimate |
-| metrics / signal / consistency (nav) | ফলাফল / ধারাবাহিকতা / নিয়মিত অভ্যাসের ফল | Results / Steady habits |
-| inflow / outflow / balance | আসা টাকা / যাওয়া টাকা / হাতে থাকা | Money in / Money out / In hand |
-| IRF / NPSB / float / interchange | বাংলাদেশ ব্যাংকের নিয়ম (উৎস: বাংলাদেশ ব্যাংক) | Bank rule (Source: Bangladesh Bank) |
-| ISO date | ১ অক্টোবর ২০২৬ | 1 October 2026 |
+| LightGBM রেগ্রেশন মডেল | স্মার্ট হিসাব | **আমাদের মডেল** / **Our model** |
+| আইসোলেশন ফরেস্ট অ্যালগরিদম | অস্বাভাবিক খোঁজার পদ্ধতি | **অস্বাভাবিক লেনদেন শনাক্তকারী** / **Anomaly detector** |
+| লজিস্টিক রিগ্রেশন ক্লাসিফায়ার | ধারাবাহিকতা যাচাই | **ধারাবাহিকতা যাচাই মডেল** / **Consistency model** |
+| ROC-AUC মেট্রিক | কতটা সঠিক | **সঠিকতা যাচাই (ROC-AUC)** / **Accuracy (ROC-AUC)** |
+| F1-স্কোর | শনাক্তকরণের মাত্রা | **সামগ্রিক নির্ভুলতা (F1)** / **Overall accuracy (F1)** |
+| গড় পরম বিচ্যুতি (MAE) | গড় ভুল | **গড় বিচ্যুতি** / **Average error** |
+| রুট মিন স্কয়ার্ড এরর (RMSE) | গড় ভুল (বড় ভুলে জোর) | **বড় বিচ্যুতির প্রভাব (RMSE)** / **Root mean squared error** |
+| বেসলাইন মুভিং এভারেজ | সাধারণ অনুমান / সাধারণ ধারণা | **সাধারণ গড়** / **Simple average** |
+| সিমুলেশন প্রক্ষেপণ | ভবিষ্যৎ পরিকল্পনা | **পরিকল্পনা হিসাব** / **Scenario calculation** |
+| শ্যাপ ভ্যালু / ফিচার কন্ট্রিবিউশন | কারণ | **প্রভাবক কারণ** / **Contributing factor** |
+| অ্যানোমালি ডিটেকশন | অস্বাভাবিক কিছু | **অস্বাভাবিক লেনদেন** / **Unusual transaction** |
+| সিস্টেম কর্তৃক গণনা করা হয়েছে | আমরা হিসাব করেছি | **আমাদের হিসাবে** / **Calculated** |
+| অ্যালগরিদম দ্বারা যাচাইকৃত | ✓ যাচাই করা | **✓ যাচাইকৃত** / **✓ Checked** |
+| ফলব্যাক টেমপ্লেট উত্তর | প্রস্তুত উত্তর | **সংরক্ষিত উত্তর** / **Standard response** |
+| পূর্বাভাসের প্রোভেন্যান্স লেয়ার | এই তথ্য কোথা থেকে | **হিসাবের উৎস** / **Data provenance** |
+| অ্যাoptionন রেঞ্জ প্রক্ষেপণ | কতজন ব্যবহার করতে পারে | **সম্ভাব্য গ্রহণের হার** / **Adoption range** |
+| ফি সুইপিং অপরচুনিটি | ক্যাশ-আউট ছেড়ে QR | **ক্যাশ-আউট ফি কমানোর উপায়** / **Reduce cash-out fees** |
+| নেট ক্যাশ উদ্বৃত্ত | হাতে থাকা টাকা | **মাসিক উদ্বৃত্ত টাকা** / **Monthly surplus** |
+| ইমার্জেন্সি সেফটি রিজার্ভ বাফার | বিপদের জন্য রাখা টাকা | **নিরাপদ জমার জন্য সংরক্ষিত** / **Safety buffer** |
+| ক্যাশ ফ্লো ডেফিসিট পিরিয়ড | টানাটানির দিন | **টানের দিনসমূহ** / **Tight days** |
+| ক্যাশ ফ্লো প্রজেকশন | আগাম হিসাব | **ক্যাশ ফ্লো পূর্বাভাস** / **Cash flow forecast** |
+| ক্রেডিট রেডিনেস স্কোর সিগন্যাল | অভ্যাসের ফল | **ধারাবাহিকতার মূল্যায়ন** / **Consistency assessment** |
+| ইন-ফ্লো ও আউট-ফ্লো ক্যাশ | আসা টাকা / যাওয়া টাকা | **টাকা আসা / টাকা যাওয়া** / **Money in / Money out** |
+| অ্যাকশন কনফার্মেশন প্রম্পট | ঠিক আছে, বুঝেছি | **ঠিক আছে** / **Okay** |
+| অ্যাকশন ডিসমিসাল প্রম্পট | পরে দেখব | **পরে দেখব** / **Later** |
+| ইন-অ্যাকশন খরচ হিসাব | কিছু না করলে হালকা হবেন | **কিছু না করলে এই মাসে খরচ** / **Doing nothing costs about** |
+| বাংলাদেশ ব্যাংক বিধিমালা | বাংলাদেশ ব্যাংকের নিয়ম | **বাংলাদেশ ব্যাংক নির্দেশনা (উৎস: বাংলাদেশ ব্যাংক)** / **Source: Bangladesh Bank** |
 
 ## Reader-test rewrites & verification (Phase 5)
 
