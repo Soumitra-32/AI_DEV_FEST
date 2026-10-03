@@ -75,7 +75,11 @@ export default function ForecastChart({ days }: ForecastChartProps) {
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#D8CFBB" />
             <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#6A6355" }} />
-            <YAxis tick={{ fontSize: 12, fill: "#6A6355" }} width={64} />
+            <YAxis
+              tick={{ fontSize: 12, fill: "#6A6355" }}
+              width={64}
+              tickFormatter={(val) => formatDigits(String(val), lang)}
+            />
             <Tooltip
               contentStyle={{
                 backgroundColor: "#FBF8F1",
