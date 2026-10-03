@@ -6,6 +6,7 @@ consumed by the routers, and the LLM is only used when a key is present.
 """
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List
@@ -116,14 +117,15 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> List[str]:
         """Allowed browser origins, parsed from the comma-separated env value.
 
-        Permits configured origins. For local dev and LAN testing (e.g. mobile/other device),
-        if localhost, 127.0.0.1, or wildcard is configured, wildcard access is enabled so
-        browsers on LAN IPs (like 192.168.x.x) are never blocked by CORS preflight.
+        GAP-11: the wildcard is opt-in, never implied. Listing ``localhost``
+        does NOT enable ``*`` (that defeated the allow-list). Two explicit
+        ways to open LAN/mobile testing: put a literal ``*`` in CORS_ORIGINS,
+        or set ``CORS_ALLOW_LAN=1``. Production (Render) sets neither, so the
+        dashboard's Vercel domain list is enforced exactly.
         """
         origins = [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
-        if any("localhost" in o or "127.0.0.1" in o or o == "*" for o in origins):
-            if "*" not in origins:
-                origins.append("*")
+        if "*" not in origins and os.getenv("CORS_ALLOW_LAN") == "1":
+            origins.append("*")
         return origins
 
     @property

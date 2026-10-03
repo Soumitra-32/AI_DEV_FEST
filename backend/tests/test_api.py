@@ -43,6 +43,32 @@ def client(api_settings: Settings) -> TestClient:
     return TestClient(app)
 
 
+def test_localhost_never_implies_a_wildcard_origin(monkeypatch) -> None:
+    """GAP-11: listing localhost must not open every origin. The wildcard is
+    opt-in via an explicit "*" or CORS_ALLOW_LAN=1 (LAN/mobile testing)."""
+    monkeypatch.delenv("CORS_ALLOW_LAN", raising=False)
+    strict = Settings(
+        demo_auth_token=DEMO_TOKEN,
+        cors_origins="http://localhost:3000,http://127.0.0.1:3000",
+    )
+    assert "*" not in strict.cors_origin_list
+    flagged = Settings(
+        demo_auth_token=DEMO_TOKEN,
+        cors_origins="http://localhost:3000",
+    )
+    monkeypatch.setenv("CORS_ALLOW_LAN", "1")
+    assert "*" in Settings(
+        demo_auth_token=DEMO_TOKEN,
+        cors_origins=flagged.cors_origins,
+    ).cors_origin_list
+    explicit = Settings(
+        demo_auth_token=DEMO_TOKEN,
+        cors_origins="http://localhost:3000,*",
+    )
+    monkeypatch.delenv("CORS_ALLOW_LAN", raising=False)
+    assert "*" in explicit.cors_origin_list
+
+
 def _auth() -> dict:
     return {"X-Demo-Token": DEMO_TOKEN}
 
