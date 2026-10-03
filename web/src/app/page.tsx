@@ -252,11 +252,7 @@ export default function HomePage() {
               onCancel={() => setPending(null)}
             />
           )}
-          <SuggestionChips
-            onSelectQuery={(q) => {
-              router.push(`/plan?goal=30000&months=6&prompt=${encodeURIComponent(q)}`);
-            }}
-          />
+          <SuggestionChips />
         </section>
 
         {/* Component 2: Ledger snapshot */}
