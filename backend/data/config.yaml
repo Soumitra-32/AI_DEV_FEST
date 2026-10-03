@@ -43,6 +43,7 @@ fee_rates:
   note: "assumed for simulation, not official upay pricing"
   by_channel:
     cash_out: 1.85
+    bangla_qr: 0.0
     app_transfer: 0.0
     merchant_payment: 0.0
     send_money: 0.0

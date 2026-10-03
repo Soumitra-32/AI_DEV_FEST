@@ -174,7 +174,10 @@ def load(artifact_dir: str | Path = ARTIFACT_DIR) -> Optional[tuple[Any, Any]]:
         return None
     if not isinstance(payload, dict) or "model" not in payload or "scaler" not in payload:
         return None
-    return payload["model"], payload["scaler"]
+    model = payload["model"]
+    if hasattr(model, "predict_proba") and not hasattr(model, "multi_class"):
+        model.multi_class = "auto"
+    return model, payload["scaler"]
 
 
 def load_meta(artifact_dir: str | Path = ARTIFACT_DIR) -> dict[str, Any]:

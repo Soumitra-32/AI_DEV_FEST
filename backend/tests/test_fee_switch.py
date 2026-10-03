@@ -169,3 +169,37 @@ def test_as_dict_matches_the_api_field_names(
     assert fields <= set(payload)
     assert FeeSwitchSuggestion(**{key: payload[key] for key in fields})
 
+
+def test_bangla_qr_policy_fields_and_incentive_calculation(base_config: dict) -> None:
+    """1 Oct 2026 Bangladesh Bank Bangla QR reform calculation and statutory terms."""
+    frame = pd.DataFrame(
+        [
+            {"channel": "cash_out", "amount_bdt": 500.0, "fee_bdt": 9.25},
+            {"channel": "cash_out", "amount_bdt": 1200.0, "fee_bdt": 22.20},
+            {"channel": "cash_out", "amount_bdt": 1800.0, "fee_bdt": 33.30},
+            {"channel": "cash_out", "amount_bdt": 2500.0, "fee_bdt": 46.25},  # over 2000 cap
+        ]
+    )
+    switch = fee_switch.suggest(frame, base_config, window_days=None)
+    assert switch.bangla_qr_eligible_count == 3
+    assert switch.bangla_qr_eligible_volume_bdt == pytest.approx(3500.0)
+    assert switch.bangla_qr_cap_bdt == 2000.0
+    # upay earns 0.20% as issuing MFS on eligible volume up to 2000: 3500 * 0.002 = 7.00 BDT
+    assert switch.upay_issuer_incentive_bdt == pytest.approx(7.00, abs=0.01)
+
+    policy = switch.bangla_qr_policy
+    assert policy["effective_date"] == "2026-10-01"
+    assert policy["incentive_cap_bdt"] == 2000.0
+    assert policy["issuer_incentive_pct"] == 0.20
+    assert policy["acquirer_incentive_pct"] == 0.10
+    assert policy["instant_settlement"] is True
+    assert policy["interchange_rate_pct"] == 0.0
+    assert policy["merchant_mdr_min_abolished"] is True
+    assert policy["customer_fee_pct"] == 0.0
+    assert "Payment and Settlement Systems Act, 2024" in policy["anti_misuse_monitoring"]
+
+    # Arithmetic trace includes the regulatory incentive line
+    trace = " | ".join(switch.arithmetic)
+    assert "Bangladesh Bank 1 Oct 2026" in trace
+
+

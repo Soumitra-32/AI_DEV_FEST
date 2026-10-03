@@ -61,27 +61,53 @@ export default function TipsPage() {
           const cashOutCount = feeSwitch.cash_out_count;
           const avgAmount = feeSwitch.cash_out_volume_bdt / feeSwitch.cash_out_count;
           const potentialSaving = feeSwitch.potential_saving_bdt;
-          const tip1DescBn = `আপনি মাসে ${formatDigits(
-            String(cashOutCount),
-            "bn"
-          )} বার গড়ে ${formatBDT(avgAmount, "bn")} করে ক্যাশ-আউট করেন। বারবার ক্যাশ-আউট না করে একবার বা দুইবারে প্রয়োজনমতো তুললে বা সরাসরি অ্যাপ ট্রান্সফার করলে প্রতি মাসে আনুমানিক ${formatBDT(
-            potentialSaving,
-            "bn"
-          )} ফি সাশ্রয় সম্ভব।`;
-          const tip1DescEn = `You currently cash out ~${cashOutCount} times/month averaging ${formatBDT(
-            avgAmount,
-            "en"
-          )}. Consolidating into 1-2 withdrawals or paying via app transfer can save ~${formatBDT(
-            potentialSaving,
-            "en"
-          )} in monthly fees.`;
+          const qrCount = feeSwitch.bangla_qr_eligible_count ?? 0;
+          const tip1DescBn = qrCount > 0
+            ? `আপনি মাসে ${formatDigits(
+                String(cashOutCount),
+                "bn"
+              )} বার গড়ে ${formatBDT(
+                avgAmount,
+                "bn"
+              )} করে ক্যাশ-আউট করেন, যার মধ্যে ${formatDigits(
+                String(qrCount),
+                "bn"
+              )}টি ২,০০০ টাকার মধ্যে। ১ অক্টোবর ২০২৬ বাংলাদেশ ব্যাংক সংস্কারের ফলে দোকানে কেনাকাটায় ক্যাশ-আউটের বদলে সরাসরি বাংলা কিউআরে দিলে ০% ফি এবং মাসে আনুমানিক ${formatBDT(
+                potentialSaving,
+                "bn"
+              )} সাশ্রয় হবে।`
+            : `আপনি মাসে ${formatDigits(
+                String(cashOutCount),
+                "bn"
+              )} বার গড়ে ${formatBDT(
+                avgAmount,
+                "bn"
+              )} করে ক্যাশ-আউট করেন। বারবার ক্যাশ-আউট না করে একবার বা দুইবারে প্রয়োজনমতো তুললে বা সরাসরি অ্যাপ ট্রান্সফার করলে প্রতি মাসে আনুমানিক ${formatBDT(
+                potentialSaving,
+                "bn"
+              )} ফি সাশ্রয় সম্ভব।`;
+          const tip1DescEn = qrCount > 0
+            ? `You cash out ~${cashOutCount} times/month averaging ${formatBDT(
+                avgAmount,
+                "en"
+              )}. Under Bangladesh Bank's 1 Oct 2026 reform, merchant Bangla QR carries 0% fee (${qrCount} of your transactions are under the ৳2,000 cap), saving ~${formatBDT(
+                potentialSaving,
+                "en"
+              )}/month.`
+            : `You currently cash out ~${cashOutCount} times/month averaging ${formatBDT(
+                avgAmount,
+                "en"
+              )}. Consolidating into 1-2 withdrawals or paying via app transfer can save ~${formatBDT(
+                potentialSaving,
+                "en"
+              )} in monthly fees.`;
           return {
-            titleBn: "ঘন ঘন ছোট ক্যাশ-আউট কমান",
-            titleEn: "Consolidate Frequent Small Cash-Outs",
+            titleBn: qrCount > 0 ? "দোকানে ক্যাশ-আউটের বদলে বাংলা কিউআর" : "ঘন ঘন ছোট ক্যাশ-আউট কমান",
+            titleEn: qrCount > 0 ? "Pay Merchants by Bangla QR (0% Fee)" : "Consolidate Frequent Small Cash-Outs",
             descBn: tip1DescBn,
             descEn: tip1DescEn,
-            tagBn: "ফি সাশ্রয়",
-            tagEn: "Fee Saving",
+            tagBn: "বাংলা কিউআর",
+            tagEn: "Bangla QR",
             stampKey: "tips.stampRule" as const,
           };
         })()

@@ -40,14 +40,31 @@ def _reason(features_row: pd.Series, timestamp: pd.Timestamp) -> str:
     """Plain-language reason for one ranked row, from its own features.
 
     The order mirrors the injected anomaly families (repeat, odd hour, large
-    amount) but is derived purely from this user's numbers — the ground-truth
-    ``anomaly_labels`` table is never read on the serving path.
+    amount) and incorporates statutory monitoring duties under the Payment and
+    Settlement Systems Act, 2024 (1 Oct 2026 Bangladesh Bank Bangla QR circular).
     """
     rapid = float(features_row.get("is_rapid_repeat", 0.0))
     off_hours = float(features_row.get("is_off_hours", 0.0))
     ratio = float(features_row.get("amount_over_user_mean", 0.0))
     zscore = float(features_row.get("amount_zscore", 0.0))
     clock = pd.Timestamp(timestamp).strftime("%H:%M")
+    amount = float(features_row.get("amount_bdt", 0.0))
+    channel = str(features_row.get("channel", ""))
+
+    # 1 Oct 2026 Bangladesh Bank statutory anti-misuse monitoring:
+    # 1. Artificial transaction splitting: rapid repeats just below the ৳2,000 BB incentive cap
+    if rapid and 1500.0 <= amount <= fee_switch.BANGLADESH_BANK_INCENTIVE_CAP_BDT:
+        return (
+            f"Rapid repeat near ৳{int(fee_switch.BANGLADESH_BANK_INCENTIVE_CAP_BDT):,} ({amount:,.0f} BDT) "
+            "— potential transaction splitting under Payment & Settlement Systems Act, 2024 monitoring"
+        )
+    # 2. Unauthorised cash-out via QR / merchant:
+    if channel in ("merchant_payment", "bangla_qr") and amount >= 5000.0 and ratio >= LARGE_RATIO:
+        return (
+            f"High-value merchant payment ({amount:,.0f} BDT) flagged for unauthorised "
+            "cash-out review (statutory QR anti-misuse monitoring)"
+        )
+
     if rapid and ratio >= 1.0:
         return f"Another very similar payment within {int(ml_anomaly.RAPID_REPEAT_MINUTES)} minutes"
     if off_hours:
@@ -61,6 +78,15 @@ def _item(row: pd.Series) -> dict[str, Any]:
     """One ``AnomalyItem`` payload (the router validates it against the schema)."""
     channel = str(row["channel"])
     is_cash_out = channel == "cash_out"
+    amount = float(row.get("amount_bdt", 0.0))
+    suggested_channel = None
+    if is_cash_out:
+        # Preferentially route small purchases (<= ৳2,000) to Bangla QR (1 Oct 2026 BB sweet spot)
+        if amount <= fee_switch.BANGLADESH_BANK_INCENTIVE_CAP_BDT:
+            suggested_channel = fee_switch.channel_label("bangla_qr")
+        else:
+            suggested_channel = fee_switch.channel_label(fee_switch.DEFAULT_ALTERNATIVE)
+
     return {
         "transaction_id": str(row["transaction_id"]),
         "timestamp": pd.Timestamp(row["timestamp"]).isoformat(),
@@ -73,9 +99,7 @@ def _item(row: pd.Series) -> dict[str, Any]:
         "score": round(float(row["anomaly_score"]), 4),
         "reason": _reason(row, row["timestamp"]),
         "suggested_action": "switch" if is_cash_out else "reduce",
-        "suggested_channel": (
-            fee_switch.channel_label(fee_switch.DEFAULT_ALTERNATIVE) if is_cash_out else None
-        ),
+        "suggested_channel": suggested_channel,
     }
 
 

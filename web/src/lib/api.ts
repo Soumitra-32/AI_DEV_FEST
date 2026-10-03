@@ -158,6 +158,22 @@ export interface FeeSwitchSuggestion {
   alternative_fee_bdt: number;
   potential_saving_bdt: number;
   adoption_range: string;
+  bangla_qr_eligible_count?: number;
+  bangla_qr_eligible_volume_bdt?: number;
+  bangla_qr_cap_bdt?: number;
+  upay_issuer_incentive_bdt?: number;
+  bangla_qr_policy?: {
+    effective_date: string;
+    incentive_cap_bdt: number;
+    issuer_incentive_pct: number;
+    acquirer_incentive_pct: number;
+    instant_settlement: boolean;
+    interchange_rate_pct: number;
+    merchant_mdr_min_abolished: boolean;
+    customer_fee_pct: number;
+    anti_misuse_monitoring: string;
+  };
+  arithmetic?: string[];
 }
 
 export interface AnomalyResponse {

@@ -31,10 +31,17 @@ import pandas as pd
 #: in the assumed rate card (0%), which is the whole point of the suggestion.
 DEFAULT_ALTERNATIVE = "app_transfer"
 
+#: 1 Oct 2026 Bangladesh Bank Bangla QR policy constants
+BANGLADESH_BANK_CIRCULAR_DATE = "2026-10-01"
+BANGLADESH_BANK_INCENTIVE_CAP_BDT = 2000.0  # BB pays incentive on transactions <= ৳2,000 via NPSB
+BANGLADESH_BANK_ISSUER_INCENTIVE_PCT = 0.20  # 0.20% paid by BB to issuing MFS (upay)
+BANGLADESH_BANK_ACQUIRER_INCENTIVE_PCT = 0.10  # 0.10% paid by BB to acquirer
+
 #: Channel keys -> the human wording the UI shows (the config uses underscores).
 CHANNEL_LABELS: Mapping[str, str] = {
     "cash_out": "cash out",
     "app_transfer": "app transfer",
+    "bangla_qr": "Bangla QR payment",
     "merchant_payment": "merchant payment",
     "send_money": "send money",
     "bill_payment": "bill payment",
@@ -106,6 +113,11 @@ class FeeSwitch:
     assumed_saving_low_bdt: float = 0.0
     assumed_saving_high_bdt: float = 0.0
     window_days: int = DEFAULT_WINDOW_DAYS
+    bangla_qr_eligible_count: int = 0
+    bangla_qr_eligible_volume_bdt: float = 0.0
+    bangla_qr_cap_bdt: float = BANGLADESH_BANK_INCENTIVE_CAP_BDT
+    upay_issuer_incentive_bdt: float = 0.0
+    bangla_qr_policy: dict[str, Any] = field(default_factory=dict)
     arithmetic: list[str] = field(default_factory=list)
 
     @property
@@ -135,6 +147,11 @@ class FeeSwitch:
             "assumed_saving_low_bdt": round(self.assumed_saving_low_bdt, 2),
             "assumed_saving_high_bdt": round(self.assumed_saving_high_bdt, 2),
             "window_days": self.window_days,
+            "bangla_qr_eligible_count": self.bangla_qr_eligible_count,
+            "bangla_qr_eligible_volume_bdt": round(self.bangla_qr_eligible_volume_bdt, 2),
+            "bangla_qr_cap_bdt": round(self.bangla_qr_cap_bdt, 2),
+            "upay_issuer_incentive_bdt": round(self.upay_issuer_incentive_bdt, 2),
+            "bangla_qr_policy": dict(self.bangla_qr_policy),
             "arithmetic": list(self.arithmetic),
             "note": FEE_NOTE,
         }
@@ -217,6 +234,60 @@ def suggest(
         ),
     ]
 
+    # 1 Oct 2026 Bangladesh Bank Bangla QR policy analysis:
+    # Small transactions (<= ৳2,000) qualify for the central bank incentive via NPSB.
+    if count and "amount_bdt" in cash_outs.columns:
+        qr_eligible = cash_outs.loc[cash_outs["amount_bdt"].astype(float).le(BANGLADESH_BANK_INCENTIVE_CAP_BDT)]
+        qr_eligible_count = int(len(qr_eligible))
+        qr_eligible_volume = round(float(qr_eligible["amount_bdt"].astype(float).sum()), 2)
+    else:
+        qr_eligible_count = 0
+        qr_eligible_volume = 0.0
+
+    upay_incentive = round(qr_eligible_volume * (BANGLADESH_BANK_ISSUER_INCENTIVE_PCT / 100.0), 2)
+
+    bangla_qr_policy = {
+        "effective_date": BANGLADESH_BANK_CIRCULAR_DATE,
+        "regulation": "Bangladesh Bank Guidelines on Bangla QR & NPSB (1 Oct 2026)",
+        "statutory_act": "Payment and Settlement Systems Act, 2024",
+        "customer_fee_pct": 0.0,
+        "cash_out_fee_pct": cash_out_rate,
+        "incentive_cap_bdt": BANGLADESH_BANK_INCENTIVE_CAP_BDT,
+        "issuer_incentive_pct": BANGLADESH_BANK_ISSUER_INCENTIVE_PCT,
+        "acquirer_incentive_pct": BANGLADESH_BANK_ACQUIRER_INCENTIVE_PCT,
+        "bb_issuer_incentive_pct": BANGLADESH_BANK_ISSUER_INCENTIVE_PCT,
+        "bb_acquirer_incentive_pct": BANGLADESH_BANK_ACQUIRER_INCENTIVE_PCT,
+        "instant_settlement": True,
+        "interchange_rate_pct": 0.0,
+        "merchant_mdr_min_abolished": True,
+        "eligible_count": qr_eligible_count,
+        "eligible_volume_bdt": qr_eligible_volume,
+        "upay_issuer_incentive_bdt": upay_incentive,
+        "settlement": "instant (NPSB)",
+        "customer_claim": "0% fee instead of 1.4% cash-out fee at merchants",
+        "upay_claim": (
+            "Instant settlement, zero IRF, 0.20% central-bank issuing subsidy under ৳2,000 via NPSB, "
+            "plus retained float (vs ~0.20% net margin on agent cash-out)"
+        ),
+        "anti_misuse_monitoring": (
+            "Payment and Settlement Systems Act, 2024: Acquirers must actively monitor for "
+            "artificial transaction splitting near ৳2,000 and unauthorised cash-outs via QR."
+        ),
+    }
+
+    if qr_eligible_count > 0:
+        arithmetic.append(
+            f"Bangladesh Bank 1 Oct 2026 reform: {qr_eligible_count} of {count} cash-out(s) are "
+            f"<= ৳{int(BANGLADESH_BANK_INCENTIVE_CAP_BDT):,} (volume ৳{qr_eligible_volume:,.2f}). "
+            f"Routing these to Bangla QR gives user 0% fee and earns upay ৳{upay_incentive:,.2f} in "
+            f"central-bank issuing subsidy (0.20% via NPSB) + retained float."
+        )
+    else:
+        arithmetic.append(
+            f"Bangladesh Bank 1 Oct 2026 reform: Bangla QR merchant payment carries 0% customer fee "
+            f"and 0.20% central-bank issuing subsidy for transactions <= ৳{int(BANGLADESH_BANK_INCENTIVE_CAP_BDT):,}."
+        )
+
     return FeeSwitch(
         cash_out_count=count,
         cash_out_volume_bdt=round(volume, 2),
@@ -232,6 +303,10 @@ def suggest(
         assumed_saving_low_bdt=round(saving * ADOPTION_LOW, 2),
         assumed_saving_high_bdt=round(saving * ADOPTION_HIGH, 2),
         window_days=days,
+        bangla_qr_eligible_count=qr_eligible_count,
+        bangla_qr_eligible_volume_bdt=qr_eligible_volume,
+        upay_issuer_incentive_bdt=upay_incentive,
+        bangla_qr_policy=bangla_qr_policy,
         arithmetic=arithmetic,
     )
 

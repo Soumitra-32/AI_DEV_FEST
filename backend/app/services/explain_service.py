@@ -27,7 +27,7 @@ from backend.data import features as user_features
 from backend.data import generator
 from backend.genai import rag
 from backend.ml import explain as ml_explain
-from backend.rules import health_score
+from backend.rules import fee_switch, health_score
 
 from . import anomaly_service, forecast_service, plan_service, signal_service
 
@@ -150,6 +150,11 @@ def fees_context(
     fee_paid = float(cash_out["fee_bdt"].sum())
     cash_out_pct, alternative_pct = _fee_rates(generator.load_config())
     alternative_fee = round(volume * alternative_pct / 100.0, 2)
+    qr_eligible = cash_out.loc[cash_out["amount_bdt"].astype(float).le(fee_switch.BANGLADESH_BANK_INCENTIVE_CAP_BDT)]
+    qr_count = int(len(qr_eligible))
+    qr_volume = round(float(qr_eligible["amount_bdt"].astype(float).sum()), 2)
+    upay_incentive = round(qr_volume * (fee_switch.BANGLADESH_BANK_ISSUER_INCENTIVE_PCT / 100.0), 2)
+
     return {
         "window_days": days,
         "cash_out_count": int(len(cash_out)),
@@ -160,6 +165,10 @@ def fees_context(
         "alternative_fee_bdt": alternative_fee,
         "potential_saving_bdt": round(max(fee_paid - alternative_fee, 0.0), 2),
         "adoption_range": ADOPTION_RANGE,
+        "bangla_qr_eligible_count": qr_count,
+        "bangla_qr_eligible_volume_bdt": qr_volume,
+        "bangla_qr_cap_bdt": fee_switch.BANGLADESH_BANK_INCENTIVE_CAP_BDT,
+        "upay_issuer_incentive_bdt": upay_incentive,
         "note": "Fee rates are simulated for this demo, not official upay pricing.",
     }
 

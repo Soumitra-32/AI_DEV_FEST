@@ -12,7 +12,7 @@ think, what we assumed, and why.
 from __future__ import annotations
 
 from datetime import date, datetime
-from typing import Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -251,6 +251,11 @@ class FeeSwitchSuggestion(BaseModel):
     adoption_range: str = Field(
         default="20%-50%", description="Assumed adoption range, not a measured result"
     )
+    bangla_qr_eligible_count: Optional[int] = None
+    bangla_qr_eligible_volume_bdt: Optional[float] = None
+    upay_issuer_incentive_bdt: Optional[float] = None
+    bangla_qr_policy: Optional[Dict[str, Any]] = None
+    arithmetic: Optional[List[str]] = None
 
 
 class AnomalyResponse(BaseModel):

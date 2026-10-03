@@ -255,3 +255,46 @@ def test_the_service_raises_for_a_user_with_no_transactions(small_db) -> None:
     with pytest.raises(KeyError):
         anomaly_service.build_anomalies("nobody-here", db_path=small_db)
 
+
+def test_anomaly_routes_small_cash_out_to_bangla_qr() -> None:
+    """Cash-out <= ৳2,000 routes to 0% Bangla QR merchant payment."""
+    row = pd.Series(
+        {
+            "transaction_id": "tx-small-1",
+            "timestamp": "2026-10-02T10:00:00",
+            "amount_bdt": 1500.0,
+            "channel": "cash_out",
+            "category": "groceries",
+            "anomaly_score": 0.85,
+        }
+    )
+    item = anomaly_service._item(row)
+    assert item["suggested_channel"] == "Bangla QR payment"
+    assert item["suggested_action"] == "switch"
+
+
+def test_anti_misuse_detection_under_payment_and_settlement_act_2024() -> None:
+    """Anti-misuse monitoring for splitting and unauthorised cash-outs."""
+    # 1. Artificial transaction splitting (repeat amount near ৳2,000 threshold)
+    split_row = {
+        "channel": "merchant_payment",
+        "amount_bdt": 1950.0,
+        "is_rapid_repeat": 1.0,
+        "amount_over_user_mean": 1.2,
+    }
+    reason_split = anomaly_service._reason(split_row, "2026-10-02T10:00:00")
+    assert "transaction splitting" in reason_split
+    assert "Payment & Settlement Systems Act, 2024" in reason_split
+
+    # 2. Unauthorised cash-out via merchant QR
+    qr_cashout_row = {
+        "channel": "merchant_payment",
+        "amount_bdt": 12000.0,
+        "amount_over_user_mean": 4.5,
+        "amount_zscore": 3.5,
+    }
+    reason_cashout = anomaly_service._reason(qr_cashout_row, "2026-10-02T10:00:00")
+    assert "unauthorised cash-out review" in reason_cashout
+    assert "statutory QR anti-misuse monitoring" in reason_cashout
+
+

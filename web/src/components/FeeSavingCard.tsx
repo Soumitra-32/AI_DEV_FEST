@@ -54,6 +54,48 @@ export default function FeeSavingCard({ feeSwitch }: FeeSavingCardProps) {
         </div>
       </div>
 
+      {/* 1 Oct 2026 Bangladesh Bank Bangla QR Callout */}
+      <div className="border-t border-rule pt-3 space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-semibold text-ink font-serif-bn text-sm">
+            {tr("spending.banglaQrTitle")}
+          </span>
+          <span className="font-mono text-[10px] px-1.5 py-0.5 border border-primaryGreen text-primaryGreen rounded-stamp">
+            ০% মার্চেন্ট ফি
+          </span>
+        </div>
+        <p className="text-xs text-ink-muted leading-relaxed font-hind">
+          {tr("spending.banglaQrDesc")}
+        </p>
+
+        {feeSwitch.bangla_qr_eligible_count ? (
+          <div className="p-2.5 bg-paper/40 border border-rule rounded-stamp space-y-1 text-xs">
+            <div className="font-medium text-ink font-hind">
+              {tr("spending.banglaQrEligible")
+                .replace("{count}", String(feeSwitch.bangla_qr_eligible_count))
+                .replace(
+                  "{volume}",
+                  formatBDT(feeSwitch.bangla_qr_eligible_volume_bdt ?? 0, lang)
+                )}
+            </div>
+            <ul className="list-disc list-inside text-ink-muted text-[11px] space-y-0.5 pt-0.5">
+              <li>{tr("spending.banglaQrCustomerBenefit")}</li>
+              <li>{tr("spending.banglaQrUpayBenefit")}</li>
+            </ul>
+          </div>
+        ) : null}
+
+        {/* Anti-misuse statutory warning banner */}
+        <div className="border border-rule bg-paper/30 rounded-stamp p-2.5 space-y-1">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-brickRed font-bold">
+            {tr("spending.banglaQrAntiMisuseTitle")}
+          </div>
+          <p className="text-[11px] text-ink-muted leading-relaxed font-hind">
+            {tr("spending.banglaQrAntiMisuseText")}
+          </p>
+        </div>
+      </div>
+
       <div className="pt-2 space-y-2">
         <Link href="/plan" className="block no-underline">
           <button

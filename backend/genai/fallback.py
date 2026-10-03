@@ -199,31 +199,43 @@ def _fees(context: Mapping[str, Any], language: str) -> TemplateAnswer:
     alt_fee = _get(fees, "alternative_fee_bdt", default=0.0)
     saving = _get(fees, "potential_saving_bdt", default=0.0)
     adoption = str(_get(fees, "adoption_range", default="20%-50%"))
+    qr_count = int(_get(fees, "bangla_qr_eligible_count", default=0))
+    qr_volume = _get(fees, "bangla_qr_eligible_volume_bdt", default=0.0)
+    cap = _get(fees, "bangla_qr_cap_bdt")
+
     if language == "bn":
+        qr_note = ""
+        if qr_count > 0:
+            cap_str = f" ({taka(cap, language)} টাকার মধ্যে)" if cap is not None else ""
+            qr_note = f" ১ অক্টোবর ২০২৬ থেকে বাংলাদেশ ব্যাংকের নিয়মে দোকানে বাংলা কিউআর (Bangla QR)-এ পেমেন্ট করলে কোনো ফি (০%) লাগে না। আপনার {qr_count}টি ক্যাশ-আউট{cap_str} মোট {taka(qr_volume, language)}, যা বাংলা কিউআরে দিলে সম্পূর্ণ ফি বাঁচবে।"
         answer = (
             f"শেষ ৩০ দিনে {count} বার ক্যাশ-আউটে {taka(volume, language)} নিয়েছেন, ফি দিয়েছেন "
-            f"{taka(paid, language)}। একই টাকা {alternative}-এ পাঠালে ফি {taka(alt_fee, language)} "
-            f"হতো, অর্থাৎ প্রায় {taka(saving, language)} বাঁচত। হিসাবটি অনুমান {adoption} "
+            f"{taka(paid, language)}। একই টাকা বাংলা কিউআর বা {alternative}-এ পাঠালে ফি {taka(alt_fee, language)} "
+            f"হতো, অর্থাৎ প্রায় {taka(saving, language)} বাঁচত।{qr_note} হিসাবটি অনুমান {adoption} "
             "ব্যবহার করে করা — পরিমাপ করা ফলাফল নয়।"
         )
         bullets = [
-            f"{alternative} দিয়ে একই পরিমাণ পাঠালে ফি প্রায় {taka(alt_fee, language)}",
+            f"বাংলা কিউআর (Bangla QR) বা {alternative} দিয়ে একই পরিমাণ পাঠালে ফি প্রায় {taka(alt_fee, language)}",
             f"সম্ভাব্য সাশ্রয় {taka(saving, language)} (ধরে নেওয়া অনুমান: {adoption})",
-            "কমানো, সময় বদলানো, বা মাধ্যম বদলানো — এই তিনটিই আমরা পরামর্শ দিই",
+            "দোকানে কেনাকাটায় ক্যাশ-আউটের বদলে ১ অক্টোবর ২০২৬ বাংলাদেশ ব্যাংক নিয়মে সরাসরি বাংলা কিউআরে দিন",
             BANNER_BN,
         ]
         return TemplateAnswer(answer=answer, bullets=bullets)
+    qr_note = ""
+    if qr_count > 0:
+        cap_str = f" under {taka(cap, language)}" if cap is not None else " under the incentive threshold"
+        qr_note = f" Under Bangladesh Bank's 1 Oct 2026 reform, merchant Bangla QR payments carry 0% fee with instant settlement. {qr_count} of your cash-outs ({taka(qr_volume, language)}) sit{cap_str} eligible for central bank issuing incentives."
     answer = (
         f"In the last 30 days you took out cash {count} times, {taka(volume, language)} "
-        f"in total, and paid {taka(paid, language)} in fees. Sending the same money by "
+        f"in total, and paid {taka(paid, language)} in fees. Sending the same money by Bangla QR or "
         f"{alternative} would cost about {taka(alt_fee, language)}, so roughly "
-        f"{taka(saving, language)} stays in your pocket. That uses an assumed adoption "
+        f"{taka(saving, language)} stays in your pocket.{qr_note} That uses an assumed adoption "
         f"of {adoption} — an assumption, not a measured result."
     )
     bullets = [
-        f"The same amount by {alternative} costs about {taka(alt_fee, language)}",
+        f"The same amount by Bangla QR or {alternative} costs about {taka(alt_fee, language)} (0% user fee)",
         f"Potential saving {taka(saving, language)} (assumed adoption {adoption})",
-        "We only ever suggest reduce, delay or switch",
+        "Merchant Bangla QR payments carry 0% fee under Bangladesh Bank's 1 Oct 2026 reform",
         BANNER_EN,
     ]
     return TemplateAnswer(answer=answer, bullets=bullets)
