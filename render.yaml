@@ -13,12 +13,15 @@ services:
         value: 3.12.0
       - key: DEMO_AUTH_TOKEN
         # Never commit a real token: set the value in the Render dashboard
-        # (Environment) and mirror it in Vercel as NEXT_PUBLIC_DEMO_TOKEN.
+        # and mirror the same value in Vercel as NEXT_DEMO_TOKEN (or
+        # NEXT_PUBLIC_DEMO_TOKEN, whichever the frontend code reads).
         # sync:false keeps dashboard edits from being overwritten by deploys.
-        #value: change-me-set-in-render-dashboard
         sync: false
       - key: CORS_ORIGINS
-        value: "http://localhost:3000,http://127.0.0.1:3000,https://shonchoy-copilot.vercel.app/"
+        # IMPORTANT: no trailing slash on any origin. Browsers send the
+        # Origin header without a trailing slash, so a trailing slash here
+        # causes every preflight/request to fail CORS.
+        value: "http://localhost:3000,http://127.0.0.1:3000,https://shonchoy-copilot.vercel.app"
       - key: DATABASE_PATH
         value: "backend/data/shonchoy.db"
       - key: FEATURE_VOICE
