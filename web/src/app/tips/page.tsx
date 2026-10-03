@@ -76,7 +76,7 @@ export default function TipsPage() {
               )}টি ২,০০০ টাকার মধ্যে। ১ অক্টোবর ২০২৬ থেকে দোকানে কিউআরে দিলে ফি ০%, মাসে আনুমানিক ${formatBDT(
                 potentialSaving,
                 "bn"
-              )} বাঁচবে।`
+              )} টাকা বাঁচবে.`
             : `আপনি মাসে ${formatDigits(
                 String(cashOutCount),
                 "bn"
@@ -86,7 +86,7 @@ export default function TipsPage() {
               )} করে ক্যাশ-আউট করেন। বারবার না তুলে একবার বা দুইবারে তুললে, বা অ্যাপে পাঠালে প্রতি মাসে আনুমানিক ${formatBDT(
                 potentialSaving,
                 "bn"
-              )} বাঁচতে পারে।`;
+              )} টাকা বাঁচতে পারে।`;
           const tip1DescEn = qrCount > 0
             ? `You take out cash about ${cashOutCount} times a month, about ${formatBDT(
                 avgAmount,
@@ -94,14 +94,14 @@ export default function TipsPage() {
               )} at a time. Since 1 October 2026, paying shops by QR costs 0% fee (${qrCount} of your payments are under the ৳2,000 limit), saving about ${formatBDT(
                 potentialSaving,
                 "en"
-              )} a month.`
+              )} taka a month.`
             : `You take out cash about ${cashOutCount} times a month, about ${formatBDT(
                 avgAmount,
                 "en"
               )} at a time. Taking it in 1–2 goes, or paying in the app, can save about ${formatBDT(
                 potentialSaving,
                 "en"
-              )} a month.`;
+              )} taka a month.`;
           return {
             titleBn: qrCount > 0 ? "দোকানে ক্যাশ-আউটের বদলে বাংলা কিউআর" : "কমবার ক্যাশ-আউট করুন",
             titleEn: qrCount > 0 ? "Pay shops by QR, skip the fee" : "Take cash out fewer times",
@@ -262,8 +262,8 @@ export default function TipsPage() {
             outcome={
             feeSwitch
               ? (lang === "bn"
-                  ? `এই পরামর্শ না মানলে মাসে প্রায় ${formatBDT(feeSwitch.potential_saving_bdt, lang)} অযথা খরচ হতেই থাকবে।`
-                  : `Ignoring these ideas keeps costing about ${formatBDT(feeSwitch.potential_saving_bdt, lang)} a month in avoidable fees.`)
+                  ? `এই পরামর্শ না মানলে মাসে প্রায় ${formatBDT(feeSwitch.potential_saving_bdt, lang)} টাকা অযথা খরচ হতেই থাকবে।`
+                  : `Ignoring these ideas keeps costing about ${formatBDT(feeSwitch.potential_saving_bdt, lang)} taka a month in avoidable fees.`)
               : (lang === "bn"
                   ? "বাড়তি খরচ মাপা যায়নি, তবে সঞ্চয়ের অভ্যাস তৈরি দেরি হবে।"
                   : "No extra cost counted, but building the saving habit will take longer.")

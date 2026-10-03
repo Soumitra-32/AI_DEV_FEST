@@ -65,6 +65,7 @@ const en = {
   "common.calculationTrace": "Calculation Trace",
   "common.howCalculated": "How we calculated this",
   "common.source": "Source",
+  "common.taka": "taka",
   "common.doNothing": "What happens if I do nothing?",
   "common.doNothingCost": "Doing nothing costs about",
   "common.doNothingConfirm": "Okay, I understand",
@@ -114,8 +115,8 @@ const en = {
   "home.startSavings": "Start Savings Plan",
   "home.viewDetails": "See details",
   "home.reformChangelog":
-    "Policy update · 1 Oct 2026: Bangladesh Bank abolished the 1% minimum MDR on Bangla QR. 0% user fee applies to merchant purchases.",
-  "home.reformChangelogTag": "1 OCT 2026 DIRECTIVE",
+    "Since 1 October, shops pay no fee to accept QR.",
+  "home.reformChangelogTag": "1 October 2026",
 
   "comingSoon.title": "Coming Soon",
   "comingSoon.phase5": "Spending companion (Phase 5)",
@@ -296,6 +297,8 @@ const en = {
   "metrics.recall": "Able to catch",
   "metrics.f1": "Catching well",
   "metrics.auc": "How accurate",
+  "metrics.outOf100": "out of 100",
+  "metrics.requestsUnit": "questions",
   "metrics.inflow": "Money in (14 days)",
   "metrics.outflow": "Money out (14 days)",
   "metrics.net": "Left (14 days)",
@@ -370,6 +373,7 @@ const bn: Dictionary = {
   "common.calculationTrace": "হিসাবের বিবরণ",
   "common.howCalculated": "এই হিসাবটি যেভাবে করা হয়েছে",
   "common.source": "উৎস",
+  "common.taka": "টাকা",
   "common.doNothing": "কিছু না করলে কী হবে?",
   "common.doNothingCost": "কিছু না করলে খরচ হবে প্রায়",
   "common.doNothingConfirm": "ঠিক আছে, বুঝেছি",
@@ -419,8 +423,8 @@ const bn: Dictionary = {
   "home.startSavings": "সঞ্চয় শুরু করুন",
   "home.viewDetails": "বিস্তারিত দেখুন",
   "home.reformChangelog":
-    "নীতি আপডেট · ১ অক্টোবর ২০২৬: বাংলাদেশ ব্যাংক বাংলা কিউআর লেনদেনে ন্যূনতম ১% এমডিআর বাতিল করেছে। দোকানে কেনাকাটায় ০% ফি প্রযোজ্য।",
-  "home.reformChangelogTag": "১ অক্টোবর ২০২৬ নির্দেশনা",
+    "১ অক্টোবর থেকে QR-এ টাকা নিলে দোকানদারকে চার্জ দিতে হয় না।",
+  "home.reformChangelogTag": "১ অক্টোবর ২০২৬",
 
   "comingSoon.title": "শীঘ্রই আসছে",
   "comingSoon.phase5": "খরচ সহযোগী (পঞ্চম ধাপ)",
@@ -601,6 +605,8 @@ const bn: Dictionary = {
   "metrics.recall": "ধরতে পারা",
   "metrics.f1": "ধরার মাত্রা",
   "metrics.auc": "কতটা সঠিক",
+  "metrics.outOf100": "১০০-এর মধ্যে",
+  "metrics.requestsUnit": "টি প্রশ্ন",
   "metrics.inflow": "আসা টাকা (১৪ দিন)",
   "metrics.outflow": "যাওয়া টাকা (১৪ দিন)",
   "metrics.net": "থাকছে (১৪ দিন)",
@@ -645,6 +651,27 @@ export function formatBDT(value: number | null | undefined, lang: Lang): string 
   return `৳${formatInteger(value, lang)}`;
 }
 
+/** "2026-10-01" -> "1 October 2026" / "১ অক্টোবর ২০২৬". Never ISO on screen. */
+export function formatWrittenDate(iso: string | null | undefined, lang: Lang): string {
+  if (!iso) return "—";
+  const m = iso.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return formatDigits(iso, lang);
+  const monthsEn = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  const monthsBn = [
+    "জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন",
+    "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর",
+  ];
+  const monthIndex = Math.min(Math.max(Number(m[2]), 1), 12) - 1;
+  const day = String(Number(m[3]));
+  const year = m[1];
+  if (lang === "bn") {
+    return `${formatDigits(day, lang)} ${monthsBn[monthIndex]} ${formatDigits(year, lang)}`;
+  }
+  return `${day} ${monthsEn[monthIndex]} ${year}`;
+}
 /** Converts numbers inside strings to Bangla numerals if lang === 'bn'. */
 export function formatDigits(text: string, lang: Lang): string {
   if (!text) return "";

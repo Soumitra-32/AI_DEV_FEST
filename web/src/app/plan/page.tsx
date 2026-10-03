@@ -37,9 +37,10 @@ function formatDoNothingOutcome(desc: string | null | undefined, lang: "bn" | "e
   const m = desc.match(/After\s+(\d+)\s+months?\s+you\s+have\s*৳?0\s+saved\s+and\s+paid\s+about\s*৳?([\d,]+)/i);
   if (m) {
     const fee = formatBDT(Number(m[2].replace(/,/g, "")), lang);
+    const taka = lang === "bn" ? "টাকা" : "taka";
     return lang === "bn"
-      ? `কিছু না করলে ${formatDigits(m[1], lang)} মাসে জমানো থাকবে ৳০, আর ফি যাবে প্রায় ${fee}।`
-      : `If you do nothing, after ${m[1]} months you will have ৳0 saved and pay about ${fee} in fees.`;
+      ? `কিছু না করলে ${formatDigits(m[1], lang)} মাসে জমানো থাকবে ৳০, আর ফি যাবে প্রায় ${fee} ${taka}।`
+      : `If you do nothing, after ${m[1]} months you will have ৳0 saved and pay about ${fee} ${taka} in fees.`;
   }
   return lang === "bn" ? formatDigits(desc, lang) : desc;
 }
@@ -317,7 +318,7 @@ function PlanContent() {
                   {tr("plan.requiredMonthly")}
                 </div>
                 <div className="font-serif-bn text-4xl md:text-5xl font-bold text-ink tracking-tight tabular-nums">
-                  {formatBDT(plan.required_monthly_bdt, lang)}{" "}
+                  {formatBDT(plan.required_monthly_bdt, lang)} {tr("common.taka")}{" "}
                   <span className="text-sm font-hind font-normal text-ink-muted">
                     {tr("spending.perMonth")}
                   </span>

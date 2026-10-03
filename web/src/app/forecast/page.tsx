@@ -10,7 +10,7 @@ import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchForecast } from "@/lib/api";
 import type { ForecastResponse } from "@/lib/api";
-import { formatBDT, formatDigits, formatModelName, formatFeatureName } from "@/lib/i18n";
+import { formatBDT, formatDigits, formatModelName, formatFeatureName, formatWrittenDate } from "@/lib/i18n";
 
 export default function ForecastPage() {
   const { lang, tr } = useLanguage();
@@ -143,12 +143,14 @@ export default function ForecastPage() {
                 <div className="text-sm font-hind text-ink flex flex-wrap items-center gap-x-4 gap-y-1">
                   <span>
                     {formatModelName(data.metrics.model_name, lang)}: {tr("metrics.maeLong")}{" "}
-                    <strong className="font-serif-bn tabular-nums">{formatBDT(data.metrics.mae_bdt, lang)}</strong>
+                    <strong className="font-serif-bn tabular-nums">{formatBDT(data.metrics.mae_bdt, lang)}</strong>{" "}
+                    {tr("common.taka")}
                   </span>
                   <span className="text-rule">·</span>
                   <span>
                     {formatModelName(data.metrics.baseline_name, lang)}: {tr("metrics.maeLong")}{" "}
-                    <strong className="font-serif-bn tabular-nums">{formatBDT(data.metrics.baseline_mae_bdt, lang)}</strong>
+                    <strong className="font-serif-bn tabular-nums">{formatBDT(data.metrics.baseline_mae_bdt, lang)}</strong>{" "}
+                    {tr("common.taka")}
                   </span>
                   <span className="text-rule">·</span>
                   <Stamp variant="ink">
@@ -189,7 +191,7 @@ export default function ForecastPage() {
                         className={day.is_pressure_day ? "bg-brickRed/5" : ""}
                       >
                         <td className="py-2 font-mono text-xs text-ink whitespace-nowrap text-left">
-                          {formatDigits(day.date, lang)}
+                          {formatWrittenDate(day.date, lang)}
                           {day.is_pressure_day && (
                             <span className="ml-2 inline-block">
                               <Stamp variant="warn">{tr("forecast.pressureBadge")}</Stamp>

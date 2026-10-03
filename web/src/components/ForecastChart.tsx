@@ -14,7 +14,7 @@ import {
 import { useLanguage } from "@/components/LangToggle";
 import type { DayForecast, PressureReason } from "@/lib/api";
 import type { TranslationKey } from "@/lib/i18n";
-import { formatBDT, formatDigits } from "@/lib/i18n";
+import { formatBDT, formatDigits, formatWrittenDate } from "@/lib/i18n";
 
 interface ForecastChartProps {
   days: DayForecast[];
@@ -167,7 +167,7 @@ export default function ForecastChart({ days }: ForecastChartProps) {
 
           <p className="text-xs text-ink-muted leading-relaxed font-hind">
             {pressureDays
-              .map((d) => `${formatDigits(d.date, lang)}: ${tr(REASON_KEY[d.pressure_reason ?? "both"])}`)
+              .map((d) => `${formatWrittenDate(d.date, lang)}: ${tr(REASON_KEY[d.pressure_reason ?? "both"])}`)
               .join(" · ")}
           </p>
         </div>

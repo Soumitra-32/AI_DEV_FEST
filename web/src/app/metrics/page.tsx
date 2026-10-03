@@ -49,14 +49,25 @@ export default function MetricsPage() {
     return metric;
   };
 
+  // Counts are said as "25 out of 100", never a bare 25.05% or 0.8375.
+  const formatOutOf100 = (val: number) => {
+    const n = val > 1 ? Math.round(val) : Math.round(val * 100);
+    return lang === "bn"
+      ? `${tr("metrics.outOf100")} ${formatDigits(String(n), lang)}টি`
+      : `${n} ${tr("metrics.outOf100")}`;
+  };
+
   const formatMetricVal = (metric: string, val: number) => {    if (metric.includes("bdt")) {
       return formatBDT(val, lang);
     }
-    if (metric.includes("pct") || metric === "precision" || metric === "recall") {
-      return `${formatDigits(val.toFixed(2), lang)}%`;
-    }
-    if (metric === "auc" || metric === "f1") {
-      return formatDigits(val.toFixed(4), lang);
+    if (
+      metric.includes("pct") ||
+      metric === "precision" ||
+      metric === "recall" ||
+      metric === "auc" ||
+      metric === "f1"
+    ) {
+      return formatOutOf100(val);
     }
     return formatDigits(val.toFixed(2), lang);
   };
@@ -125,7 +136,7 @@ export default function MetricsPage() {
                       </span>
                       <span className="tab-leader" />
                       <strong className="font-serif-bn text-ink text-base text-right tabular-nums">
-                        MAE {formatBDT(row.value, lang)}
+                        {tr("metrics.maeLong")} {formatBDT(row.value, lang)} {tr("common.taka")}
                       </strong>
                     </div>
 
@@ -135,9 +146,9 @@ export default function MetricsPage() {
                           {formatModelName(row.baseline_name, lang)}
                         </span>
                         <span className="tab-leader" />
-                        <strong className="font-serif-bn text-ink-muted text-base text-right tabular-nums">
-                          MAE {formatBDT(row.baseline_value, lang)}
-                        </strong>
+                      <strong className="font-serif-bn text-ink-muted text-base text-right tabular-nums">
+                        {tr("metrics.maeLong")} {formatBDT(row.baseline_value, lang)} {tr("common.taka")}
+                      </strong>
                       </div>
                     )}
 
@@ -262,15 +273,17 @@ export default function MetricsPage() {
                       <div key={idx} className="border border-rule p-3 bg-paper/40 space-y-1">
                         <div className="text-[10px] text-ink-muted uppercase">
                           {imp.metric === "avg_potential_fee_saving_bdt_per_month"
-                            ? (lang === "bn" ? "গড় সম্ভাব্য ফি সাশ্রয় / মাস" : "Avg Potential Fee Saving / Mo")
+                            ? (lang === "bn" ? "মাসে বাঁচতে পারে এমন ফি" : "Fee you could save a month")
                             : imp.metric === "observed_shortfall_days_per_month"
-                            ? (lang === "bn" ? "মাসিক শর্টফল দিন" : "Observed Shortfall Days / Mo")
-                            : (lang === "bn" ? "মোট সার্ভ করা রিকোয়েস্ট" : "Total Served Requests")}
+                            ? (lang === "bn" ? "মাসে টানের দিন" : "Tight days a month")
+                            : (lang === "bn" ? "উত্তর দেওয়া প্রশ্ন" : "Questions answered")}
                         </div>
                         <div className="font-serif-bn font-bold text-base text-ink text-right tabular-nums">
                           {imp.metric.includes("bdt")
-                            ? formatBDT(imp.value, lang)
-                            : formatDigits(imp.value.toFixed(1), lang)}
+                            ? <>{formatBDT(imp.value, lang)} {tr("common.taka")}</>
+                            : imp.metric === "observed_shortfall_days_per_month"
+                            ? <>{formatDigits(imp.value.toFixed(1), lang)} {tr("spending.daysUnit")}</>
+                            : <>{formatInteger(Math.round(imp.value), lang)} {tr("metrics.requestsUnit")}</>}
                         </div>
                       </div>
                     ))}

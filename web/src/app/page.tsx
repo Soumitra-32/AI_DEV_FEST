@@ -363,8 +363,8 @@ export default function HomePage() {
           outcome={
             homeFeeSaving
               ? (lang === "bn"
-                  ? `কিছু না করলে প্রতি মাসে প্রায় ${formatBDT(homeFeeSaving, lang)} বাড়তি ফি দিতে হতে পারে।`
-                  : `If you do nothing, you may pay about ${formatBDT(homeFeeSaving, lang)} extra in fees every month.`)
+                  ? `কিছু না করলে প্রতি মাসে প্রায় ${formatBDT(homeFeeSaving, lang)} টাকা বাড়তি ফি দিতে হতে পারে।`
+                  : `If you do nothing, you may pay about ${formatBDT(homeFeeSaving, lang)} taka extra in fees every month.`)
               : (lang === "bn"
                   ? "বাড়তি খরচ মাপা যায়নি, তবে সঞ্চয়ের লক্ষ্য পিছিয়ে যাবে।"
                   : "No extra cost counted, but your saving goal will take longer.")

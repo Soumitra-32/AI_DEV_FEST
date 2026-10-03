@@ -50,7 +50,7 @@ export default function SpendingSummary({ feeSwitch, windowDays = 30 }: Spending
             <span className="font-medium text-ink">{tr("spending.cashOutVolume")}</span>
             <span className="tab-leader" />
             <span className="font-serif-bn font-bold text-lg text-ink text-right tabular-nums">
-              {formatBDT(feeSwitch.cash_out_volume_bdt, lang)}
+              {formatBDT(feeSwitch.cash_out_volume_bdt, lang)} {tr("common.taka")}
             </span>
           </div>
           <div className="text-[12px] text-ink-muted -mt-1 pl-1 font-hind">

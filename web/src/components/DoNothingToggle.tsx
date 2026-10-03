@@ -67,7 +67,7 @@ export default function DoNothingToggle({ costBdt, months, outcome }: DoNothingT
           <span className="text-ink-muted">{tr("common.doNothingCost")}</span>
           <span className="tab-leader" />
           <strong className="font-serif-bn text-base text-brickRed text-right tabular-nums">
-            {formatBDT(costBdt, lang)}
+            {formatBDT(costBdt, lang)} {tr("common.taka")}
           </strong>
         </div>
       )}

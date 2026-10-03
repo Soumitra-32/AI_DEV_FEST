@@ -1,7 +1,7 @@
 "use client";
 
 import { useLanguage } from "@/components/LangToggle";
-import { formatBDT, formatDigits } from "@/lib/i18n";
+import { formatBDT, formatDigits, formatWrittenDate } from "@/lib/i18n";
 import type { AnomalyItem } from "@/lib/api";
 import Stamp from "@/components/Stamp";
 
@@ -108,7 +108,7 @@ export default function AnomalyCard({ item }: AnomalyCardProps) {
             {CHANNEL_MAP[item.channel]?.[lang] ?? item.channel}
           </span>
           <span className="text-xs font-mono text-ink-muted">
-            {item.timestamp ? formatDigits(item.timestamp.slice(0, 10), lang) : ""}
+            {item.timestamp ? formatWrittenDate(item.timestamp.slice(0, 10), lang) : ""}
           </span>
           <Stamp variant="muted">
             {(item.anomaly_type && ANOMALY_TYPE_MAP[item.anomaly_type]?.[lang]) ||
