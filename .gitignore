@@ -35,6 +35,7 @@ _pyright*.json
 _before.json
 _after.json
 _bak_*.py
+_diag_*.py
 
 
 # --- Editors / OS / misc ---
@@ -48,3 +49,4 @@ _bak_*.py
 Thumbs.db
 *.log
 
+_diag_*.py

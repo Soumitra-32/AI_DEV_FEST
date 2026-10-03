@@ -63,7 +63,7 @@ def main() -> int:
     # --- 1. anomaly: train (train users) + evaluate (test users) ---
     feats = anomaly.build_features(tx)
     labels = _anomaly_labels(db)
-    anomaly.train(feats, splits, cfg, artifact_dir=str(ARTIFACTS))
+    anomaly.train(feats, splits, cfg, artifact_dir=str(ARTIFACTS), anomaly_labels=labels)
     out["anomaly"] = anomaly.evaluate(feats, tx, labels, splits, cfg, artifact_dir=str(ARTIFACTS))
 
     # --- 2a. forecast fairness: net MAE by persona + income_band ---
