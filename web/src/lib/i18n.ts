@@ -173,6 +173,9 @@ const en = {
   "voice.nomic": "No microphone found. Check your device mic, then try again.",
   "voice.offline": "Voice needs internet (recognition runs online). Reconnect, then try again.",
   "voice.nospeech": "Didn't hear anything. Speak closer to the mic and try again.",
+  "voice.heard": "I heard:",
+  "voice.confirm": "Calculate",
+  "voice.retry": "Speak again",
   "voice.placeholder": "e.g., I want to save ৳30,000 in 6 months",
   "voice.suggestedTitle": "Suggested Queries:",
 
@@ -413,6 +416,9 @@ const bn: Dictionary = {
   "voice.nomic": "কোনো মাইক্রোফোন পাওয়া যায়নি। ডিভাইসের মাইক পরীক্ষা করে আবার চেষ্টা করুন।",
   "voice.offline": "ভয়েসের জন্য ইন্টারনেট লাগে। সংযোগ ফিরিয়ে এনে আবার চেষ্টা করুন।",
   "voice.nospeech": "কিছু শোনা যায়নি। মাইকের কাছে থেকে বলুন এবং আবার চেষ্টা করুন।",
+  "voice.heard": "আমি শুনেছি:",
+  "voice.confirm": "হিসাব করুন",
+  "voice.retry": "আবার বলুন",
   "voice.placeholder": "যেমন: ৬ মাসে ৳৩০,০০০ জমাতে চাই",
   "voice.suggestedTitle": "প্রস্তাবিত জিজ্ঞাসা:",
 
