@@ -249,8 +249,10 @@ def _impact_notes(metrics: Mapping[str, Any]) -> list[str]:
         )
     target = metrics.get("target_improvement_pct")
     if target is not None:
+        # GAP-12: say *forecast* improvement — "the plan's target" reads as
+        # the fairness/plan target two notes below, which is NOT met.
         notes.append(
-            f"impact: the plan's {target}% accuracy target is "
+            f"impact: the forecast's {target}% improvement target is "
             f"{'met' if metrics.get('target_met') else 'not met'}."
         )
     anomaly = metrics.get("anomaly") or {}
