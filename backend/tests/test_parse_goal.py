@@ -73,6 +73,13 @@ def test_metrics_serves_model_scoreboard() -> None:
     [
         ("save thirty thousand in six months", 30000.0, 6),
         ("save fifty thousand in twelve months", 50000.0, 12),
+        ("save thirty thousand six months", 30000.0, 6),
+        ("save one hundred twenty thousand in a year", 120000.0, 12),
+        ("save 50000 in a year", 50000.0, 12),
+        ("save 50000 in 2 years", 50000.0, 24),
+        ("ত্রিশ হাজার টাকা ছয় মাসে জমাতে চাই", 30000.0, 6),
+        ("পঞ্চাশ হাজার বারো মাসে", 50000.0, 12),
+        ("এক লাখ টাকা এক বছরে জমাবো", 100000.0, 12),
     ],
 )
 def test_parse_goal_reads_spoken_english(client: TestClient, message: str, goal: float, months: int) -> None:

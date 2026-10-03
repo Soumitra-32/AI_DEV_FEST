@@ -272,6 +272,11 @@ def test_missing_context_still_answers_something_useful() -> None:
         ("I want to save thirty thousand taka in six months", 30000.0, 6),
         ("save fifty thousand in twelve months", 50000.0, 12),
         ("save one lakh in ten months", 100000.0, 10),
+        # Spoken Bangla arrives in Bengali script from bn-BD recognition.
+        ("ত্রিশ হাজার টাকা ছয় মাসে জমাতে চাই", 30000.0, 6),
+        ("পঞ্চাশ হাজার বারো মাসে", 50000.0, 12),
+        ("এক লাখ টাকা এক বছরে জমাবো", 100000.0, 12),
+        ("save 50000 in a year", 50000.0, 12),
     ],
 )
 def test_goal_parsing_reads_the_demo_sentence(message: str, goal: float, months: int) -> None:

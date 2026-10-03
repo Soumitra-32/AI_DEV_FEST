@@ -504,7 +504,30 @@ _SCALES = {
     "hundred": 100, "thousand": 1000,
     "lakh": 100000, "lac": 100000, "million": 1000000,
 }
-_NUMBER_WORDS = frozenset(_ONES) | frozenset(_TENS) | frozenset(_SCALES)
+#: Bangla number words: bn-BD speech recognition returns Bengali script
+#: ("ত্রিশ হাজার", not "30000"), which [a-z]+ tokenisation misses entirely.
+_BN_ONES = {
+    "শূন্য": 0, "এক": 1, "দুই": 2, "তিন": 3, "চার": 4, "পাঁচ": 5,
+    "ছয়": 6, "সাত": 7, "আট": 8, "নয়": 9, "দশ": 10,
+    "এগারো": 11, "বারো": 12, "তেরো": 13, "চৌদ্দ": 14, "চোদ্দ": 14,
+    "পনেরো": 15, "পনের": 15, "ষোলো": 16, "ষোল": 16, "সতেরো": 17,
+    "আঠারো": 18, "আঠার": 18, "উনিশ": 19, "ঊনিশ": 19,
+}
+_BN_TENS = {
+    "বিশ": 20, "ত্রিশ": 30, "চল্লিশ": 40, "পঞ্চাশ": 50,
+    "ষাট": 60, "সত্তর": 70, "আশি": 80, "নব্বই": 90,
+}
+_BN_SCALES = {
+    "শ": 100, "শত": 100, "হাজার": 1000,
+    "লাখ": 100000, "লক্ষ": 100000,
+}
+_NUMBER_WORDS = (
+    frozenset(_ONES) | frozenset(_TENS) | frozenset(_SCALES)
+    | frozenset(_BN_ONES) | frozenset(_BN_TENS) | frozenset(_BN_SCALES)
+)
+
+#: Word tokeniser covering both scripts (English + Bengali runs).
+_WORD_RE = re.compile(r"[a-z]+|[\u0980-\u09FF]+")
 
 
 def _word_run_value(tokens: list) -> tuple | None:
@@ -512,16 +535,18 @@ def _word_run_value(tokens: list) -> tuple | None:
 
     Returns None when any token is not a number word. A lone scale word
     counts once ("thousand" alone is 1000, "a thousand" is 1 x 1000).
+    English and Bangla words share one evaluator ("thirty" and "ত্রিশ"
+    both add 30).
     """
     total, current, saw_scale = 0.0, 0.0, False
     for token in tokens:
-        if token in _ONES:
-            current += _ONES[token]
-        elif token in _TENS:
-            current += _TENS[token]
-        elif token in _SCALES:
+        if token in _ONES or token in _BN_ONES:
+            current += _ONES.get(token, _BN_ONES.get(token, 0))
+        elif token in _TENS or token in _BN_TENS:
+            current += _TENS.get(token, _BN_TENS.get(token, 0))
+        elif token in _SCALES or token in _BN_SCALES:
             saw_scale = True
-            magnitude = _SCALES[token]
+            magnitude = _SCALES.get(token, _BN_SCALES.get(token, 0))
             if magnitude == 100:
                 current = (current or 1.0) * 100.0
             else:
@@ -532,11 +557,37 @@ def _word_run_value(tokens: list) -> tuple | None:
     return (total + current, saw_scale)
 
 
+def _goal_run_value(run: list, horizon_ahead: bool) -> tuple | None:
+    """Goal-side run value.
+
+    A trailing scaleless number followed by a month/year word belongs to the
+    horizon ("পঞ্চাশ হাজার বারো মাসে" is 50,000 + 12 months, not 50,012),
+    so it is trimmed — but only then, so "one hundred twenty" still reads
+    120 when no horizon word follows.
+    """
+    trimmed = list(run)
+    if horizon_ahead:
+        while (
+            len(trimmed) > 1
+            and trimmed[-1] not in _SCALES
+            and trimmed[-1] not in _BN_SCALES
+            and any(t in _SCALES or t in _BN_SCALES for t in trimmed[:-1])
+        ):
+            trimmed.pop()
+    return _word_run_value(trimmed)
+
+
+def _is_horizon_word(token: str) -> bool:
+    # NOTE: \w misses Bengali vowel marks (ে, া are marks, not letters), so
+    # মাসে never fullmatches মাস\w* — use the explicit script range instead.
+    return bool(re.fullmatch(r"months?|মাস[\u0980-\u09FF]*|years?|বছর[\u0980-\u09FF]*", token))
+
+
 def _word_amounts(normalised: str) -> list:
     """(value, has_scale) for every maximal number-word run in the text."""
     found = []
     run: list = []
-    for token in re.findall(r"[a-z]+", normalised):
+    for token in _WORD_RE.findall(normalised):
         if token in _NUMBER_WORDS:
             run.append(token)
         else:
@@ -547,6 +598,26 @@ def _word_amounts(normalised: str) -> list:
                 run = []
     if run:
         parsed = _word_run_value(run)
+        if parsed is not None:
+            found.append(parsed)
+    return found
+
+
+def _goal_amounts(normalised: str) -> list:
+    """(value, has_scale) for goal runs, horizon numbers trimmed (see above)."""
+    found = []
+    run: list = []
+    for token in _WORD_RE.findall(normalised):
+        if token in _NUMBER_WORDS:
+            run.append(token)
+        else:
+            if run:
+                parsed = _goal_run_value(run, _is_horizon_word(token))
+                if parsed is not None:
+                    found.append(parsed)
+                run = []
+    if run:
+        parsed = _goal_run_value(run, False)
         if parsed is not None:
             found.append(parsed)
     return found
@@ -607,7 +678,9 @@ def parse_goal(message: str) -> GoalRequest:
         # Spoken English has no digits ("thirty thousand", not "30000"), so
         # also read number-word runs — but only runs with a scale word, the
         # same conservatism as the digit rules (a bare "six" is never a goal).
-        for value, has_scale in _word_amounts(normalised):
+        # A trailing scaleless number belongs to the horizon ("পঞ্চাশ হাজার
+        # বারো মাসে" is 50,000 + 12 months, not 50,012), so it is trimmed.
+        for value, has_scale in _goal_amounts(normalised):
             if has_scale and value > 0 and (goal is None or value > goal):
                 goal = value
     if goal is None and _GOAL_HINT.search(normalised):
@@ -628,11 +701,11 @@ def parse_goal(message: str) -> GoalRequest:
         if parsed is not None and MIN_MONTHS <= float(parsed) <= MAX_MONTHS:
             months = int(float(parsed))
     if months is None:
-        # Spoken months ("six months"): longest trailing number-word run
-        # before each month word. A lone "a"/"an" never counts ("a month" is
-        # a rate, not a horizon).
+        # Spoken months ("six months", "ছয় মাসে"): longest trailing
+        # number-word run before each month word, in either script. A lone
+        # "a"/"an" never counts ("a month" is a rate, not a horizon).
         for match in re.finditer(r"months?|মাস\w*", normalised):
-            preceding = re.findall(r"[a-z]+", normalised[: match.start()])[-3:]
+            preceding = _WORD_RE.findall(normalised[: match.start()])[-3:]
             for start in range(len(preceding)):
                 run = preceding[start:]
                 if len(run) == 1 and run[0] in ("a", "an"):
@@ -645,6 +718,35 @@ def parse_goal(message: str) -> GoalRequest:
                     months = int(value)
                     break
             if months is not None:
+                break
+    if months is None:
+        # Years ("a year", "2 years", "এক বছর"): horizons beyond 12 months
+        # arrive as years in speech. A bare year word is 12 months.
+        digit_year = re.search(r"(\d+)\s*(years?|বছর\w*)", normalised)
+        if digit_year:
+            total_months = int(digit_year.group(1)) * 12
+            if MIN_MONTHS <= total_months <= MAX_MONTHS:
+                months = total_months
+    if months is None:
+        for match in re.finditer(r"years?|বছর\w*", normalised):
+            preceding = _WORD_RE.findall(normalised[: match.start()])[-3:]
+            years: float | None = None
+            for start in range(len(preceding)):
+                run = preceding[start:]
+                if len(run) == 1 and run[0] in ("a", "an"):
+                    years = 1.0
+                    break
+                parsed = _word_run_value(run)
+                if parsed is None:
+                    continue
+                value, _ = parsed
+                years = value
+                break
+            if years is None:
+                years = 1.0
+            total_months = int(round(years * 12))
+            if MIN_MONTHS <= total_months <= MAX_MONTHS:
+                months = total_months
                 break
     return GoalRequest(goal_bdt=goal, months=months)
 
