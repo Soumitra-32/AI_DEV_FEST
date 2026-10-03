@@ -44,59 +44,59 @@
     "persona": {
       "groups": {
         "daily_wage": {
-          "mae_net": 2670.98,
-          "improvement_vs_best_pct": 51.5,
+          "mae_net": 2170.84,
+          "improvement_vs_best_pct": 63.2,
           "test_users": 16
         },
         "gig_rider": {
-          "mae_net": 4024.11,
-          "improvement_vs_best_pct": 10.1,
+          "mae_net": 2106.25,
+          "improvement_vs_best_pct": 51.9,
           "test_users": 9
         },
         "remittance_receiver": {
-          "mae_net": 10058.05,
-          "improvement_vs_best_pct": 68.1,
+          "mae_net": 7371.68,
+          "improvement_vs_best_pct": 77.0,
           "test_users": 4
         },
         "salaried": {
-          "mae_net": 20019.26,
-          "improvement_vs_best_pct": 23.9,
+          "mae_net": 4305.27,
+          "improvement_vs_best_pct": 86.0,
           "test_users": 19
         },
         "shopkeeper": {
-          "mae_net": 3754.49,
-          "improvement_vs_best_pct": 59.0,
+          "mae_net": 3859.88,
+          "improvement_vs_best_pct": 60.3,
           "test_users": 23
         },
         "student": {
-          "mae_net": 2945.72,
-          "improvement_vs_best_pct": 63.4,
+          "mae_net": 1346.28,
+          "improvement_vs_best_pct": 82.8,
           "test_users": 4
         }
       },
-      "max_relative_gap_pct": 649.51,
-      "max_absolute_gap_bdt": 17348.28
+      "max_relative_gap_pct": 447.56,
+      "max_absolute_gap_bdt": 6025.4
     },
     "income_band": {
       "groups": {
         "high": {
-          "mae_net": 6948.01,
-          "improvement_vs_best_pct": 50.0,
+          "mae_net": 4279.59,
+          "improvement_vs_best_pct": 70.1,
           "test_users": 14
         },
         "low": {
-          "mae_net": 7690.33,
-          "improvement_vs_best_pct": 28.7,
+          "mae_net": 2430.13,
+          "improvement_vs_best_pct": 76.0,
           "test_users": 31
         },
         "mid": {
-          "mae_net": 8739.29,
-          "improvement_vs_best_pct": 44.0,
+          "mae_net": 4066.89,
+          "improvement_vs_best_pct": 75.4,
           "test_users": 30
         }
       },
-      "max_relative_gap_pct": 25.78,
-      "max_absolute_gap_bdt": 1791.28
+      "max_relative_gap_pct": 76.11,
+      "max_absolute_gap_bdt": 1849.46
     }
   },
   "fairness_anomaly": {

@@ -31,32 +31,123 @@ def _calendar_weights(daily: pd.DataFrame) -> pd.DataFrame:
 
 
 def _net_weights(daily: pd.DataFrame) -> pd.DataFrame:
-    """Each user's mean *net* per weekday, spread so the day can be negative."""
+    """Each user's mean *net* per weekday, spread so the day can be negative.
+
+    Uses the fee-inclusive ``net_bdt`` when the frame carries it (the same
+    definition as the anchor ``roll_28_net`` and the training target), and
+    carries the user's overall daily-net spread for the additive shape cap.
+    """
     frame = daily.copy()
     frame["date"] = pd.to_datetime(frame["date"])
     frame["weekday"] = frame["date"].dt.weekday
-    frame["net_bdt"] = frame["inflow_bdt"] - frame["outflow_bdt"]
-    return frame.groupby(["user_id", "weekday"], as_index=False).agg(
+    if "net_bdt" in frame.columns:
+        frame["net_bdt"] = frame["net_bdt"]
+    else:  # pragma: no cover - all pipeline frames carry net_bdt
+        frame["net_bdt"] = frame["inflow_bdt"] - frame["outflow_bdt"]
+    grouped = frame.groupby(["user_id", "weekday"], as_index=False).agg(
         mean_net=("net_bdt", "mean")
+    )
+    spread = frame.groupby("user_id", as_index=False).agg(std_net=("net_bdt", "std"))
+    return grouped.merge(spread, on="user_id", how="left")
+
+
+#: Shrinkage applied to weekday deviations (0.5 keeps half the calendar
+#: shape; the rest is the flat mean, which is always safe).
+SHAPE_SHRINK = 0.5
+#: Weekday deviations are capped at ±2 user sigmas before recentering, so one
+#: thin weekday cell can never dominate the window.
+SHAPE_SIGMA_CAP = 2.0
+
+
+def _spread_one_origin(sub_features, sub_means, daily, origin, horizon_days):
+    """Spread one origin date's windows from strictly-past history.
+
+    GAP-04 no-lookahead: weekday weights for a window starting at ``origin``
+    come only from rows dated before it (expanding window), so the shape
+    never reads the scored future.
+    """
+    past = daily[pd.to_datetime(daily["date"]) < pd.to_datetime(origin)]
+    tables = _spread_tables(past)
+    return spread_predictions(
+        sub_features[["user_id", "date"]], sub_means, past,
+        horizon_days, tables=tables,
     )
 
 
-def spread_predictions(dates, mean_flows, daily, horizon_days=HORIZON_DAYS):
-    """Spread each 14-day mean across the horizon by the user's weekday shape.
-
-    Inflow and outflow are spread independently and clipped at zero. Net is
-    spread from its own model and its own weekday shape, so the served per-day
-    nets sum to exactly the net model's total instead of accumulating the two
-    flow models' independent errors. ``net_source`` records which produced it.
-
-    Without a net model the net falls back to the difference of the spread
-    flows; the shape is still the calendar one, but the level is the weaker
-    number and the reported ``net_source`` says exactly that.
-    """
+def _spread_tables(daily: pd.DataFrame):
+    """Weight lookups for one history frame: (in/out by weekday, net, sigma)."""
     weights = _calendar_weights(daily)
     net_shape = _net_weights(daily)
     by_user = {user: group for user, group in weights.groupby("user_id")}
     net_by_user = {user: group for user, group in net_shape.groupby("user_id")}
+    return by_user, net_by_user
+
+
+def _additive_net_days(
+    mean_net: float,
+    weekdays: list[int],
+    net_table,
+    horizon_days: int,
+) -> list[float]:
+    """Spread one window total additively over weekday deviations.
+
+    GAP-04: the old code divided by the *signed* sum of weekday means, so a
+    near-zero or negative weekday sum exploded single days (measured p95
+    26× the window total). Deviations are shrunk, capped at ±2σ of the
+    user's daily net, and recentered — the days sum to exactly
+    ``mean_net × horizon_days`` with no division by a signed sum.
+    """
+    shape = []
+    for weekday in weekdays:
+        hit = net_table.loc[net_table["weekday"].eq(weekday)] if net_table is not None else None
+        if hit is not None and not hit.empty:
+            shape.append(float(hit.iloc[0]["mean_net"]))
+        else:
+            shape.append(None)
+    known = [value for value in shape if value is not None]
+    if known:
+        center = float(sum(known) / len(known))
+        shape = [value if value is not None else center for value in shape]
+    else:
+        return [mean_net] * horizon_days
+    center = float(sum(shape) / len(shape))
+    sigma = None
+    if net_table is not None and len(net_table) and "std_net" in net_table.columns:
+        try:
+            sigma = float(net_table["std_net"].iloc[0])
+        except (ValueError, TypeError):
+            sigma = None
+    if sigma is None or not np.isfinite(sigma) or sigma <= 0:
+        return [mean_net] * horizon_days
+    dev = [SHAPE_SHRINK * (value - center) for value in shape]
+    cap = SHAPE_SIGMA_CAP * sigma
+    dev = [min(max(value, -cap), cap) for value in dev]
+    recenter = sum(dev) / len(dev)
+    return [mean_net + value - recenter for value in dev]
+
+
+def spread_predictions(dates, mean_flows, daily, horizon_days=HORIZON_DAYS, tables=None):
+    """Spread each 14-day mean across the horizon by the user's weekday shape.
+
+    Inflow and outflow are spread independently and clipped at zero. Net is
+    spread additively from its own model and weekday deviations (shrunk,
+    capped, recentered), so the served per-day nets sum to exactly the net
+    model's total with no division by a signed weekday sum. ``net_source``
+    records which produced it.
+
+    Without a net model the net falls back to the difference of the spread
+    flows; the shape is still the calendar one, but the level is the weaker
+    number and the reported ``net_source`` says exactly that.
+
+    ``tables`` (from :func:`_spread_tables`) overrides the weights built from
+    ``daily``: evaluation passes per-origin tables built strictly before each
+    window so weights never read the scored future, while serving passes
+    nothing and correctly uses the whole history.
+    """
+    if tables is None:
+        by_user, net_by_user = _spread_tables(daily)
+    else:
+        by_user, net_by_user = tables
     # The caller's own label wins when it is present: the service can supply a
     # net built from the trailing-average rule, and that is a "difference" even
     # though the column exists. Deriving it from column presence alone would
@@ -81,7 +172,6 @@ def spread_predictions(dates, mean_flows, daily, horizon_days=HORIZON_DAYS):
         net_table = net_by_user.get(user_id)
         inflow_w: list[float] = []
         outflow_w: list[float] = []
-        net_w: list[float | None] = []
         for horizon in range(1, horizon_days + 1):
             weekday = (start + pd.Timedelta(days=horizon)).weekday()
             match = None
@@ -91,29 +181,8 @@ def spread_predictions(dates, mean_flows, daily, horizon_days=HORIZON_DAYS):
                     match = hit.iloc[0]
             inflow_w.append(float(match["mean_inflow"]) if match is not None else 1.0)
             outflow_w.append(float(match["mean_outflow"]) if match is not None else 1.0)
-            net_match = None
-            if net_table is not None:
-                hit = net_table.loc[net_table["weekday"].eq(weekday)]
-                if not hit.empty:
-                    net_match = hit.iloc[0]
-            # a weekday with no history falls back to the user's overall mean
-            # net, not to 1.0, which would bias every spread toward positive
-            net_w.append(float(net_match["mean_net"]) if net_match is not None else None)
-        if any(value is None for value in net_w):
-            overall = None
-            if net_table is not None and len(net_table):
-                overall = float(net_table["mean_net"].mean())
-            net_w = [overall if value is None else value for value in net_w]
-            if overall is None:
-                net_w = [0.0] * horizon_days
-        # the None sentinels above are all resolved by now; the explicit
-        # conversion is what lets the spread arithmetic below stay float-only
-        net_weights: list[float] = [
-            0.0 if value is None else float(value) for value in net_w
-        ]
         inflow_total = sum(inflow_w) or 1.0
         outflow_total = sum(outflow_w) or 1.0
-        net_total = sum(net_weights)
         mean_in = float(mean_flows["mean_inflow"].iloc[index])
         mean_out = float(mean_flows["mean_outflow"].iloc[index])
         mean_net = (
@@ -121,16 +190,25 @@ def spread_predictions(dates, mean_flows, daily, horizon_days=HORIZON_DAYS):
             if has_net_model
             else mean_in - mean_out
         )
+        weekdays = [(start + pd.Timedelta(days=horizon)).weekday() for horizon in range(1, horizon_days + 1)]
+        net_days = (
+            _additive_net_days(mean_net, weekdays, net_table, horizon_days)
+            if has_net_model
+            else None
+        )
         for horizon in range(1, horizon_days + 1):
+            if net_days is not None:
+                predicted_net = net_days[horizon - 1]
+            else:
+                predicted_net = (
+                    mean_in * horizon_days * inflow_w[horizon - 1] / inflow_total
+                    - mean_out * horizon_days * outflow_w[horizon - 1] / outflow_total
+                )
             records.append({
                 "user_id": user_id, "date": start, "horizon": horizon,
                 "predicted_inflow": max(mean_in * horizon_days * inflow_w[horizon - 1] / inflow_total, 0.0),
                 "predicted_outflow": max(mean_out * horizon_days * outflow_w[horizon - 1] / outflow_total, 0.0),
-                "predicted_net": (
-                    mean_net * horizon_days * net_weights[horizon - 1] / net_total
-                    if net_total
-                    else mean_net
-                ),
+                "predicted_net": predicted_net,
                 "net_source": "model" if has_net_model else "difference",
             })
     return pd.DataFrame(records)
@@ -149,9 +227,9 @@ def _rmse(predicted: pd.Series, actual: pd.Series) -> float:
     return float(np.sqrt(np.mean(error ** 2)))
 
 
-def _score_block(actual: pd.Series, predictions: Mapping[str, pd.Series]) -> dict[str, Any]:
+def _score_block(actual: pd.Series, predictions: Mapping[str, pd.Series], unit: str) -> dict[str, Any]:
     """MAE/RMSE per method (``model`` first) plus improvement over the best rule."""
-    block: dict[str, Any] = {}
+    block: dict[str, Any] = {"unit": unit}
     for name, values in predictions.items():
         block[name] = {
             "mae": round(_mae(values, actual), 2),
@@ -183,7 +261,7 @@ def day_level_scores(joined: pd.DataFrame) -> dict[str, Any]:
         predictions = {"model": joined[f"predicted_{flow}"]}
         for method in baselines.BASELINE_NAMES:
             predictions[method] = joined[f"{method}_{flow}"]
-        scores[flow] = _score_block(actual, predictions)
+        scores[flow] = _score_block(actual, predictions, unit="mean_daily_bdt")
     return scores
 
 
@@ -208,7 +286,7 @@ def cumulative_scores(joined: pd.DataFrame) -> dict[str, Any]:
         predictions = {"model": totals[f"predicted_{flow}"]}
         for method in baselines.BASELINE_NAMES:
             predictions[method] = totals[f"{method}_{flow}"]
-        scores[flow] = _score_block(totals[f"actual_{flow}"], predictions)
+        scores[flow] = _score_block(totals[f"actual_{flow}"], predictions, unit="window_total_bdt")
     return scores
 
 
@@ -236,10 +314,24 @@ def scored_cells(
     if test_features.empty:
         raise ValueError("no test users to evaluate")
     mean_flows = forecast.predict_mean(test_features, artifact_dir)
-    model_days = spread_predictions(test_features[["user_id", "date"]], mean_flows, daily, horizon_days)
+    # GAP-04 no-lookahead: weekday weights for each window come strictly from
+    # history before that window's origin date (expanding window). Sharing one
+    # table built on the full history leaks the scored future into the shape.
+    origin_dates = pd.to_datetime(test_features["date"])
+    model_parts = []
+    for origin in sorted(origin_dates.drop_duplicates()):
+        mask = (origin_dates == origin).to_numpy()
+        sub_features = test_features.loc[mask]
+        sub_means = mean_flows.loc[mask].reset_index(drop=True)
+        model_parts.append(_spread_one_origin(
+            sub_features, sub_means, daily, origin, horizon_days,
+        ))
+    model_days = pd.concat(model_parts, ignore_index=True)
 
-    lookup = daily.set_index(["user_id", pd.to_datetime(daily["date"])])[["inflow_bdt", "outflow_bdt"]]
-    actual_in, actual_out = [], []
+    lookup = daily.set_index(["user_id", pd.to_datetime(daily["date"])])[
+        ["inflow_bdt", "outflow_bdt", "fee_bdt"]
+    ]
+    actual_in, actual_out, actual_fee = [], [], []
     for _, row in model_days.iterrows():
         day = pd.to_datetime(row["date"]) + pd.Timedelta(days=int(row["horizon"]))
         try:
@@ -247,16 +339,24 @@ def scored_cells(
         except KeyError:
             actual_in.append(np.nan)
             actual_out.append(np.nan)
+            actual_fee.append(np.nan)
             continue
         if isinstance(match, pd.DataFrame):
             match = match.iloc[0]
         actual_in.append(float(match["inflow_bdt"]))
         actual_out.append(float(match["outflow_bdt"]))
+        actual_fee.append(float(match["fee_bdt"]))
     model_days["actual_inflow"] = actual_in
     model_days["actual_outflow"] = actual_out
-    # net is the flow the solver reads, so it is scored against the realised net
-    model_days["actual_net"] = model_days["actual_inflow"] - model_days["actual_outflow"]
-    model_days = model_days.dropna(subset=["actual_inflow", "actual_outflow"]).reset_index(drop=True)
+    model_days["actual_fee"] = actual_fee
+    # One net definition (GAP-04): realised net includes fees, exactly like
+    # the anchor, the training target and the served monthly_net.
+    model_days["actual_net"] = (
+        model_days["actual_inflow"] - model_days["actual_outflow"] - model_days["actual_fee"]
+    )
+    model_days = model_days.dropna(
+        subset=["actual_inflow", "actual_outflow", "actual_net"]
+    ).reset_index(drop=True)
 
     baseline_preds = baselines.predict(daily, test_features["user_id"], horizon_days)
     base = baseline_preds.copy()
@@ -266,6 +366,14 @@ def scored_cells(
         base, on=["user_id", "date", "horizon"], how="inner",
         suffixes=("", "_baseline"),
     )
+    # Complete windows only (GAP-04): a truncated window scored as a 14-day
+    # total understates the total. Groups with fewer than horizon_days rows
+    # are dropped so n_cells == n_windows x horizon_days by construction.
+    # NOTE: baseline method nets are inflow−outflow without fees (baselines
+    # have no fee model); the ~10/day systematic gap is negligible next to
+    # MAEs in the hundreds and is revisited with the baselines in GAP-05.
+    sizes = joined.groupby(["user_id", "date"])["horizon"].transform("size")
+    joined = joined[sizes == horizon_days].reset_index(drop=True)
     return joined, test_features
 
 

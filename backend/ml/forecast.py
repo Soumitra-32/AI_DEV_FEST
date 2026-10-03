@@ -113,9 +113,10 @@ def horizon_targets(daily: pd.DataFrame, horizon_days: int = HORIZON_DAYS) -> Ho
     """Mean daily inflow/outflow/net over the next ``horizon_days`` days.
 
     ``target_net`` is the mean of the realised daily net over the same window,
-    *not* ``target_inflow - target_outflow``: the sum of each day's net is the
-    sum of its two flows, so the two agree on totals but the net series has
-    cancellation built in and is far less noisy to learn.
+    *including fees* (``net_bdt = inflow − outflow − fee``): the anchor
+    (``roll_28_net``) and the served actuals are fee-inclusive too, so one net
+    definition runs through features, targets and scores (GAP-04). The sum of
+    each day's net is the sum of its flows minus fees, so totals still agree.
     """
     frame = daily.copy()
     frame["date"] = pd.to_datetime(frame["date"])
@@ -123,12 +124,15 @@ def horizon_targets(daily: pd.DataFrame, horizon_days: int = HORIZON_DAYS) -> Ho
     grouped = frame.groupby("user_id", sort=False)
     inflow_cols = [f"_fwd_in_{h}" for h in range(1, horizon_days + 1)]
     outflow_cols = [f"_fwd_out_{h}" for h in range(1, horizon_days + 1)]
+    fee_cols = [f"_fwd_fee_{h}" for h in range(1, horizon_days + 1)]
     for horizon in range(1, horizon_days + 1):
         frame[f"_fwd_in_{horizon}"] = grouped["inflow_bdt"].shift(-horizon)
         frame[f"_fwd_out_{horizon}"] = grouped["outflow_bdt"].shift(-horizon)
-    frame = frame.dropna(subset=inflow_cols + outflow_cols).reset_index(drop=True)
+        frame[f"_fwd_fee_{horizon}"] = grouped["fee_bdt"].shift(-horizon)
+    frame = frame.dropna(subset=inflow_cols + outflow_cols + fee_cols).reset_index(drop=True)
     frame["target_inflow"] = frame[inflow_cols].mean(axis=1)
     frame["target_outflow"] = frame[outflow_cols].mean(axis=1)
+    frame["target_fee"] = frame[fee_cols].mean(axis=1)
     # Subtracted by *position*, not by name: the inflow and lookahead frames
     # carry disjoint column names (_fwd_in_1 vs _fwd_out_1), so a plain
     # frame[cols_a] - frame[cols_b] aligns on the union of names and yields an
@@ -137,8 +141,9 @@ def horizon_targets(daily: pd.DataFrame, horizon_days: int = HORIZON_DAYS) -> Ho
     frame["target_net"] = (
         frame[inflow_cols].to_numpy(dtype=float)
         - frame[outflow_cols].to_numpy(dtype=float)
+        - frame[fee_cols].to_numpy(dtype=float)
     ).mean(axis=1)
-    targets = frame[["target_inflow", "target_outflow", "target_net"]]
+    targets = frame[["target_inflow", "target_outflow", "target_fee", "target_net"]]
     if targets.isna().any().any():
         raise ValueError("horizon_targets produced NaN targets; refusing to train on them")
     return HorizonTargets(frame=frame)

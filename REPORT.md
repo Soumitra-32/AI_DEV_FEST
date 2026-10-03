@@ -40,22 +40,30 @@ PII anywhere; request logs carry provider labels only.
 
 ### 4.1 Cash-flow forecast — LightGBM vs baselines (14-day horizon, 75 test users)
 
-Headline = 14-day totals (what the savings solver consumes):
+Headline = 14-day totals (what the savings solver consumes), complete
+windows only (truncated windows are dropped, so every total covers 14 days):
 
 | Flow | Model MAE | Seasonal-naive MAE | Trailing-avg MAE | Improvement vs best |
 |---|---|---|---|---|
-| Inflow | 2,661.54 | 14,165.31 | 10,310.43 | **+74.2%** |
-| Outflow | 2,613.33 | 10,833.90 | 5,704.55 | **+54.2%** |
-| Net | 7,972.55 | 19,879.10 | 13,291.05 | **+40.0%** |
+| Inflow | 2,407.02 | 13,970.11 | 9,878.65 | **+75.6%** |
+| Outflow | 2,780.92 | 12,252.64 | 6,378.28 | **+56.4%** |
+| Net | 3,435.20 | 20,875.83 | 13,418.24 | **+74.4%** |
 
 Target (plan §4): ≥15% better than the best baseline on every flow — **met on
-all three** (`target_met: true`, 147,623 scored cells).
+all three** (`target_met: true`, 109,914 scored cells = 7,851 complete
+windows × 14).
 
-**Honest weak spot:** day-level *net* loses to the baselines (model MAE
-12,466 vs 1,636–1,981). Daily inflow/outflow still win (+24.9%/+9.1%), but
-their difference compounds day to day. Impact is bounded because the solver
-reads 14-day totals, not single days — still, day-level net is the first thing
-we would fix with real data (joint net target instead of inflow−outflow).
+**What changed vs the previous report:** the evaluation now scores complete
+windows only, builds weekday shapes strictly before each window (no
+look-ahead), spreads net additively (no division by signed weekday sums),
+and defines net fee-inclusively everywhere (GAP-04). The net jump (+40% →
++74%) comes mostly from dropping truncated windows and the fee-consistent
+target, not from a better booster.
+
+**Remaining weak spot:** day-level *outflow* beats the best baseline by only
++2.6% (model MAE 870 vs 894). Day-level net now wins too (+11.6%: 1,400 vs
+1,583) — the old 7.7× loss was the unstable spread, now fixed — but outflow
+at single-day resolution is the next thing to improve with real data.
 
 **Serving guard (GAP-01):** the net residual booster is biased for earners
 whose corner has no training mass (demo backtest: model −৳5.4k/14d vs the
@@ -125,27 +133,26 @@ against pressure-day dips is listed as pre-pilot work, not a solved problem.
 
 ## 6. Fairness (plan §10: no group worse than 15% relative gap)
 
-Headline first: **the forecast model beats the best baseline in 8 of 9
-persona/income groups** (+10.1% to +68.1% improvement); gig riders (+10.1%,
-n=9) miss the 15% bar on a noisy cell. Raw MAE differs widely across
-groups, but MAE scales with money moved — salaried users' MAE (20,019)
-is ~7× daily-wage users' (2,671) because their flows are ~7× larger, not
-because the model serves them worse.
+Headline first: **the forecast model beats the best baseline in all 9
+persona/income groups** (+51.9% to +86.0% improvement, complete windows).
+Raw MAE differs widely across groups, but MAE scales with money moved —
+salaried users' MAE (4,305) is ~2× daily-wage users' (2,171) because their
+flows are larger, not because the model serves them worse.
 
 | Persona (test users) | Net MAE | Improvement vs best baseline |
 |---|---|---|
-| daily_wage (16) | 2,670.98 | +51.5% |
-| gig_rider (9) | 4,024.11 | +10.1% |
-| remittance_receiver (4) | 10,058.05 | +68.1% |
-| salaried (19) | 20,019.26 | +23.9% |
-| shopkeeper (23) | 3,754.49 | +59.0% |
-| student (4) | 2,945.72 | +63.4% |
+| daily_wage (16) | 2,170.80 | +63.2% |
+| gig_rider (9) | 2,106.20 | +51.9% |
+| remittance_receiver (4) | 7,371.70 | +77.0% |
+| salaried (19) | 4,305.30 | +86.0% |
+| shopkeeper (23) | 3,859.90 | +60.3% |
+| student (4) | 1,346.30 | +82.8% |
 
 | Income band (test users) | Net MAE | Improvement vs best baseline |
 |---|---|---|
-| high (14) | 6,948.01 | +50.0% |
-| low (31) | 7,690.33 | +28.7% |
-| mid (30) | 8,739.29 | +44.0% |
+| high (14) | 4,279.60 | +70.1% |
+| low (31) | 2,430.10 | +76.0% |
+| mid (30) | 4,066.90 | +75.4% |
 
 Anomaly flag rates are 0.77%–2.75% across personas (max absolute gap
 1.98pp), 0.88%–2.33% across districts (1.44pp), 1.33%–1.89% across income

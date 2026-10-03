@@ -1,170 +1,179 @@
 {
   "horizon_days": 14,
-  "n_cells": 147623,
-  "n_windows": 11379,
+  "n_cells": 109914,
+  "n_windows": 7851,
   "test_users": 75,
   "inflow": {
+    "unit": "window_total_bdt",
     "model": {
-      "mae": 2661.54,
-      "rmse": 5986.38
+      "mae": 2407.02,
+      "rmse": 5593.47
     },
     "seasonal_naive": {
-      "mae": 14165.31,
-      "rmse": 48934.03,
-      "improvement_pct": 81.2
+      "mae": 13970.11,
+      "rmse": 50775.02,
+      "improvement_pct": 82.8
     },
     "trailing_average": {
-      "mae": 10310.43,
-      "rmse": 21261.0,
-      "improvement_pct": 74.2
+      "mae": 9878.65,
+      "rmse": 21755.49,
+      "improvement_pct": 75.6
     },
-    "improvement_over_best_pct": 74.2
+    "improvement_over_best_pct": 75.6
   },
   "outflow": {
+    "unit": "window_total_bdt",
     "model": {
-      "mae": 2613.33,
-      "rmse": 3879.99
+      "mae": 2780.92,
+      "rmse": 3968.57
     },
     "seasonal_naive": {
-      "mae": 10833.9,
-      "rmse": 20020.54,
-      "improvement_pct": 75.9
+      "mae": 12252.64,
+      "rmse": 22166.17,
+      "improvement_pct": 77.3
     },
     "trailing_average": {
-      "mae": 5704.55,
-      "rmse": 8420.82,
-      "improvement_pct": 54.2
+      "mae": 6378.28,
+      "rmse": 9193.5,
+      "improvement_pct": 56.4
     },
-    "improvement_over_best_pct": 54.2
+    "improvement_over_best_pct": 56.4
   },
   "net": {
+    "unit": "window_total_bdt",
     "model": {
-      "mae": 7972.55,
-      "rmse": 22574.13
+      "mae": 3435.2,
+      "rmse": 6395.72
     },
     "seasonal_naive": {
-      "mae": 19879.1,
-      "rmse": 52184.96,
-      "improvement_pct": 59.9
+      "mae": 20875.83,
+      "rmse": 54733.26,
+      "improvement_pct": 83.5
     },
     "trailing_average": {
-      "mae": 13291.05,
-      "rmse": 22475.69,
-      "improvement_pct": 40.0
+      "mae": 13418.24,
+      "rmse": 23152.05,
+      "improvement_pct": 74.4
     },
-    "improvement_over_best_pct": 40.0
+    "improvement_over_best_pct": 74.4
   },
   "net_source": "model",
   "day_level": {
     "inflow": {
+      "unit": "mean_daily_bdt",
       "model": {
-        "mae": 828.02,
-        "rmse": 3158.53
+        "mae": 765.75,
+        "rmse": 3160.35
       },
       "seasonal_naive": {
-        "mae": 1196.1,
-        "rmse": 4907.03,
-        "improvement_pct": 30.8
+        "mae": 1122.56,
+        "rmse": 4693.57,
+        "improvement_pct": 31.8
       },
       "trailing_average": {
-        "mae": 1102.11,
-        "rmse": 3615.72,
-        "improvement_pct": 24.9
-      },
-      "improvement_over_best_pct": 24.9
-    },
-    "outflow": {
-      "model": {
-        "mae": 774.63,
-        "rmse": 1453.99
-      },
-      "seasonal_naive": {
-        "mae": 1026.16,
-        "rmse": 2096.47,
+        "mae": 1014.72,
+        "rmse": 3360.18,
         "improvement_pct": 24.5
       },
-      "trailing_average": {
-        "mae": 851.77,
-        "rmse": 1588.54,
-        "improvement_pct": 9.1
-      },
-      "improvement_over_best_pct": 9.1
+      "improvement_over_best_pct": 24.5
     },
-    "net": {
+    "outflow": {
+      "unit": "mean_daily_bdt",
       "model": {
-        "mae": 12466.28,
-        "rmse": 36834.65
+        "mae": 869.84,
+        "rmse": 1596.88
       },
       "seasonal_naive": {
-        "mae": 1981.33,
-        "rmse": 5284.24,
-        "improvement_pct": -529.2
+        "mae": 1076.88,
+        "rmse": 2185.28,
+        "improvement_pct": 19.2
       },
       "trailing_average": {
-        "mae": 1635.48,
-        "rmse": 3918.14,
-        "improvement_pct": -662.2
+        "mae": 893.48,
+        "rmse": 1643.12,
+        "improvement_pct": 2.6
       },
-      "improvement_over_best_pct": -662.2
+      "improvement_over_best_pct": 2.6
+    },
+    "net": {
+      "unit": "mean_daily_bdt",
+      "model": {
+        "mae": 1400.39,
+        "rmse": 3387.84
+      },
+      "seasonal_naive": {
+        "mae": 1939.12,
+        "rmse": 5134.95,
+        "improvement_pct": 27.8
+      },
+      "trailing_average": {
+        "mae": 1583.33,
+        "rmse": 3717.28,
+        "improvement_pct": 11.6
+      },
+      "improvement_over_best_pct": 11.6
     }
   },
   "cumulative": {
     "inflow": {
+      "unit": "window_total_bdt",
       "model": {
-        "mae": 2661.54,
-        "rmse": 5986.38
+        "mae": 2407.02,
+        "rmse": 5593.47
       },
       "seasonal_naive": {
-        "mae": 14165.31,
-        "rmse": 48934.03,
-        "improvement_pct": 81.2
+        "mae": 13970.11,
+        "rmse": 50775.02,
+        "improvement_pct": 82.8
       },
       "trailing_average": {
-        "mae": 10310.43,
-        "rmse": 21261.0,
-        "improvement_pct": 74.2
+        "mae": 9878.65,
+        "rmse": 21755.49,
+        "improvement_pct": 75.6
       },
-      "improvement_over_best_pct": 74.2
+      "improvement_over_best_pct": 75.6
     },
     "outflow": {
+      "unit": "window_total_bdt",
       "model": {
-        "mae": 2613.33,
-        "rmse": 3879.99
+        "mae": 2780.92,
+        "rmse": 3968.57
       },
       "seasonal_naive": {
-        "mae": 10833.9,
-        "rmse": 20020.54,
-        "improvement_pct": 75.9
+        "mae": 12252.64,
+        "rmse": 22166.17,
+        "improvement_pct": 77.3
       },
       "trailing_average": {
-        "mae": 5704.55,
-        "rmse": 8420.82,
-        "improvement_pct": 54.2
+        "mae": 6378.28,
+        "rmse": 9193.5,
+        "improvement_pct": 56.4
       },
-      "improvement_over_best_pct": 54.2
+      "improvement_over_best_pct": 56.4
     },
     "net": {
+      "unit": "window_total_bdt",
       "model": {
-        "mae": 7972.55,
-        "rmse": 22574.13
+        "mae": 3435.2,
+        "rmse": 6395.72
       },
       "seasonal_naive": {
-        "mae": 19879.1,
-        "rmse": 52184.96,
-        "improvement_pct": 59.9
+        "mae": 20875.83,
+        "rmse": 54733.26,
+        "improvement_pct": 83.5
       },
       "trailing_average": {
-        "mae": 13291.05,
-        "rmse": 22475.69,
-        "improvement_pct": 40.0
+        "mae": 13418.24,
+        "rmse": 23152.05,
+        "improvement_pct": 74.4
       },
-      "improvement_over_best_pct": 40.0
+      "improvement_over_best_pct": 74.4
     }
   },
   "improvement_vs_best_pct": {
-    "inflow": 74.2,
-    "outflow": 54.2,
-    "net": 40.0
+    "inflow": 75.6,
+    "outflow": 56.4,
+    "net": 74.4
   },
   "target_improvement_pct": 15.0,
   "target_met": true,
@@ -205,13 +214,13 @@
     },
     "request_logs": {
       "status": "ok",
-      "requests": 1861,
-      "error_rate_pct": 39.6,
-      "avg_duration_ms": 1066.25,
+      "requests": 1988,
+      "error_rate_pct": 37.68,
+      "avg_duration_ms": 1159.86,
       "by_path": [
         {
           "path": "/health",
-          "requests": 755
+          "requests": 764
         },
         {
           "path": "/v1/models",
@@ -219,15 +228,15 @@
         },
         {
           "path": "/parse-goal",
-          "requests": 122
+          "requests": 206
         },
         {
           "path": "/me",
-          "requests": 90
+          "requests": 105
         },
         {
           "path": "/chat-explain",
-          "requests": 61
+          "requests": 71
         },
         {
           "path": "/credit-readiness",
@@ -238,16 +247,16 @@
           "requests": 32
         },
         {
+          "path": "/metrics",
+          "requests": 19
+        },
+        {
           "path": "/forecast",
           "requests": 16
         },
         {
-          "path": "/metrics",
-          "requests": 14
-        },
-        {
-          "path": "/anomalies",
-          "requests": 9
+          "path": "/openapi.json",
+          "requests": 11
         }
       ],
       "note": "Request logs carry method, path, status and latency only \u2014 the query string, headers, body and user are never logged."
@@ -256,7 +265,7 @@
   "val": {
     "mae_inflow": 160.21,
     "mae_outflow": 187.4,
-    "mae_net": 232.34
+    "mae_net": 233.46
   },
   "anomaly": {
     "model_name": "isolation_forest_behavior",
@@ -433,63 +442,39 @@
       "income_band"
     ],
     "n_rows": 72,
-    "n_exceeding_target": 50,
+    "n_exceeding_target": 48,
     "target_met": false,
     "rows": [
       {
         "dimension": "income_band",
         "group": "mid",
-        "metric": "mae_inflow_bdt",
-        "value": 3804.0611,
-        "relative_gap_pct": 154.57,
+        "metric": "mae_net_bdt",
+        "value": 5292.8463,
+        "relative_gap_pct": 144.71,
         "exceeds_target": true
       },
       {
         "dimension": "income_band",
         "group": "mid",
-        "metric": "mae_net_bdt",
-        "value": 5143.5426,
-        "relative_gap_pct": 146.61,
-        "exceeds_target": true
-      },
-      {
-        "dimension": "persona",
-        "group": "salaried",
-        "metric": "mae_net_bdt",
-        "value": 5101.2629,
-        "relative_gap_pct": 144.58,
-        "exceeds_target": true
-      },
-      {
-        "dimension": "persona",
-        "group": "salaried",
         "metric": "mae_inflow_bdt",
-        "value": 3626.2869,
-        "relative_gap_pct": 142.67,
+        "value": 3740.6317,
+        "relative_gap_pct": 135.79,
         "exceeds_target": true
       },
       {
         "dimension": "income_band",
         "group": "high",
         "metric": "mae_outflow_bdt",
-        "value": 4078.679,
-        "relative_gap_pct": 129.47,
+        "value": 4257.5752,
+        "relative_gap_pct": 127.59,
         "exceeds_target": true
       },
       {
-        "dimension": "income_band",
-        "group": "high",
+        "dimension": "persona",
+        "group": "salaried",
         "metric": "mae_net_bdt",
-        "value": 4712.5243,
-        "relative_gap_pct": 125.94,
-        "exceeds_target": true
-      },
-      {
-        "dimension": "district",
-        "group": "Sylhet",
-        "metric": "mae_inflow_bdt",
-        "value": 3222.3587,
-        "relative_gap_pct": 115.64,
+        "value": 4726.3979,
+        "relative_gap_pct": 118.52,
         "exceeds_target": true
       },
       {
@@ -501,35 +486,35 @@
         "exceeds_target": true
       },
       {
-        "dimension": "district",
-        "group": "Dhaka",
+        "dimension": "income_band",
+        "group": "high",
         "metric": "mae_net_bdt",
-        "value": 4348.0312,
-        "relative_gap_pct": 108.47,
+        "value": 4502.3304,
+        "relative_gap_pct": 108.16,
         "exceeds_target": true
       },
       {
         "dimension": "district",
         "group": "Dhaka",
-        "metric": "mae_inflow_bdt",
-        "value": 3093.285,
-        "relative_gap_pct": 107.01,
+        "metric": "mae_net_bdt",
+        "value": 4222.2172,
+        "relative_gap_pct": 95.21,
         "exceeds_target": true
       },
       {
         "dimension": "district",
         "group": "Sylhet",
         "metric": "mae_net_bdt",
-        "value": 4205.3855,
-        "relative_gap_pct": 101.63,
+        "value": 4160.5342,
+        "relative_gap_pct": 92.36,
         "exceeds_target": true
       },
       {
-        "dimension": "income_band",
-        "group": "high",
+        "dimension": "district",
+        "group": "Sylhet",
         "metric": "mae_inflow_bdt",
-        "value": 2978.2618,
-        "relative_gap_pct": 99.31,
+        "value": 3024.9559,
+        "relative_gap_pct": 90.67,
         "exceeds_target": true
       },
       {
@@ -543,6 +528,14 @@
       {
         "dimension": "persona",
         "group": "salaried",
+        "metric": "mae_inflow_bdt",
+        "value": 2967.7722,
+        "relative_gap_pct": 87.07,
+        "exceeds_target": true
+      },
+      {
+        "dimension": "persona",
+        "group": "salaried",
         "metric": "band_share_pct",
         "value": 5.2632,
         "relative_gap_pct": -80.26,
@@ -551,25 +544,41 @@
       {
         "dimension": "persona",
         "group": "shopkeeper",
+        "metric": "mae_outflow_bdt",
+        "value": 3257.0617,
+        "relative_gap_pct": 74.11,
+        "exceeds_target": true
+      },
+      {
+        "dimension": "district",
+        "group": "Dhaka",
         "metric": "mae_inflow_bdt",
-        "value": 2631.4848,
-        "relative_gap_pct": 76.1,
+        "value": 2761.7082,
+        "relative_gap_pct": 74.08,
         "exceeds_target": true
       },
       {
         "dimension": "persona",
         "group": "shopkeeper",
-        "metric": "mae_outflow_bdt",
-        "value": 3121.2975,
-        "relative_gap_pct": 75.61,
+        "metric": "mae_inflow_bdt",
+        "value": 2747.867,
+        "relative_gap_pct": 73.21,
         "exceeds_target": true
       },
       {
         "dimension": "persona",
         "group": "shopkeeper",
         "metric": "mae_net_bdt",
-        "value": 3552.1509,
-        "relative_gap_pct": 70.31,
+        "value": 3702.0951,
+        "relative_gap_pct": 71.16,
+        "exceeds_target": true
+      },
+      {
+        "dimension": "income_band",
+        "group": "high",
+        "metric": "mae_inflow_bdt",
+        "value": 2660.5134,
+        "relative_gap_pct": 67.7,
         "exceeds_target": true
       },
       {
@@ -605,19 +614,27 @@
         "exceeds_target": true
       },
       {
+        "dimension": "district",
+        "group": "Dhaka",
+        "metric": "mae_outflow_bdt",
+        "value": 2924.6456,
+        "relative_gap_pct": 56.34,
+        "exceeds_target": true
+      },
+      {
+        "dimension": "income_band",
+        "group": "mid",
+        "metric": "mae_outflow_bdt",
+        "value": 2895.8911,
+        "relative_gap_pct": 54.8,
+        "exceeds_target": true
+      },
+      {
         "dimension": "persona",
         "group": "shopkeeper",
         "metric": "anomaly_flag_rate_pct",
         "value": 0.7746,
         "relative_gap_pct": -54.11,
-        "exceeds_target": true
-      },
-      {
-        "dimension": "district",
-        "group": "Dhaka",
-        "metric": "mae_outflow_bdt",
-        "value": 2738.7053,
-        "relative_gap_pct": 54.08,
         "exceeds_target": true
       },
       {
@@ -645,14 +662,6 @@
         "exceeds_target": true
       },
       {
-        "dimension": "income_band",
-        "group": "mid",
-        "metric": "mae_outflow_bdt",
-        "value": 2640.2517,
-        "relative_gap_pct": 48.54,
-        "exceeds_target": true
-      },
-      {
         "dimension": "persona",
         "group": "shopkeeper",
         "metric": "band_share_pct",
@@ -677,19 +686,11 @@
         "exceeds_target": true
       },
       {
-        "dimension": "district",
-        "group": "Rangpur",
-        "metric": "mae_net_bdt",
-        "value": 2992.2496,
-        "relative_gap_pct": 43.46,
-        "exceeds_target": true
-      },
-      {
-        "dimension": "district",
-        "group": "Rangpur",
+        "dimension": "persona",
+        "group": "salaried",
         "metric": "mae_outflow_bdt",
-        "value": 2546.9005,
-        "relative_gap_pct": 43.29,
+        "value": 2716.746,
+        "relative_gap_pct": 45.23,
         "exceeds_target": true
       },
       {
@@ -710,6 +711,22 @@
       },
       {
         "dimension": "district",
+        "group": "Sylhet",
+        "metric": "mae_outflow_bdt",
+        "value": 2625.6224,
+        "relative_gap_pct": 40.35,
+        "exceeds_target": true
+      },
+      {
+        "dimension": "district",
+        "group": "Rangpur",
+        "metric": "mae_outflow_bdt",
+        "value": 2616.7914,
+        "relative_gap_pct": 39.88,
+        "exceeds_target": true
+      },
+      {
+        "dimension": "district",
         "group": "Dhaka",
         "metric": "anomaly_flag_rate_pct",
         "value": 2.3259,
@@ -717,27 +734,11 @@
         "exceeds_target": true
       },
       {
-        "dimension": "persona",
-        "group": "salaried",
-        "metric": "mae_outflow_bdt",
-        "value": 2448.2447,
-        "relative_gap_pct": 37.74,
-        "exceeds_target": true
-      },
-      {
         "dimension": "district",
         "group": "Rangpur",
-        "metric": "mae_inflow_bdt",
-        "value": 2049.871,
-        "relative_gap_pct": 37.18,
-        "exceeds_target": true
-      },
-      {
-        "dimension": "district",
-        "group": "Sylhet",
-        "metric": "mae_outflow_bdt",
-        "value": 2367.4709,
-        "relative_gap_pct": 33.19,
+        "metric": "mae_net_bdt",
+        "value": 2917.9193,
+        "relative_gap_pct": 34.91,
         "exceeds_target": true
       },
       {
@@ -773,11 +774,11 @@
         "exceeds_target": true
       },
       {
-        "dimension": "income_band",
-        "group": "low",
+        "dimension": "district",
+        "group": "Rangpur",
         "metric": "mae_inflow_bdt",
-        "value": 1879.2403,
-        "relative_gap_pct": 25.76,
+        "value": 1983.2964,
+        "relative_gap_pct": 25.01,
         "exceeds_target": true
       },
       {
@@ -826,14 +827,6 @@
         "metric": "anomaly_label_rate_pct",
         "value": 2.36,
         "relative_gap_pct": -17.85,
-        "exceeds_target": true
-      },
-      {
-        "dimension": "income_band",
-        "group": "low",
-        "metric": "mae_net_bdt",
-        "value": 2423.8015,
-        "relative_gap_pct": 16.21,
         "exceeds_target": true
       },
       {
@@ -925,14 +918,6 @@
         "exceeds_target": false
       },
       {
-        "dimension": "persona",
-        "group": "daily_wage",
-        "metric": "mae_outflow_bdt",
-        "value": 1912.4459,
-        "relative_gap_pct": 7.59,
-        "exceeds_target": false
-      },
-      {
         "dimension": "income_band",
         "group": "high",
         "metric": "anomaly_label_rate_pct",
@@ -946,6 +931,14 @@
         "metric": "anomaly_label_rate_pct",
         "value": 2.7395,
         "relative_gap_pct": -4.63,
+        "exceeds_target": false
+      },
+      {
+        "dimension": "persona",
+        "group": "daily_wage",
+        "metric": "mae_outflow_bdt",
+        "value": 1946.3386,
+        "relative_gap_pct": 4.04,
         "exceeds_target": false
       },
       {
@@ -975,6 +968,14 @@
       {
         "dimension": "income_band",
         "group": "low",
+        "metric": "mae_net_bdt",
+        "value": 2193.1838,
+        "relative_gap_pct": 1.4,
+        "exceeds_target": false
+      },
+      {
+        "dimension": "income_band",
+        "group": "low",
         "metric": "anomaly_flag_rate_pct",
         "value": 1.6734,
         "relative_gap_pct": -0.87,
@@ -992,7 +993,15 @@
         "dimension": "persona",
         "group": "daily_wage",
         "metric": "mae_inflow_bdt",
-        "value": 1494.2992,
+        "value": 1599.7524,
+        "relative_gap_pct": 0.84,
+        "exceeds_target": false
+      },
+      {
+        "dimension": "income_band",
+        "group": "low",
+        "metric": "mae_inflow_bdt",
+        "value": 1586.4505,
         "relative_gap_pct": 0.0,
         "exceeds_target": false
       },
@@ -1000,7 +1009,7 @@
         "dimension": "income_band",
         "group": "low",
         "metric": "mae_outflow_bdt",
-        "value": 1777.4531,
+        "value": 1870.7025,
         "relative_gap_pct": 0.0,
         "exceeds_target": false
       },
@@ -1008,7 +1017,7 @@
         "dimension": "persona",
         "group": "daily_wage",
         "metric": "mae_net_bdt",
-        "value": 2085.7015,
+        "value": 2162.9042,
         "relative_gap_pct": 0.0,
         "exceeds_target": false
       }
@@ -1021,21 +1030,21 @@
           "mae_net_bdt"
         ],
         "reference": "best-scored group (lower MAE is better)",
-        "worst_relative_gap_pct": 154.57,
+        "worst_relative_gap_pct": 144.71,
         "target_met": false,
         "inflow": {
-          "best_mae_bdt": 1494.3,
-          "worst_mae_bdt": 3804.06,
+          "best_mae_bdt": 1586.45,
+          "worst_mae_bdt": 3740.63,
           "groups_scored": 9
         },
         "outflow": {
-          "best_mae_bdt": 1777.45,
-          "worst_mae_bdt": 4078.68,
+          "best_mae_bdt": 1870.7,
+          "worst_mae_bdt": 4257.58,
           "groups_scored": 9
         },
         "net": {
-          "best_mae_bdt": 2085.7,
-          "worst_mae_bdt": 5143.54,
+          "best_mae_bdt": 2162.9,
+          "worst_mae_bdt": 5292.85,
           "groups_scored": 9
         }
       },

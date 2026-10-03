@@ -71,13 +71,14 @@ def test_horizon_targets_are_never_nan(small_db) -> None:
     """
     frame = dataset.make_frame(small_db)
     targets = forecast.horizon_targets(frame.features, horizon_days=7).frame
-    for column in ("target_inflow", "target_outflow", "target_net"):
+    for column in ("target_inflow", "target_outflow", "target_fee", "target_net"):
         values = targets[column].to_numpy(dtype=float)
         assert np.isfinite(values).all(), f"{column} contains non-finite values"
-    # net is the mean of each window's realised (inflow - outflow)
+    # One net definition (GAP-04): the window net includes fees, exactly like
+    # the anchor roll_28_net and the served actuals — not inflow−outflow.
     first = targets.iloc[0]
     assert first["target_net"] == pytest.approx(
-        first["target_inflow"] - first["target_outflow"]
+        first["target_inflow"] - first["target_outflow"] - first["target_fee"]
     )
 
 
@@ -94,6 +95,70 @@ def test_spread_keeps_the_horizon_total(small_db) -> None:
     assert spread["predicted_inflow"].sum() == pytest.approx(1000.0 * 14, rel=1e-6)
     assert spread["predicted_outflow"].sum() == pytest.approx(800.0 * 14, rel=1e-6)
     assert (spread["predicted_inflow"] >= 0).all()
+
+
+def test_additive_net_spread_never_explodes_a_single_day(small_db) -> None:
+    """GAP-04: dividing by a signed weekday sum once put 33.7× the window
+    total on one day. Additive deviations keep every day bounded."""
+    frame = dataset.make_frame(small_db)
+    user = frame.features["user_id"].iloc[0]
+    daily = frame.daily.loc[frame.daily["user_id"].eq(user)]
+    start = pd.to_datetime(frame.features.loc[frame.features["user_id"].eq(user), "date"].max())
+    dates = pd.DataFrame({"user_id": [user], "date": [start]})
+    means = pd.DataFrame({
+        "mean_inflow": [1000.0], "mean_outflow": [800.0], "mean_net": [500.0],
+    })
+    spread = evaluate.spread_predictions(dates, means, daily, horizon_days=14)
+    total = spread["predicted_net"].sum()
+    assert total == pytest.approx(500.0 * 14, rel=1e-6)
+    assert (spread["predicted_net"].abs() <= 5 * abs(total)).all()
+
+
+def test_spread_weights_never_read_the_scored_future(small_db) -> None:
+    """GAP-04 no-lookahead: a future spike must not move weights used for an
+    earlier origin — the shape cannot see tomorrow."""
+    from backend.ml.evaluate import _spread_one_origin
+
+    frame = dataset.make_frame(small_db)
+    user = frame.features["user_id"].iloc[0]
+    daily = frame.daily.loc[frame.daily["user_id"].eq(user)].sort_values("date")
+    origin = pd.to_datetime(daily["date"].iloc[60])
+    sub = pd.DataFrame({"user_id": [user], "date": [origin]})
+    means = pd.DataFrame({
+        "mean_inflow": [1000.0], "mean_outflow": [800.0], "mean_net": [500.0],
+    })
+    clean = _spread_one_origin(sub, means, daily, origin, 14)
+    spiked = daily.copy()
+    future_mondays = (pd.to_datetime(spiked["date"]) > origin) & (
+        pd.to_datetime(spiked["date"]).dt.weekday == 0
+    )
+    spiked.loc[future_mondays, "inflow_bdt"] *= 50.0
+    assert future_mondays.any()
+    with_spike = _spread_one_origin(sub, means, spiked, origin, 14)
+    pd.testing.assert_frame_equal(clean, with_spike)
+
+
+def test_scored_cells_cover_complete_windows_only(small_db, tmp_path) -> None:
+    """GAP-04: truncated windows must not be scored as 14-day totals, so
+    n_cells == n_windows × horizon by construction."""
+    import shutil
+
+    from backend.ml import evaluate as forecast_evaluate
+    from backend.ml import forecast as forecast_model
+
+    # Anchor-only artifacts (committed meta, no boosters): predict_mean falls
+    # back to each user's own trailing mean, which is all this needs.
+    anchor_dir = tmp_path / "anchor_artifacts"
+    anchor_dir.mkdir()
+    shutil.copy(forecast_model.ARTIFACT_DIR / "forecast_meta.json", anchor_dir / "forecast_meta.json")
+    frame = dataset.make_frame(small_db)
+    splits = split_module.load_splits(small_db)
+    joined, _ = forecast_evaluate.scored_cells(
+        frame.features, frame.daily, splits, anchor_dir, horizon_days=14,
+    )
+    windows = joined[["user_id", "date"]].drop_duplicates().shape[0]
+    assert windows > 0
+    assert len(joined) == windows * 14
 
 
 def test_spread_uses_the_net_model_and_keeps_its_total(small_db) -> None:
