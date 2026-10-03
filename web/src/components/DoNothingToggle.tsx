@@ -32,9 +32,6 @@ export default function DoNothingToggle({ costBdt, months }: DoNothingToggleProp
         onClick={() => setOpen(true)}
       >
         <div className="space-y-0.5">
-          <span className="text-xs font-mono text-ink-muted uppercase">
-            {tr("common.doNothing")}
-          </span>
           <div className="font-bold text-base text-ink">
             {tr("common.doNothing")}
           </div>
