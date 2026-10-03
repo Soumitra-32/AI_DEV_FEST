@@ -8,13 +8,6 @@ export const metadata: Metadata = {
   title: "সঞ্চয় Copilot — খতিয়ান ও হিসাবের খাতা",
   description:
     "দোকানের খাঁটি লাল-বাঁধানো জাবেদা ও খতিয়ান খাতার নান্দনিকতা। সম্পূর্ণ ফ্ল্যাট, শান্ত, উচ্চ পঠনযোগ্যতা এবং শূন্য অলঙ্করণ সহ সাধারণ মানুষের জন্য নির্মিত ডিজিটাল লেজার।",
-  openGraph: {
-    title: "সঞ্চয় Copilot — খতিয়ান ও হিসাবের খাতা",
-    description:
-      "Bangla-first financial coach and digital ledger system built for Bangladeshi shopkeepers and households.",
-    locale: "bn_BD",
-    type: "website",
-  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
