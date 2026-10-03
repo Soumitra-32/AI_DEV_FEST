@@ -49,8 +49,18 @@ jobs:
       - run: pip install -r backend/requirements.txt
       - run: python backend/scripts/generate_data.py
       - run: nohup python -m uvicorn backend.app.main:app --port 8000 >/tmp/uvicorn.log 2>&1 &
-      - run: sleep 8
-      - run: curl -sf http://localhost:8000/health
+      - run: |
+          for i in $(seq 1 24); do
+            if curl -sf http://localhost:8000/health; then
+              echo "API healthy after ~$((i * 5))s"
+              exit 0
+            fi
+            echo "Attempt $i: not ready yet, waiting 5s..."
+            sleep 5
+          done
+          echo "API never became healthy; uvicorn log:"
+          cat /tmp/uvicorn.log
+          exit 1
       - run: >
           curl -sf -H "X-Demo-Token: ci-token"
           http://localhost:8000/me
@@ -67,6 +77,19 @@ jobs:
       - uses: actions/checkout@v4
       - run: docker build -f backend/Dockerfile -t shonchoy-api:ci .
       - run: docker run -d --name shonchoy-ci -p 8000:8000 shonchoy-api:ci
-      - run: sleep 100; curl -sf http://localhost:8000/health
+      # First boot generates the synthetic DB inside the container, so poll
+      # instead of sleeping a fixed 100s; dump logs when it never turns green.
+      - run: |
+          for i in $(seq 1 36); do
+            if curl -sf http://localhost:8000/health; then
+              echo "API healthy after ~$((i * 5))s"
+              exit 0
+            fi
+            echo "Attempt $i: not ready yet, waiting 5s..."
+            sleep 5
+          done
+          echo "API never became healthy; container logs:"
+          docker logs shonchoy-ci
+          exit 1
       - run: docker stop shonchoy-ci
         if: always()
