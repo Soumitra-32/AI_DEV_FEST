@@ -74,6 +74,8 @@ const en = {
     "After 6 months, savings will remain ৳0. That is entirely your decision.",
   "common.doNothingOutcomeN":
     "After {months} months, savings will remain ৳0. That is entirely your decision.",
+  "common.doNothingOutcome1":
+    "After 1 month, savings will remain ৳0. That is entirely your decision.",
   "common.doNothingDisclaimer":
     "No coercion, no penalties. The app never executes transactions or makes lending decisions without you.",
 
@@ -161,6 +163,7 @@ const en = {
   "spending.action": "Suggested Action",
   "spending.feeSwitch": "Fee Switch Opportunity",
   "spending.feeSwitchDesc": "Switching from agent cash-out to app transfers or direct merchant payment can avoid cash-out fees.",
+  "spending.doNothingOutcome": "Without switching, about {fee} a month keeps going to cash-out fees. That is entirely your decision.",
   "spending.potentialSaving": "Monthly Saving",
   "spending.currentFee": "Current Monthly Fee",
   "spending.altChannel": "Alternative Channel",
@@ -329,6 +332,8 @@ const bn: Dictionary = {
     "৬ মাস পরে সঞ্চয় ৳০ থাকবে। এটাও আপনার নিজস্ব সিদ্ধান্ত।",
   "common.doNothingOutcomeN":
     "{months} মাস পরে সঞ্চয় ৳০ থাকবে। এটাও আপনার নিজস্ব সিদ্ধান্ত।",
+  "common.doNothingOutcome1":
+    "১ মাস পরে সঞ্চয় ৳০ থাকবে। এটাও আপনার নিজস্ব সিদ্ধান্ত।",
   "common.doNothingDisclaimer":
     "কোনো জোরজবরদস্তি বা বাড়তি দায়বদ্ধতা নেই। অ্যাপ আপনার অনুমতি ছাড়া কোনো লেনদেন করবে না।",
 
@@ -400,7 +405,7 @@ const bn: Dictionary = {
 
   "spending.headerTag": "খরচ ও ফি বিশ্লেষণ",
   "spending.title": "খরচ ও সাশ্রয় সহযোগী",
-  "spending.subtitle": "দোকান ও ব্যক্তিগত ব্যয়ের ধরণ বিশ্লেষণ এবং সম্ভাব্য ফি সাশ্রয়।",
+  "spending.subtitle": "আপনার ব্যয়ের ধরণ বিশ্লেষণ এবং সম্ভাব্য ফি সাশ্রয়।",
   "spending.loading": "ব্যয় ও ফি বিশ্লেষণ করা হচ্ছে…",
   "spending.summary": "খতিয়ান সারাংশ",
   "spending.cashOutCount": "ক্যাশ-আউট সংখ্যা",
@@ -416,6 +421,7 @@ const bn: Dictionary = {
   "spending.action": "প্রস্তাবিত পদক্ষেপ",
   "spending.feeSwitch": "ফি পরিবর্তনের সুযোগ",
   "spending.feeSwitchDesc": "এজেন্ট ক্যাশ-আউটের বদলে অ্যাপ ট্রান্সফার বা সরাসরি মার্চেন্ট পেমেন্ট ব্যবহার করলে বাড়তি ফি বাঁচবে।",
+  "spending.doNothingOutcome": "বদল না করলে প্রতি মাসে প্রায় {fee} ক্যাশ-আউট ফিতে চলে যাবে। এটাও আপনার নিজস্ব সিদ্ধান্ত।",
   "spending.potentialSaving": "মাসিক সাশ্রয়",
   "spending.currentFee": "বর্তমান মাসিক ফি",
   "spending.altChannel": "বিকল্প চ্যানেল",

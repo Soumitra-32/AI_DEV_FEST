@@ -8,22 +8,27 @@ import { formatBDT, formatInteger } from "@/lib/i18n";
 interface DoNothingToggleProps {
   costBdt?: number | null;
   months?: number | null;
+  /** Page-specific outcome line. When absent, the horizon-templated default. */
+  outcome?: string | null;
 }
 
 /**
  * Section 7: "কিছু না করলে কী হবে?" (Do Nothing Option)
  * Both Collapsed & Expanded states matching the ledger design system.
  */
-export default function DoNothingToggle({ costBdt, months }: DoNothingToggleProps) {
+export default function DoNothingToggle({ costBdt, months, outcome }: DoNothingToggleProps) {
   const { lang, tr } = useLanguage();
   const [open, setOpen] = useState(false);
   const [chosen, setChosen] = useState(false);
   // The horizon belongs to the plan being viewed: a 12-month plan must not
   // say "after 6 months". Pages without a horizon keep the legacy text.
-  const outcome =
+  const defaultOutcome =
     months != null && Number.isFinite(months) && months >= 1
-      ? tr("common.doNothingOutcomeN").replace("{months}", formatInteger(months, lang))
+      ? (months === 1
+          ? tr("common.doNothingOutcome1")
+          : tr("common.doNothingOutcomeN").replace("{months}", formatInteger(months, lang)))
       : tr("common.doNothingOutcome");
+  const outcomeText = outcome ?? defaultOutcome;
 
   if (!open) {
     return (
@@ -54,7 +59,7 @@ export default function DoNothingToggle({ costBdt, months }: DoNothingToggleProp
       </div>
 
       <p className="text-sm font-medium text-ink leading-relaxed">
-        {outcome}
+        {outcomeText}
       </p>
 
       {typeof costBdt === "number" && (

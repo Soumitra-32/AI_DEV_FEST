@@ -11,9 +11,10 @@ import DoNothingToggle from "@/components/DoNothingToggle";
 import { useLanguage } from "@/components/LangToggle";
 import { fetchAnomalies } from "@/lib/api";
 import type { AnomalyResponse } from "@/lib/api";
+import { formatBDT } from "@/lib/i18n";
 
 export default function SpendingPage() {
-  const { tr } = useLanguage();
+  const { lang, tr } = useLanguage();
   const [data, setData] = useState<AnomalyResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,7 +119,17 @@ export default function SpendingPage() {
             )}
 
             {/* Do Nothing Consent */}
-            <DoNothingToggle costBdt={data.fee_switch?.potential_saving_bdt} />
+            <DoNothingToggle
+              costBdt={data.fee_switch?.potential_saving_bdt}
+              outcome={
+                data.fee_switch
+                  ? tr("spending.doNothingOutcome").replace(
+                      "{fee}",
+                      formatBDT(data.fee_switch.potential_saving_bdt, lang),
+                    )
+                  : null
+              }
+            />
           </>
         )}
       </main>
