@@ -64,7 +64,9 @@ jobs:
       - run: >
           curl -sf -H "X-Demo-Token: ci-token"
           http://localhost:8000/me
-      - run: curl -sf http://localhost:8000/metrics
+      - run: >
+          curl -sf -H "X-Demo-Token: ci-token"
+          http://localhost:8000/metrics
       - run: >
           curl -sf -X POST http://localhost:8000/parse-goal
           -H "Content-Type: application/json"
