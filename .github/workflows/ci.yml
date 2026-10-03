@@ -15,6 +15,10 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r backend/requirements.txt
+      # Several tests read the real database path (test_signal, test_rag via
+      # default_db_path), which is gitignored and absent in CI. Generate it
+      # first; the small_db fixture covers the rest.
+      - run: python backend/scripts/generate_data.py
       - run: python -m pytest backend/tests -q
 
   frontend-build:
