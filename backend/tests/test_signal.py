@@ -31,39 +31,67 @@ from backend.app.main import create_app
 from backend.app.schemas import ConsistencySignalResponse
 from backend.app.services import signal_service
 from backend.data import features as user_features
+from backend.data import generator
 from backend.data import split as split_module
 from backend.ml import signal
+from backend.scripts import generate_data
 
 TOKEN = "signal-token"
 
+#: Model-quality tests need enough users to beat chance. The shared 60x3
+#: fixture is too small (AUC variance dominates), so build a 120x6 ledger
+#: once per module in tmp — still hermetic, no committed .db needed.
+SIGNAL_USERS = 120
+SIGNAL_MONTHS = 6
 
-def _user_rows(db_path: Path | None = None) -> pd.DataFrame:
-    path = db_path or user_features.default_db_path()
+
+def _user_rows(db_path: Path) -> pd.DataFrame:
     frame = user_features.user_features(
-        user_features.load_config(), user_features.load_transactions(path)
+        user_features.load_config(), user_features.load_transactions(db_path)
     )
-    return user_features.attach_split(frame, split_module.load_splits(path))
+    return user_features.attach_split(frame, split_module.load_splits(db_path))
 
 
-def _labels(db_path: Path | None = None) -> pd.DataFrame:
-    return user_features.load_user_labels(db_path or user_features.default_db_path())
+def _labels(db_path: Path) -> pd.DataFrame:
+    return user_features.load_user_labels(db_path)
 
 
-def _splits(db_path: Path | None = None):
-    return split_module.load_splits(db_path or user_features.default_db_path())
+def _splits(db_path: Path):
+    return split_module.load_splits(db_path)
 
 
 @pytest.fixture(scope="module")
-def trained(tmp_path_factory) -> Path:
+def signal_db(tmp_path_factory, base_config) -> Path:
+    """A 120x6 hermetic ledger: big enough to beat chance, small enough for CI."""
+    import copy
+
+    cfg = copy.deepcopy(base_config)
+    cfg["dataset"]["n_users"] = SIGNAL_USERS
+    cfg["dataset"]["months"] = SIGNAL_MONTHS
+    users, transactions, anomaly_labels, splits, user_labels = generate_data.build_dataset(cfg)
+    db_path = tmp_path_factory.mktemp("signal_db") / "signal.db"
+    generate_data.write_dataset(
+        db_path, cfg, users, transactions, anomaly_labels, splits, user_labels
+    )
+    return db_path
+
+
+@pytest.fixture(scope="module")
+def trained(signal_db, tmp_path_factory) -> Path:
     """A trained artifact in a temp directory, shared by the read-only tests."""
     directory = tmp_path_factory.mktemp("signal_artifacts")
-    signal.train(_user_rows(), _labels(), _splits(), artifact_dir=directory)
+    signal.train(_user_rows(signal_db), _labels(signal_db), _splits(signal_db), artifact_dir=directory)
     return directory
 
 
 @pytest.fixture()
-def client() -> TestClient:
-    settings = Settings(demo_auth_token=TOKEN, demo_user_id="rahim", feature_llm=False)
+def client(small_db) -> TestClient:
+    settings = Settings(
+        demo_auth_token=TOKEN,
+        demo_user_id="rahim",
+        feature_llm=False,
+        database_path=str(small_db),
+    )
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
     return TestClient(app)
@@ -94,16 +122,16 @@ def test_the_label_is_not_a_model_feature() -> None:
     assert not any("label" in name or "stable" in name for name in signal.FEATURE_COLUMNS)
 
 
-def test_beats_the_random_baseline_on_held_out_users(trained: Path) -> None:
-    rows, labels = _user_rows(), _labels()
-    result = signal.evaluate(rows, labels, _splits(), trained)
+def test_beats_the_random_baseline_on_held_out_users(signal_db, trained: Path) -> None:
+    rows, labels = _user_rows(signal_db), _labels(signal_db)
+    result = signal.evaluate(rows, labels, _splits(signal_db), trained)
     assert result["auc"] is not None
     assert result["auc"] > result["baseline_auc"]
     assert result["auc"] > 0.6
 
 
-def test_prediction_carries_shap_factors_with_a_direction(trained: Path) -> None:
-    rows = _user_rows()
+def test_prediction_carries_shap_factors_with_a_direction(signal_db, trained: Path) -> None:
+    rows = _user_rows(signal_db)
     prediction = signal.predict(rows.loc[rows["user_id"].eq("rahim")], trained)
     assert prediction is not None
     assert prediction.source == "model"
@@ -115,32 +143,32 @@ def test_prediction_carries_shap_factors_with_a_direction(trained: Path) -> None
         assert factor["magnitude"] >= 0
 
 
-def test_the_demo_user_is_not_in_the_test_cohort() -> None:
+def test_the_demo_user_is_not_in_the_test_cohort(signal_db) -> None:
     """Rahim is held out, so his band is not something the model was fitted on."""
-    splits = _splits()
+    splits = _splits(signal_db)
     demo_rows = splits.loc[splits["user_id"].eq("rahim"), "split"]
     assert not demo_rows.empty
     assert demo_rows.iloc[0] == "demo"
 # --- degradation ----------------------------------------------------------
-def test_predict_returns_none_without_an_artifact(tmp_path: Path) -> None:
-    assert signal.predict(_user_rows().head(1), tmp_path) is None
+def test_predict_returns_none_without_an_artifact(small_db, tmp_path: Path) -> None:
+    assert signal.predict(_user_rows(small_db).head(1), tmp_path) is None
     assert signal.load(tmp_path) is None
 
 
-def test_a_corrupt_artifact_is_ignored_not_raised(tmp_path: Path) -> None:
+def test_a_corrupt_artifact_is_ignored_not_raised(small_db, tmp_path: Path) -> None:
     (tmp_path / signal.MODEL_FILE).write_text("not a model", encoding="utf-8")
     assert signal.load(tmp_path) is None
-    assert signal.predict(_user_rows().head(1), tmp_path) is None
+    assert signal.predict(_user_rows(small_db).head(1), tmp_path) is None
 
 
-def test_evaluate_reports_no_auc_when_untrained(tmp_path: Path) -> None:
-    result = signal.evaluate(_user_rows(), _labels(), None, tmp_path)
+def test_evaluate_reports_no_auc_when_untrained(small_db, tmp_path: Path) -> None:
+    result = signal.evaluate(_user_rows(small_db), _labels(small_db), None, tmp_path)
     assert result["auc"] is None
     assert "not trained" in result["note"]
 
 
-def test_service_falls_back_to_the_rule_band_and_says_so(tmp_path: Path) -> None:
-    payload = signal_service.build_signal("rahim", artifact_dir=tmp_path)
+def test_service_falls_back_to_the_rule_band_and_says_so(small_db, tmp_path: Path) -> None:
+    payload = signal_service.build_signal("rahim", db_path=small_db, artifact_dir=tmp_path)
     assert payload["provenance"]["source"] == "rule"
     assert payload["band"] in {"Building", "Steady", "Strong"}
     assert payload["factors"]
@@ -163,7 +191,7 @@ def test_the_rule_band_moves_with_the_numbers() -> None:
 
 
 # --- the SHAP explanation --------------------------------------------------
-def test_shap_contributions_reconstruct_the_log_odds(trained: Path) -> None:
+def test_shap_contributions_reconstruct_the_log_odds(signal_db, trained: Path) -> None:
     """The audit property: base + every contribution == the model's log-odds.
 
     This is the test that would catch a wrong SHAP implementation. A plausible
@@ -172,7 +200,7 @@ def test_shap_contributions_reconstruct_the_log_odds(trained: Path) -> None:
     no longer reconstructs the score. Checking the arithmetic pins the semantics.
     """
     model, scaler = signal.load(trained)
-    rows = _user_rows()
+    rows = _user_rows(signal_db)
     one = rows.loc[rows["user_id"].eq("rahim")]
 
     explanation = signal.shap_explanation(model, scaler, one.iloc[0])
@@ -188,9 +216,9 @@ def test_shap_contributions_reconstruct_the_log_odds(trained: Path) -> None:
     )
 
 
-def test_shap_explanation_covers_every_feature_and_ranks_by_size(trained: Path) -> None:
+def test_shap_explanation_covers_every_feature_and_ranks_by_size(signal_db, trained: Path) -> None:
     model, scaler = signal.load(trained)
-    explanation = signal.shap_explanation(model, scaler, _user_rows().iloc[0])
+    explanation = signal.shap_explanation(model, scaler, _user_rows(signal_db).iloc[0])
 
     features = explanation["features"]
     # Every model input is explained, in magnitude order rather than column order.
@@ -202,10 +230,10 @@ def test_shap_explanation_covers_every_feature_and_ranks_by_size(trained: Path) 
     assert set(explanation["band_cutoffs"]) == {"Building", "Steady"}
 
 
-def test_shap_factors_agree_with_the_explanation(trained: Path) -> None:
+def test_shap_factors_agree_with_the_explanation(signal_db, trained: Path) -> None:
     """The card's top-3 and the audit list are one derivation, not two."""
     model, scaler = signal.load(trained)
-    row = _user_rows().iloc[0]
+    row = _user_rows(signal_db).iloc[0]
     factors = signal.shap_factors(model, scaler, row, top_k=3)
     explanation = signal.shap_explanation(model, scaler, row)
 
@@ -217,8 +245,8 @@ def test_shap_factors_agree_with_the_explanation(trained: Path) -> None:
         assert factor["magnitude"] == pytest.approx(abs(item["contribution"]), abs=1e-3)
 
 
-def test_shap_importance_is_ranked_and_never_raises(trained: Path, tmp_path: Path) -> None:
-    rows = _user_rows()
+def test_shap_importance_is_ranked_and_never_raises(signal_db, trained: Path, tmp_path: Path) -> None:
+    rows = _user_rows(signal_db)
     importance = signal.shap_importance(rows, trained)
     assert importance is not None
     assert importance["rows"] == len(rows)
@@ -246,14 +274,14 @@ def test_the_endpoint_returns_the_shap_block(client: TestClient) -> None:
     ConsistencySignalResponse.model_validate(body)
 
 
-def test_the_shap_block_is_null_on_the_rule_path(tmp_path: Path) -> None:
+def test_the_shap_block_is_null_on_the_rule_path(small_db, tmp_path: Path) -> None:
     """No artifact means no SHAP values -- and an empty list would be a lie.
 
     ``factors: []`` reads as "nothing moved this user"; ``shap: null`` reads as
     "nothing was explained", which is what actually happened.
     """
     payload = signal_service.build_signal(
-        "rahim", db_path=None, artifact_dir=tmp_path / "no_artifact"
+        "rahim", db_path=small_db, artifact_dir=tmp_path / "no_artifact"
     )
     assert payload["provenance"]["source"] == "rule"
     assert payload["shap"] is None
@@ -313,16 +341,20 @@ def test_endpoint_requires_a_token(client: TestClient) -> None:
     assert client.post("/credit-readiness", headers={"X-Demo-Token": "wrong"}).status_code == 403
 
 
-def test_feature_flag_switches_the_signal_off() -> None:
-    settings = Settings(demo_auth_token=TOKEN, feature_signal=False)
+def test_feature_flag_switches_the_signal_off(small_db) -> None:
+    settings = Settings(
+        demo_auth_token=TOKEN, feature_signal=False, database_path=str(small_db)
+    )
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
     response = TestClient(app).post("/credit-readiness", headers={"X-Demo-Token": TOKEN})
     assert response.status_code == 503
 
 
-def test_unknown_user_is_a_404_not_an_empty_band() -> None:
-    settings = Settings(demo_auth_token=TOKEN, demo_user_id="nobody")
+def test_unknown_user_is_a_404_not_an_empty_band(small_db) -> None:
+    settings = Settings(
+        demo_auth_token=TOKEN, demo_user_id="nobody", database_path=str(small_db)
+    )
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings
     response = TestClient(app).post("/credit-readiness", headers={"X-Demo-Token": TOKEN})

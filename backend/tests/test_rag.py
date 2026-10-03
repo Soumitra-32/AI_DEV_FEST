@@ -150,9 +150,9 @@ def test_the_bank_file_is_valid_json_with_a_version() -> None:
     assert len(payload["tips"]) == len(rag.load_bank())
 
 
-def test_rahims_own_numbers_retrieve_tips() -> None:
+def test_rahims_own_numbers_retrieve_tips(small_db) -> None:
     """End to end against the generated demo user, not a fixture."""
-    path = user_features.default_db_path()
+    path = small_db
     frame = user_features.user_features(
         user_features.load_config(), user_features.load_transactions(path)
     )
