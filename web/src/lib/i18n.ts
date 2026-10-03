@@ -588,7 +588,7 @@ const bn: Dictionary = {
   "metrics.improvement": "উন্নত",
   "metrics.anomaly": "অস্বাভাবিক লেনদেন শনাক্তকারী",
   "metrics.anomalyBadge": "স্বয়ংক্রিয় শনাক্তকরণ",
-  "metrics.anomalyDesc": "আপনার ঐতিহাসিক লেনদেনের ওপর ভিত্তি করে স্বাভাবিক ধারার বাইরের লেনদেন শনাক্ত করে।",
+  "metrics.anomalyDesc": "আপনার পূর্বের লেনদেনের ওপর ভিত্তি করে স্বাভাবিক ধারার বাইরের লেনদেন শনাক্ত করে।",
   "metrics.signal": "ধারাবাহিকতা মডেল",
   "metrics.fairness": "সকল ব্যবহারকারীর জন্য নিরপেক্ষতা",
   "metrics.fairnessDesc": "৫টি পেশা ও ১০টি জেলায় যাচাই করা হয়েছে, যাতে সবার জন্য হিসাবের মান সমান থাকে।",
@@ -812,6 +812,9 @@ export function sanitizeBullet(bullet: string, lang: Lang): string {
   });
 
   if (lang === "bn") {
+    clean = clean.replace(/ঐতিহাসিক/g, "পূর্বের");
+    clean = clean.replace(/(\d+)টি/g, (_, num) => `${formatDigits(num, "bn")}টি`);
+    clean = clean.replace(/(\d+)\s*বার/g, (_, num) => `${formatDigits(num, "bn")} বার`);
     clean = formatDigits(clean, "bn");
   }
 

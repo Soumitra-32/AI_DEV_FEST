@@ -74,7 +74,7 @@ def _provenance(outcome: Any, intent: str, language: str = "bn") -> Provenance:
             assumption = "পরামর্শে শুধুমাত্র আপনার সংরক্ষিত খতিয়ানের সঠিক হিসাব ও নিয়ম ব্যবহার করা হয়েছে।"
         else:
             prediction = "আপনার লেনদেনের নির্ভরযোগ্য খতিয়ান হিসাবের ভিত্তিতে পরামর্শটি সাজানো।"
-            assumption = "আপনার ঐতিহাসিক লেনদেন ও ক্যাশ-আউট তথ্যের নির্ভুল পরিসংখ্যান ব্যবহার করা হয়েছে।"
+            assumption = "আপনার পূর্বের লেনদেন ও ক্যাশ-আউট তথ্যের নির্ভুল পরিসংখ্যান ব্যবহার করা হয়েছে।"
         explanation = "এই পরামর্শের প্রতিটি সংখ্যা ও হিসাব আপনার নিজস্ব লেনদেনের ইতিহাস থেকে প্রাপ্ত।"
     else:
         if outcome.used_llm:
@@ -82,7 +82,7 @@ def _provenance(outcome: Any, intent: str, language: str = "bn") -> Provenance:
             assumption = "Only figures validated by our financial ledger and models are included."
         else:
             prediction = "Verified guidance calculated directly from your transaction ledger."
-            assumption = "Calculated from your historical transactions and verified spending patterns."
+            assumption = "Calculated from your past transactions and verified spending patterns."
         explanation = "Every figure in this recommendation is derived directly from your personal transaction history."
     return Provenance(
         prediction=prediction, assumption=assumption, explanation=explanation, source=source

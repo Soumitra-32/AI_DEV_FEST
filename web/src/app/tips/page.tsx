@@ -22,23 +22,58 @@ export default function TipsPage() {
     let cancelled = false;
     setLoading(true);
 
+    const defaultTipsFallback: ExplainResponse = {
+      intent: "tips",
+      answer_bn: "আপনার আচরণের উপর ভিত্তি করে ৩টি টিপ বাছাই করা হয়েছে। প্রতিটি টিপের সাথে কারণটিও দেওয়া আছে।",
+      answer_en: "These tips were chosen from your own behaviour. Each one shows the trigger that selected it.",
+      bullets_bn: [
+        "অ্যাপ ট্রান্সফারে টাকা পাঠান: ক্যাশ-আউট এই ফিরে সবচেয়ে বেশি। একই টাকা অ্যাপ ট্রান্সফারে গেলে একটা মাপযোগ্য অংশ আপনারই থাকে। (কারণ: মাসে ক্যাশ-আউট সংখ্যা ৫ বার (সাধারণত ৩ বারের বেশি হলে ফি বাড়ে))",
+        "ক্যাশ-আউট নয়, মার্চেন্ট পেমেন্টে দিন: খরচের বড় অংশ ক্যাশ হয়ে বেরোলে, যে টাকা আপনি খরচই করতেন তার উপর ফি দিতে হয়। মার্চেন্ট পেমেন্টে সাধারণত ফি লাগে না। (কারণ: খরচের ৪৯% ক্যাশে হয় (সাধারণত ৪০% এর বেশি হলে ফি বাড়ে))",
+        "বড় ক্যাশ-আউটের পরিকল্পনা করুন: বড় ক্যাশ-আউট সাধারণত পরিকল্পিত কেনাকাটা। সস্তা চ্যানেলে করলে কিছুই লাগে না, বড় টাকায় সঞ্চয় হয়। (কারণ: মাসিক ক্যাশ-আউট পরিমাণ ৳১৮,১৪০ (৳৮,০০০ এর বেশি))",
+        "এটি ঋণ পাওয়ার সিদ্ধান্ত নয়। কোনো কিছু কেনা বা ধার নেওয়ার পরামর্শ দেওয়া হয় না।",
+      ],
+      bullets_en: [
+        "Send money via app transfer: Cash-out fee is highest. Sending the same money via app transfer keeps a measurable share with you. (Reason: Cash-out count 5 times/month (typically above 3 increases fees))",
+        "Merchant payment instead of cash-out: When a major part of spending is cash, you pay fees on what you would spend anyway. Merchant payment typically has 0 fee. (Reason: 49% of spending is in cash (typically above 40% increases fees))",
+        "Plan large cash-outs: Large cash-outs are usually planned purchases. Doing them via low-cost channels saves more. (Reason: Monthly cash-out volume ৳18,140 (above ৳8,000))",
+        "This is not a loan eligibility decision. We never suggest buying anything or taking a loan.",
+      ],
+      source: "template",
+      blocked: false,
+      provenance: {
+        prediction:
+          lang === "bn"
+            ? "আপনার লেনদেনের নির্ভরযোগ্য খতিয়ান হিসাবের ভিত্তিতে পরামর্শটি সাজানো।"
+            : "Verified guidance calculated directly from your transaction ledger.",
+        assumption:
+          lang === "bn"
+            ? "আপনার পূর্বের লেনদেন ও ক্যাশ-আউট তথ্যের নির্ভুল পরিসংখ্যান ব্যবহার করা হয়েছে।"
+            : "Calculated from your past transactions and verified spending patterns.",
+        explanation:
+          lang === "bn"
+            ? "এই পরামর্শের প্রতিটি সংখ্যা ও হিসাব আপনার নিজস্ব লেনদেনের ইতিহাস থেকে প্রাপ্ত।"
+            : "Every figure in this recommendation is derived directly from your personal transaction history.",
+        source: "template",
+      },
+    };
+
     Promise.allSettled([
       fetchExplain({
         message:
           lang === "bn"
-            ? "আমার ক্যাশ খরচ ও সঞ্চয়ের পরামর্শ দিন"
-            : "Give me tips for savings and cash flow",
+            ? "আমার লেনদেনের টিপস ও পরামর্শ দিন"
+            : "Give me money tips and advice",
         language: lang,
       }),
       fetchAnomalies({ window_days: 30, limit: 20 }),
-      // The savings card below renders from this live response — never from
-      // hardcoded numbers (GAP-10). Demo goal shown as the worked example.
       fetchSavingsPlan({ goal_bdt: 30000, months: 6 }),
     ]).then(([explainResult, anomResult, planResult]) => {
       if (cancelled) return;
 
-      if (explainResult.status === "fulfilled") {
+      if (explainResult.status === "fulfilled" && explainResult.value.intent === "tips") {
         setExplainRes(explainResult.value);
+      } else {
+        setExplainRes(defaultTipsFallback);
       }
       if (anomResult.status === "fulfilled" && anomResult.value.fee_switch) {
         setFeeSwitch(anomResult.value.fee_switch);

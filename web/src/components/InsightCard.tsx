@@ -45,7 +45,7 @@ function formatProvenanceContent(
     }
     if (field === "assumption") {
       return lang === "bn"
-        ? "আপনার ঐতিহাসিক লেনদেন ও ক্যাশ-আউটের নির্ভরযোগ্য তথ্যের ভিত্তিতে হিসাব করা হয়েছে।"
+        ? "আপনার পূর্বের লেনদেন ও ক্যাশ-আউটের নির্ভরযোগ্য তথ্যের ভিত্তিতে হিসাব করা হয়েছে।"
         : "Calculated using verified transaction history and cash flow rules.";
     }
     if (field === "explanation") {
@@ -157,7 +157,7 @@ function formatProvenanceContent(
     return routeDefault;
   }
 
-  return raw;
+  return raw.replace(/ঐতিহাসিক/g, "পূর্বের");
 }
 
 export default function InsightCard({
