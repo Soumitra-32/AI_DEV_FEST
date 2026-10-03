@@ -1,0 +1,193 @@
+\documentclass[11pt, a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=blue,
+    citecolor=blue,
+}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+
+% Page styling
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{AI DEV FEST 2026 - Project Report}
+\lhead{Team Polaris}
+\rfoot{Page \thepage\ of \pageref{LastPage}}
+
+% Title formatting
+\titleformat{\section}{\large\bfseries\uppercase}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\begin{document}
+
+% Title Page
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    {\Huge\bfseries Shonchoy Copilot\par}
+    \vspace{0.5cm}
+    {\Large\bfseries An AI-Powered Financial Health \& Savings Companion\par}
+    \vspace{1.5cm}
+    {\Large\textbf{AI DEV FEST 2026 | AI Hackathon}\par}
+    \vspace{0.5cm}
+    {\large Organized by DIU-CPC $\times$ upay\par}
+    \vspace{1.5cm}
+    {\Large\textbf{Team Name:} Polaris\par}
+    \vspace{1cm}
+    {\large\textbf{Team Members:}\par}
+    \vspace{0.3cm}
+    
+    {\large Soumitra Saha\par}
+    {\large Dipta Kumar Das\par}
+    {\large K.M. Taskif Bin Parves\par}
+    \vspace{1.5cm}
+    {\large \today\par}
+    \vfill
+    {\large Daffodil International University\par}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% Abstract
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+Shonchoy Copilot is an AI-driven financial health and savings companion designed to empower Mobile Financial Service (MFS) users to make informed, sustainable financial decisions. Aligned with \textbf{Track 03: Customer Innovation \& Financial Independence}, the project moves beyond basic payment transactions to provide personalized savings planning, cash-flow forecasting, and conversational financial coaching. Built using synthetic transaction data, a modern web stack, and Generative AI, the prototype demonstrates a clear, scalable path to enhancing customer trust, retention, and financial well-being within the upay ecosystem.
+
+\newpage
+
+% 1. Introduction & Problem Statement
+\section{Introduction and Problem Statement}
+\subsection{Context}
+While digital financial services have achieved massive adoption, many users still struggle with financial planning, budgeting, and achieving long-term savings goals. Traditional MFS platforms excel at transaction execution but lack proactive, personalized financial guidance.
+
+\subsection{Problem Statement}
+For \textbf{everyday MFS users}, the \textbf{lack of personalized, actionable financial guidance} causes \textbf{poor savings habits, unexpected liquidity pressure, and financial stress}. 
+
+\subsection{Proposed Solution}
+We will build \textbf{Shonchoy Copilot}, an AI-powered product that uses \textbf{synthetic transaction data and Large Language Models (LLMs)} to \textbf{analyze spending patterns, generate realistic savings plans, and provide conversational financial coaching}, with success measured by \textbf{user engagement rates and simulated savings goal completion}.
+
+\newpage
+
+% 2. Proposed Solution & Key Features
+\section{Proposed Solution and Key Features}
+Shonchoy Copilot addresses the problem through three core features:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Smart Savings Planner:} Users input a financial goal (e.g., "Save ৳30,000 in six months"). The AI analyzes simulated cash-flow behavior to propose feasible monthly contribution targets and highlights budget trade-offs.
+    \item \textbf{Cash-Flow \& Spending Intelligence:} Identifies recurring outflows and unusual spending patterns, translating complex transaction histories into simple, plain-language insights (e.g., "You spend 20\% more on weekends; adjusting this can accelerate your goal").
+    \item \textbf{Conversational Financial Assistant:} A chatbot interface (supporting Bangla and English) that answers financial queries, explains transaction categories, and provides nudges toward financial independence without manipulative or debt-encouraging recommendations.
+\end{itemize}
+
+\newpage
+
+% 3. AI Approach & Technical Architecture
+\section{AI Approach and Technical Architecture}
+\subsection{AI/ML Methodology}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Generative AI (LLM + RAG):} Used for the conversational assistant to provide context-aware, natural-language explanations of financial data. Retrieval-Augmented Generation (RAG) ensures responses are grounded in the user's specific (synthetic) transaction context, preventing hallucinations.
+    \item \textbf{Predictive Analytics:} A lightweight regression/clustering model (e.g., Scikit-learn) to forecast short-term cash flow and assess the feasibility of a user's savings goal based on historical simulated behavior.
+\end{itemize}
+
+\subsection{Technology Stack}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Frontend:} React / Next.js (Hosted on Vercel)
+    \item \textbf{Backend API:} Node.js / Express or Python FastAPI (Hosted on Render)
+    \item \textbf{AI/ML:} OpenAI API / Open-source LLM, Scikit-learn for predictive modeling
+    \item \textbf{Database:} PostgreSQL / MongoDB (for storing synthetic user profiles and session data)
+\end{itemize}
+
+\subsection{System Architecture}
+\textbf{Input} (User Goal/Synthetic Transaction Data) $\rightarrow$ \textbf{Intelligence Layer} (Feature Extraction + LLM/RAG Engine) $\rightarrow$ \textbf{Action} (Personalized Savings Plan \& Chat Response) $\rightarrow$ \textbf{Feedback Loop} (User adjusts goals based on AI insights).
+
+\newpage
+
+% 4. Data Strategy
+\section{Data Strategy}
+In strict adherence to the hackathon's \textbf{Privacy by Design} principles, \textbf{no production upay customer data was used}. 
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Synthetic Data Generation:} We generated realistic synthetic datasets encompassing user profiles, transaction histories, merchant categories, and savings goals.
+    \item \textbf{Injected Patterns:} The synthetic data includes known patterns such as regular income, recurring bills, seasonal spending spikes, and varying savings behaviors to ensure the AI models have meaningful patterns to learn from and explain.
+    \item \textbf{Data Governance:} All personally identifiable information (PII) is entirely fabricated. The architecture is designed so that if real data is introduced post-hackathon, it will be anonymized and aggregated.
+\end{itemize}
+
+\newpage
+
+% 5. Implementation & Deployment
+\section{Implementation and Deployment}
+The project has been developed as a functional, end-to-end prototype within the 72-hour initial development window, maintaining a continuous Git commit history as per competition rules.
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Public GitHub Repository:} \url{https://github.com/Soumitra-32/AI_DEV_FEST/} \\
+    \textit{(Contains complete source code, synthetic data scripts, and a comprehensive README.md with setup instructions)}
+    \item \textbf{Live Frontend Deployment:} \url{https://shonchoy-copilot.vercel.app/}
+    \item \textbf{Live Backend API Deployment:} \url{https://shonchoy-copilot-api.onrender.com/}
+\end{itemize}
+
+\newpage
+
+% 6. Business & Customer Impact
+\section{Business and Customer Impact}
+Aligned with the official evaluation framework, Shonchoy Copilot delivers measurable value:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Customer Value (Track 03 Alignment):} Empowers users to become financially independent, shifting the platform's perception from a mere "payment tool" to a "financial wellness partner."
+    \item \textbf{Business Metrics:} Increased user retention, higher wallet balances (due to successful savings goals), and enhanced trust in the MFS ecosystem.
+    \item \textbf{Innovation:} Differentiates upay by offering proactive, AI-driven financial coaching rather than reactive transaction histories.
+\end{itemize}
+
+\newpage
+
+% 7. Responsible AI & Security
+\section{Responsible AI and Security}
+Fintech AI requires strict ethical boundaries. Our design adheres to the following principles:
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Privacy:} Strict use of synthetic data during development; no real PII is processed.
+    \item \textbf{Explainability:} The AI explicitly states the reasoning behind its savings recommendations (e.g., "Based on your average monthly surplus of ৳5,000...").
+    \item \textbf{No Harmful Automation:} The copilot provides \textit{recommendations and insights}, but never autonomously executes transactions, approves credit, or makes binding financial decisions without explicit user confirmation.
+    \item \textbf{Security:} API endpoints are secured, and environment variables (e.g., API keys) are strictly managed via platform secrets, not exposed in the public repository.
+\end{itemize}
+
+\newpage
+
+% 8. Future Scope & Scalability
+\section{Future Scope and Scalability}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Controlled Validation:} Partner with upay to test the model's accuracy against anonymized, aggregated historical data in a sandbox environment.
+    \item \textbf{Advanced Personalization:} Integrate uplift modeling to determine the optimal time and channel to nudge a user about their savings goal.
+    \item \textbf{Ecosystem Expansion:} Extend the intelligence layer to offer "Merchant Savings" or "Agent Liquidity Forecasting" (Track 05) using the same underlying architectural patterns.
+\end{itemize}
+
+\newpage
+
+% 9. Conclusion
+\section{Conclusion}
+Shonchoy Copilot successfully demonstrates how AI can be applied with purpose to solve a real user problem in digital financial services. By combining predictive analytics with conversational AI, Team Polaris has built a defensible, customer-first prototype that aligns perfectly with the future vision of upay. The project is fully functional, responsibly designed, and ready for the next stage of technical and business validation.
+
+\vspace{1cm}
+\hrule
+\vspace{0.5cm}
+\textbf{Declaration:} We, the members of Team Polaris, declare that this project is our original work developed during the AI DEV FEST 2026 hackathon. We have not used any pre-existing, challenge-specific completed solutions, and all external resources, libraries, and AI tools have been used in compliance with the official rulebook.
+
+\vspace{1cm}
+\begin{flushright}
+\textit{Signed,} \\
+\vspace{0.2cm}
+
+Soumitra Saha \\
+Dipta Kumar Das \\
+K.M. Taskif Bin Parves \\
+\textbf{Team Polaris} \\
+AI DEV FEST 2026
+\end{flushright}
+
+\end{document}
