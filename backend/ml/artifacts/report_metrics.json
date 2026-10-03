@@ -1,0 +1,203 @@
+{
+  "db": "/home/dipta-das/DIU_AI_Hackathon/Ai_dev_project/AI_DEV_FEST/backend/data/shonchoy.db",
+  "anomaly": {
+    "model_name": "isolation_forest_behavior",
+    "baseline_name": "fixed_threshold",
+    "n_test_transactions": 27606,
+    "n_anomalies": 793,
+    "by_type": {
+      "rapid_repeat": {
+        "count": 372,
+        "model_recall": 10.48,
+        "baseline_recall": 6.99
+      },
+      "unusual_time": {
+        "count": 167,
+        "model_recall": 34.13,
+        "baseline_recall": 4.79
+      },
+      "unusually_large": {
+        "count": 254,
+        "model_recall": 9.45,
+        "baseline_recall": 39.37
+      }
+    },
+    "contamination": 0.02,
+    "model": {
+      "precision": 25.05,
+      "recall": 15.13,
+      "f1": 18.87,
+      "auc": 0.8375
+    },
+    "baseline": {
+      "precision": 7.85,
+      "recall": 16.9,
+      "f1": 10.72,
+      "auc": 0.6122,
+      "threshold_bdt": 2487.4
+    },
+    "improvement_recall_pct": -10.47,
+    "improvement_f1_pct": 76.03,
+    "improvement_auc_pct": 36.8
+  },
+  "fairness_forecast": {
+    "persona": {
+      "groups": {
+        "daily_wage": {
+          "mae_net": 2559.69,
+          "improvement_vs_best_pct": 53.5,
+          "test_users": 16
+        },
+        "gig_rider": {
+          "mae_net": 3764.04,
+          "improvement_vs_best_pct": 15.9,
+          "test_users": 9
+        },
+        "remittance_receiver": {
+          "mae_net": 10138.78,
+          "improvement_vs_best_pct": 67.8,
+          "test_users": 4
+        },
+        "salaried": {
+          "mae_net": 20378.23,
+          "improvement_vs_best_pct": 22.6,
+          "test_users": 19
+        },
+        "shopkeeper": {
+          "mae_net": 3783.35,
+          "improvement_vs_best_pct": 58.7,
+          "test_users": 23
+        },
+        "student": {
+          "mae_net": 2774.76,
+          "improvement_vs_best_pct": 65.6,
+          "test_users": 4
+        }
+      },
+      "max_relative_gap_pct": 696.12,
+      "max_absolute_gap_bdt": 17818.54
+    },
+    "income_band": {
+      "groups": {
+        "high": {
+          "mae_net": 6867.34,
+          "improvement_vs_best_pct": 50.6,
+          "test_users": 14
+        },
+        "low": {
+          "mae_net": 7839.91,
+          "improvement_vs_best_pct": 27.3,
+          "test_users": 31
+        },
+        "mid": {
+          "mae_net": 8722.77,
+          "improvement_vs_best_pct": 44.1,
+          "test_users": 30
+        }
+      },
+      "max_relative_gap_pct": 27.02,
+      "max_absolute_gap_bdt": 1855.43
+    }
+  },
+  "fairness_anomaly": {
+    "persona": {
+      "flag_rate": {
+        "daily_wage": 0.01,
+        "gig_rider": 0.0395,
+        "remittance_receiver": 0.0411,
+        "salaried": 0.0266,
+        "shopkeeper": 0.0064,
+        "student": 0.0446
+      },
+      "max_relative_gap_pct": 596.87,
+      "max_absolute_gap_pp": 3.82
+    },
+    "district": {
+      "flag_rate": {
+        "Barishal": 0.019,
+        "Chattogram": 0.0184,
+        "Cox's Bazar": 0.0,
+        "Cumilla": 0.01,
+        "Dhaka": 0.0235,
+        "Khulna": 0.0158,
+        "Mymensingh": 0.0186,
+        "Rajshahi": 0.0194,
+        "Rangpur": 0.0095,
+        "Sylhet": 0.0178
+      },
+      "max_relative_gap_pct": null,
+      "max_absolute_gap_pp": 2.35
+    },
+    "income_band": {
+      "flag_rate": {
+        "high": 0.0126,
+        "low": 0.0169,
+        "mid": 0.0203
+      },
+      "max_relative_gap_pct": 61.11,
+      "max_absolute_gap_pp": 0.77
+    }
+  },
+  "fairness_signal": {
+    "persona": {
+      "strong_share": {
+        "daily_wage": 0.375,
+        "gig_rider": 0.3333,
+        "remittance_receiver": 0.0,
+        "salaried": 0.0526,
+        "shopkeeper": 0.4348,
+        "student": 0.0
+      },
+      "max_relative_gap_pct": null,
+      "max_absolute_gap_pp": 43.48
+    },
+    "district": {
+      "strong_share": {
+        "Barishal": 0.0,
+        "Chattogram": 0.1111,
+        "Cox's Bazar": 1.0,
+        "Cumilla": 0.75,
+        "Dhaka": 0.2381,
+        "Khulna": 0.5,
+        "Mymensingh": 0.5,
+        "Rajshahi": 0.25,
+        "Rangpur": 0.3,
+        "Sylhet": 0.1
+      },
+      "max_relative_gap_pct": null,
+      "max_absolute_gap_pp": 100.0
+    },
+    "income_band": {
+      "strong_share": {
+        "high": 0.5,
+        "low": 0.2258,
+        "mid": 0.2
+      },
+      "max_relative_gap_pct": 150.0,
+      "max_absolute_gap_pp": 30.0
+    },
+    "test_users": 75
+  },
+  "fees": {
+    "fee_rate_assumed_pct": 1.85,
+    "users_with_cash_outs": 493,
+    "mean_monthly_fee_all_cashout_users_bdt": 222.25,
+    "mean_monthly_cashout_volume_bdt": 12013.63,
+    "rahim_monthly_fee_bdt": 335.58,
+    "potential_saving_100pct_bdt": 222.25,
+    "potential_saving_20_50pct_bdt": [
+      44.45,
+      111.13
+    ],
+    "note": "volumes measured on synthetic data; 20-50% adoption is an assumption, not measured"
+  },
+  "backtest": {
+    "test_users": 75,
+    "required_monthly_bdt": 5000.0,
+    "ai_feasible_users": 0,
+    "ai_hit_rate_given_feasible_pct": 0.0,
+    "ai_false_feasible_rate_pct": 0.0,
+    "naive_false_feasible_rate_pct": 85.3,
+    "note": "simulation on synthetic data; solver buffer = 1 std of monthly net"
+  }
+}
