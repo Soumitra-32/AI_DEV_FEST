@@ -15,12 +15,13 @@ from pydantic import TypeAdapter
 
 from ..config import Settings, get_settings
 from ..deps import CurrentUser
-from ..schemas import DayForecast, ForecastRequest, ForecastResponse
+from ..schemas import DayForecast, Driver, ForecastRequest, ForecastResponse
 from ..services import forecast_service
 
 router = APIRouter(tags=["forecast"])
 
 _day_adapter = TypeAdapter(DayForecast)
+_driver_adapter = TypeAdapter(Driver)
 
 
 def _disabled() -> HTTPException:
@@ -46,12 +47,15 @@ def get_forecast(
             include_pressure_days=body.include_pressure_days,
             db_path=settings.db_path,
             as_of=body.as_of.isoformat() if body.as_of is not None else None,
+            include_drivers=body.include_drivers,
+            language=body.language,
         )
     except KeyError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
     days = [_day_adapter.validate_python(item) for item in payload["days"]]
+    drivers = [_driver_adapter.validate_python(item) for item in payload.get("drivers", [])]
     return ForecastResponse(
         user_id=user_id,
         horizon_days=body.horizon_days,
@@ -60,6 +64,7 @@ def get_forecast(
         net_source=payload.get("net_source", "model"),
         days=days,
         pressure_days=payload["pressure_days"],
+        drivers=drivers,
         metrics=payload["metrics"],
         provenance=payload["provenance"],
     )

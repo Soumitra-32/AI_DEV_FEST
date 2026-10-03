@@ -10,10 +10,12 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
+from backend.app.schemas import ForecastRequest
 from backend.app.services import forecast_service, plan_service
 from backend.data import split as split_module
-from backend.ml import baselines, dataset, evaluate, forecast
+from backend.ml import baselines, dataset, evaluate, explain as ml_explain, forecast
 
 DEMO_USER = "rahim"
 
@@ -323,3 +325,105 @@ def test_plan_verdict_follows_the_arithmetic(small_db, empty_artifacts: str) -> 
     )
     assert plan["feasible"] is False
     assert plan["provenance"]["prediction"].startswith("Not feasible")
+
+
+# ---------------------------------------------------------------------------
+# SHAP drivers: the "why" under the forecast card
+# ---------------------------------------------------------------------------
+def test_forecast_request_defaults_to_drivers_in_bangla() -> None:
+    """The card asks for drivers by default; the language is whitelisted."""
+    request = ForecastRequest()
+    assert request.include_drivers is True
+    assert request.language == "bn"
+    assert ForecastRequest(language="en").language == "en"
+    with pytest.raises(ValidationError):
+        # Deliberately invalid on purpose: the whitelist must reject it.
+        ForecastRequest(language="fr")  # type: ignore[arg-type]
+
+
+def test_build_forecast_wires_drivers_only_when_asked(
+    small_db, empty_artifacts: str, monkeypatch
+) -> None:
+    """The service attaches ml.explain's drivers on request — and does not pay
+    for an explainer when the caller only needs the numbers."""
+    fake = ml_explain.Driver(
+        feature="roll_7_outflow", direction="increases", impact_bdt=123.45, detail="d"
+    )
+    calls: dict[str, object] = {}
+
+    def fake_top_drivers(row, flow="outflow", language="en", artifact_dir=None, limit=3):
+        calls["flow"] = flow
+        calls["language"] = language
+        return [fake]
+
+    monkeypatch.setattr("backend.ml.explain.top_drivers", fake_top_drivers)
+    payload = forecast_service.build_forecast(
+        DEMO_USER,
+        db_path=small_db,
+        artifact_dir=empty_artifacts,
+        include_drivers=True,
+        language="en",
+    )
+    assert payload["drivers"] == [fake.as_dict()]
+    assert calls == {"flow": "outflow", "language": "en"}
+    calls.clear()
+    quiet = forecast_service.build_forecast(
+        DEMO_USER, db_path=small_db, artifact_dir=empty_artifacts
+    )
+    assert quiet["drivers"] == []
+    assert calls == {}
+
+
+def test_forecast_route_maps_drivers_into_the_response(monkeypatch, tmp_path) -> None:
+    """The route used to drop the drivers the service built — pin the wiring."""
+    from fastapi.testclient import TestClient
+
+    from backend.app.config import Settings, get_settings
+    from backend.app.main import create_app
+    from backend.app.schemas import Provenance
+
+    token = "forecast-driver-token"
+    settings = Settings(
+        demo_auth_token=token, request_log_path=str(tmp_path / "requests.jsonl")
+    )
+    captured: dict[str, object] = {}
+
+    def fake_build(user_id, **kwargs):
+        captured.update(kwargs)
+        return {
+            "days": [],
+            "pressure_days": [],
+            "generated_from": None,
+            "net_source": "model",
+            "metrics": None,
+            "drivers": [
+                {
+                    "feature": "roll_7_outflow",
+                    "direction": "increases",
+                    "impact_bdt": 123.45,
+                    "detail": "spending over 7 days pushes up next spending",
+                }
+            ],
+            "provenance": Provenance(
+                prediction="p", assumption="a", explanation="e", source="model"
+            ).model_dump(),
+        }
+
+    monkeypatch.setattr("backend.app.services.forecast_service.build_forecast", fake_build)
+    app = create_app(settings)
+    app.dependency_overrides[get_settings] = lambda: settings
+    response = TestClient(app).post(
+        "/forecast", json={"language": "en"}, headers={"X-Demo-Token": token}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["drivers"] == [
+        {
+            "feature": "roll_7_outflow",
+            "direction": "increases",
+            "impact_bdt": 123.45,
+            "detail": "spending over 7 days pushes up next spending",
+        }
+    ]
+    assert captured["language"] == "en"
+    assert captured["include_drivers"] is True

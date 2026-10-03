@@ -122,3 +122,20 @@ def test_net_model_backtest_bias_is_reported_and_fallback_covers_it() -> None:
     if abs(bias_model / count) > abs(bias_anchor / count):
         assert payload["net_source"] == "anchor"
         assert "anchor" in payload["provenance"]["assumption"].lower()
+
+
+@NEEDS_DB
+def test_served_forecast_carries_bilingual_shap_drivers() -> None:
+    """The card's "why": SHAP reasons from the real artifacts, in the
+    requested language, bounded to the three reasons the UI renders."""
+    bangla = _served_forecast(include_drivers=True, language="bn")["drivers"]
+    assert 0 < len(bangla) <= 3
+    for driver in bangla:
+        assert driver["direction"] in {"increases", "decreases"}
+        assert driver["impact_bdt"] > 0
+        assert driver["detail"]
+    assert "প্রায়" in bangla[0]["detail"]
+
+    english = _served_forecast(include_drivers=True, language="en")["drivers"]
+    assert 0 < len(english) <= 3
+    assert "by about" in english[0]["detail"]

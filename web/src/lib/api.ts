@@ -42,6 +42,9 @@ export interface Provenance {
 export interface ForecastRequest {
   horizon_days?: number;
   include_pressure_days?: boolean;
+  include_drivers?: boolean;
+  /** Language for the SHAP driver explanations (bn | en). */
+  language?: "bn" | "en";
   as_of?: string;
 }
 
@@ -302,6 +305,8 @@ export function fetchForecast(body: ForecastRequest = {}): Promise<ForecastRespo
     body: JSON.stringify({
       horizon_days: body.horizon_days ?? 14,
       include_pressure_days: body.include_pressure_days ?? true,
+      include_drivers: body.include_drivers ?? true,
+      language: body.language ?? "bn",
       ...(body.as_of ? { as_of: body.as_of } : {}),
     }),
   });

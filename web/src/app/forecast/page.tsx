@@ -28,6 +28,8 @@ export default function ForecastPage() {
       setPreset(which);
       fetchForecast({
         horizon_days: 14,
+        // Driver explanation sentences follow the UI language.
+        language: lang,
         // 06-27 → window Jun 28–Jul 11: covers month-end days 28–31.
         ...(which === "monthend" ? { as_of: "2025-06-27" } : {}),
       })
@@ -40,7 +42,7 @@ export default function ForecastPage() {
           setLoading(false);
         });
     },
-    [tr],
+    [lang, tr],
   );
 
   useEffect(() => {
@@ -156,6 +158,23 @@ export default function ForecastPage() {
                   <Stamp variant="ink">
                     +{formatDigits(String(data.metrics.improvement_pct), lang)}% {tr("metrics.improvement")}
                   </Stamp>
+                  {data.metrics.net_mae_bdt != null && (
+                    <>
+                      <span className="text-rule">·</span>
+                      <span>
+                        {tr("metrics.net")}: MAE{" "}
+                        <strong className="font-serif-bn tabular-nums">
+                          {formatBDT(data.metrics.net_mae_bdt, lang)}
+                        </strong>
+                        {data.metrics.net_baseline_name
+                          ? ` vs ${formatModelName(data.metrics.net_baseline_name, lang)}`
+                          : ""}
+                        {data.metrics.net_improvement_pct != null
+                          ? ` (+${formatDigits(String(data.metrics.net_improvement_pct), lang)}%)`
+                          : ""}
+                      </span>
+                    </>
+                  )}
                 </div>
               ) : (
                 <p className="text-xs font-mono text-ink-muted">{tr("forecast.noMetrics")}</p>

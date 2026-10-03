@@ -204,11 +204,18 @@ def build_messages(
     ]
 
 
-def request_kwargs(temperature: float = 0.2, max_tokens: int = 700) -> dict[str, Any]:
+def request_kwargs(temperature: float = 0.2, max_tokens: int = 2000) -> dict[str, Any]:
     """Sampling defaults for a factual task.
 
     Low temperature because the answer must follow the context, and JSON mode so
     a stray sentence cannot become the user-visible answer.
+
+    The token budget must cover a reasoning model's thinking *plus* the JSON
+    reply: Groq's gpt-oss models spend ~800-1000 tokens thinking before they
+    emit the answer, and at 700 every call was rejected with a 400
+    ``json_validate_failed`` (truncated JSON), silently dropping chat to the
+    template path. The cap is only a ceiling, so a larger budget costs nothing
+    when the model stops early.
     """
     return {
         "temperature": temperature,

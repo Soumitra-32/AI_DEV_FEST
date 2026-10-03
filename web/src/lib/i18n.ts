@@ -698,10 +698,54 @@ export function formatModelName(name: string | null | undefined, lang: Lang): st
   return name;
 }
 
+/** Forecast model driver features, mirroring backend/ml/explain.py FEATURE_LABELS. */
+const FORECAST_FEATURE_LABELS: Record<string, { bn: string; en: string }> = {
+  day_of_month: { bn: "মাসের কত তারিখ", en: "Day of the Month" },
+  weekday: { bn: "সপ্তাহের দিন", en: "Weekday" },
+  is_weekend: { bn: "সাপ্তাহিক ছুটি", en: "Weekend" },
+  is_month_end: { bn: "মাস শেষ", en: "Month End" },
+  days_to_month_end: { bn: "মাস শেষ হতে বাকি দিন", en: "Days to Month End" },
+  lag_1_net: { bn: "গতকালের নেট", en: "Net Yesterday" },
+  lag_2_net: { bn: "দুই দিন আগের নেট", en: "Net Two Days Ago" },
+  lag_3_net: { bn: "তিন দিন আগের নেট", en: "Net Three Days Ago" },
+  lag_7_net: { bn: "গত সপ্তাহের নেট", en: "Net Last Week" },
+  lag_14_net: { bn: "২ সপ্তাহ আগের নেট", en: "Net Two Weeks Ago" },
+  lag_1_outflow: { bn: "গতকালের খরচ", en: "Spending Yesterday" },
+  lag_2_outflow: { bn: "দুই দিন আগের খরচ", en: "Spending Two Days Ago" },
+  lag_3_outflow: { bn: "তিন দিন আগের খরচ", en: "Spending Three Days Ago" },
+  lag_7_outflow: { bn: "গত সপ্তাহের খরচ", en: "Spending Last Week" },
+  lag_1_inflow: { bn: "গতকালের আয়", en: "Income Yesterday" },
+  roll_3_inflow: { bn: "গত ৩ দিনের আয়", en: "Income Over 3 Days" },
+  roll_3_outflow: { bn: "গত ৩ দিনের খরচ", en: "Spending Over 3 Days" },
+  roll_3_net: { bn: "গত ৩ দিনের নেট", en: "Net Over 3 Days" },
+  roll_7_inflow: { bn: "গত ৭ দিনের আয়", en: "Income Over 7 Days" },
+  roll_7_outflow: { bn: "গত ৭ দিনের খরচ", en: "Spending Over 7 Days" },
+  roll_7_net: { bn: "গত ৭ দিনের নেট", en: "Net Over 7 Days" },
+  roll_14_outflow: { bn: "গত ১৪ দিনের খরচ", en: "Spending Over 14 Days" },
+  roll_14_net: { bn: "গত ১৪ দিনের নেট", en: "Net Over 14 Days" },
+  roll_28_inflow: { bn: "গত ২৮ দিনের আয়", en: "Income Over 28 Days" },
+  roll_28_outflow: { bn: "গত ২৮ দিনের খরচ", en: "Spending Over 28 Days" },
+  roll_28_net: { bn: "গত ২৮ দিনের নেট", en: "Net Over 28 Days" },
+  max_7_outflow: { bn: "সপ্তাহের সবচেয়ে বেশি খরচের দিন", en: "Biggest Spending Day This Week" },
+  shortfall_last_7: { bn: "গত ৭ দিনে ব্যালেন্স ঘাটতি", en: "Shortfall Days in the Last 7" },
+  mtd_inflow: { bn: "এই মাসে এখন পর্যন্ত আয়", en: "Income So Far This Month" },
+  mtd_outflow: { bn: "এই মাসে এখন পর্যন্ত খরচ", en: "Spending So Far This Month" },
+  mtd_cash_out_bdt: { bn: "এই মাসে ক্যাশ-আউট", en: "Cash-Outs So Far This Month" },
+  mtd_cash_out_count: { bn: "এই মাসে ক্যাশ-আউট সংখ্যা", en: "Cash-Out Count This Month" },
+  roll_7_cash_out_bdt: { bn: "গত ৭ দিনে ক্যাশ-আউট", en: "Cash-Outs Over 7 Days" },
+  roll_28_cash_out_bdt: { bn: "গত ২৮ দিনে ক্যাশ-আউট", en: "Cash-Outs Over 28 Days" },
+  days_since_cash_out: { bn: "শেষ ক্যাশ-আউটের পর দিন", en: "Days Since Last Cash-Out" },
+  balance_end_bdt: { bn: "ওয়ালেটের বর্তমান ব্যালেন্স", en: "Current Wallet Balance" },
+};
+
 /** Human-friendly feature labels for SHAP drivers, metrics, and triggers. */
 export function formatFeatureName(name: string | null | undefined, lang: Lang): string {
   if (!name) return "";
   const lower = name.toLowerCase();
+  const forecastLabel = FORECAST_FEATURE_LABELS[lower];
+  if (forecastLabel) {
+    return lang === "bn" ? forecastLabel.bn : forecastLabel.en;
+  }
   if (lower.includes("cash_out_count_per_month")) {
     return lang === "bn" ? "মাসে ক্যাশ-আউট সংখ্যা" : "Cash-Outs Per Month";
   }

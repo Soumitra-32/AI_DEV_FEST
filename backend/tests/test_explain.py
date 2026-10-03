@@ -133,6 +133,10 @@ def test_request_asks_for_json_at_low_temperature() -> None:
     kwargs = prompts.request_kwargs()
     assert kwargs["response_format"] == {"type": "json_object"}
     assert kwargs["temperature"] <= 0.3
+    # Reasoning models spend most of the budget thinking; a 700-token cap made
+    # Groq reject the truncated JSON (400 json_validate_failed) and chat fell
+    # back to templates. The budget must cover thinking + the JSON reply.
+    assert kwargs["max_tokens"] >= 1200
 
 
 # ---------------------------------------------------------------------------
@@ -205,8 +209,18 @@ def test_an_api_error_falls_back_without_raising() -> None:
 
 
 def test_no_api_key_means_the_template_path_and_no_call() -> None:
+    # Blank all three chain slots explicitly: an explicit kwargs value beats
+    # the developer's .env, so the pool is empty no matter what is configured
+    # locally (the test must not leak real backup keys into this scenario).
     outcome = genai_explain.verbalize(
-        "fees", FEES_CONTEXT, settings=Settings(llm_api_key=""), client=None
+        "fees",
+        FEES_CONTEXT,
+        settings=Settings(
+            llm_api_key="",
+            llm_backup_api_key_1="",
+            llm_backup_api_key_2="",
+        ),
+        client=None,
     )
     assert outcome.source == "template"
 
@@ -278,12 +292,19 @@ def test_the_savings_context_is_the_solver_verdict(small_db) -> None:
 # ---------------------------------------------------------------------------
 @pytest.fixture(scope="module")
 def client(small_db) -> TestClient:
-    """A client with no LLM key, i.e. the template path, as in the demo."""
+    """A client with no LLM key, i.e. the template path, as in the demo.
+
+    All three chain slots are emptied explicitly: explicit kwargs beat the
+    developer's .env, so a locally configured backup key cannot turn this
+    template-path fixture into a live-LLM client.
+    """
     settings = Settings(
         demo_auth_token=DEMO_TOKEN,
         demo_user_id=DEMO_USER,
         database_path=str(small_db),
         llm_api_key="",
+        llm_backup_api_key_1="",
+        llm_backup_api_key_2="",
     )
     app = create_app(settings)
     app.dependency_overrides[get_settings] = lambda: settings

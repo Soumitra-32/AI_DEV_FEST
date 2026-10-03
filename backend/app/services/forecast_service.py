@@ -19,6 +19,7 @@ from backend.data import features as user_features
 from backend.data import generator
 from backend.ml import dataset as forecast_dataset
 from backend.ml import evaluate as forecast_evaluate
+from backend.ml import explain as ml_explain
 from backend.ml import forecast as forecast_model
 from backend.rules import pressure_days as pressure_rules
 
@@ -183,6 +184,8 @@ def build_forecast(
     artifact_dir: str | Path | None = None,
     safety_buffer_bdt: Optional[float] = None,
     as_of: Any = None,
+    include_drivers: bool = False,
+    language: str = "bn",
 ) -> dict[str, Any]:
     """Build the ``ForecastResponse`` payload for one user.
 
@@ -364,8 +367,22 @@ def build_forecast(
         explanation = f"Tightest day is {pressure_dates[0]} ({pressure_by_date[pressure_dates[0]]}); {n_pressure} pressure day(s)."
     else:
         explanation = "No pressure day in this window — the wallet stays above the buffer."
+    # The SHAP "why" behind the outflow model's number — what the forecast
+    # card shows under the chart. ``ml.explain`` degrades to an empty list
+    # when shap or the artifacts are unavailable, so serving never fails
+    # here. It is opt-in because callers that only read the numbers (the
+    # savings solver) should not pay for an explainer they never show.
+    drivers: list[dict[str, Any]] = []
+    if include_drivers:
+        drivers = [
+            driver.as_dict()
+            for driver in ml_explain.top_drivers(
+                last_row, flow="outflow", language=language, artifact_dir=str(artifacts)
+            )
+        ]
     return {
         "days": days, "pressure_days": pressure_dates,
+        "drivers": drivers,
         "monthly_net": round(monthly_net, 2),
         "monthly_inflow": round(monthly_inflow, 2),
         "monthly_outflow": round(monthly_outflow, 2),

@@ -102,6 +102,14 @@ class IdentityResponse(BaseModel):
 class ForecastRequest(BaseModel):
     horizon_days: int = Field(default=14, ge=1, le=60)
     include_pressure_days: bool = True
+    include_drivers: bool = Field(
+        default=True,
+        description="Include the SHAP 'why' drivers behind the outlook",
+    )
+    language: Language = Field(
+        default="bn",
+        description="Language of the driver explanations (bn | en)",
+    )
     as_of: Optional[date] = Field(
         default=None,
         description="ISO date placing the window: only history on or before "
@@ -131,12 +139,22 @@ class Driver(BaseModel):
 
 
 class ForecastMetrics(BaseModel):
+    """Held-out accuracy of the served forecast, model beside its best rule.
+
+    The ``net_*`` fields describe the net booster — the flow the savings solver
+    actually consumes — so they survive validation instead of being dropped.
+    """
+
     model_name: str
     mae_bdt: float
     rmse_bdt: float
     baseline_name: str
     baseline_mae_bdt: float
     improvement_pct: float
+    net_mae_bdt: Optional[float] = None
+    net_baseline_name: Optional[str] = None
+    net_improvement_pct: Optional[float] = None
+    net_source: Optional[Literal["model", "difference", "anchor"]] = None
 
 
 class ForecastResponse(BaseModel):
