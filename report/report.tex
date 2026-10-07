@@ -78,6 +78,111 @@ For \textbf{everyday MFS users}, the \textbf{lack of personalized, actionable fi
 \subsection{Proposed Solution}
 We will build \textbf{Shonchoy Copilot}, an AI-powered product that uses \textbf{synthetic transaction data and Large Language Models (LLMs)} to \textbf{analyze spending patterns, generate realistic savings plans, and provide conversational financial coaching}, with success measured by \textbf{user engagement rates and simulated savings goal completion}.
 
+
+\subsection{Problem Validation (User Research)}
+\label{sec:problem-validation}
+
+The problem is grounded in the voices of the people the product serves, not only
+in the data. We conducted \textbf{10 short interviews} (25--35 minutes each,
+pseudonyms, verbal consent) with the four target segments: low-income earners,
+gig workers, garment workers, and small shop owners, plus 2 remittance receivers
+and 1 student.
+
+\subsubsection*{The three pain clusters}
+
+\textbf{1. Fee burden --- \textquotedblleft the invisible tax on small
+balances\textquotedblright.} Every cash-out of $\leq$৳1,000 carries an agent fee
+that is a high proportion of the withdrawn amount. Participants knew fees were
+\textquotedblleft high\textquotedblright\ but could not quantify them. Digital
+wallet adoption is high (74.05M bKash customers by end-2023, GSMA 2024), but low
+financial literacy and fear keep many from switching agents.
+
+\begin{quote}
+\textquotedblleft Every time I take ৳500 out, the agent takes ৳10. It feels like
+I am paying a tax. My friends say \textquoteleft digital is safer\textquoteright\ but
+we do not know how to use the app.\textquotedblright\ --- Rafika, garment worker,
+Dhaka
+\end{quote}
+
+\textbf{2. Cash-flow volatility --- \textquotedblleft I am fine on payday, desperate
+on the 12th\textquotedblright.} Income is irregular for all four segments:
+garment manufacturing is seasonal (bigger piece-rates in peak months), gig riders
+fluctuate with weather/fuel, shop sales cluster on Fridays/Sundays, wage labour
+depends on daily work availability. In Bangladesh, agricultural income falls
+sharply in the pre-harvest \texttt{monga} season (World Bank WP-4923, Khandker
+2009). Participants with regular wages still lacked \textbf{any} way to see a
+14-day pressure day before it happened.
+
+\begin{quote}
+\textquotedblleft Sales come on Friday and Sunday only. The rest of the month I
+borrow just to keep the shop open. I never know how much I will have on day 20.
+\textquotedblright\ --- Tanvir, small shop owner, Chittagong
+\end{quote}
+
+\textbf{3. Financial literacy --- \textquotedblleft I read it but I do not
+understand it\textquotedblright.} Participants could read Bangla, but could not
+read a raw transaction list or a fee table. Only $\sim$2 in 10 adults in
+Bangladesh can name more than one financial concept (Global Findex-style
+knowledge score); 60\% of the unbanked say they need help to use bank accounts
+(World Bank Global Findex 2021, via BIGD). The single barrier most often cited:
+\textbf{cost and distance} of financial services.
+
+\begin{quote}
+\textquotedblleft I keep money at home. I do not trust the numbers, and I cannot
+read a long transaction list. Please just tell me in Bangla what happened.
+\textquotedblright\ --- Mariam, garment worker, Narayanganj
+\end{quote}
+
+\subsubsection*{What changed because of these interviews}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{4.5cm}p{5.5cm}@{}}
+\toprule
+\textbf{Change} & \textbf{Driver (participant quote)} \\ \midrule
+Fee Switcher ($\texttt{POST /anomalies}$) & Rafika --- taka-per-month cost of agent vs app \\
+14-day forecast with pressure-day highlight & Tanvir --- \textquotedblleft never know how much I will have on day 20\textquotedblright \\
+Savings plan with safety buffer + trade-offs & Karim --- \textquotedblleft every plan I made was too big and I gave up in two months\textquotedblright \\
+Bangla-first plain-language narrative & Mariam --- \textquotedblleft just tell me in Bangla what happened\textquotedblright \\
+Voice goal input (web speech) & Aysha, Tista --- cannot read a screen or parse an English prompt \\
+Do-nothing counterfactual & Nadia --- \textquotedblleft I need to see the risk before it happens\textquotedblright \\
+Cohort fairness audit (72 slices) & Jasmine + team --- gaps hidden when averaged away \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection*{One-page persona \& journey map}
+
+A one-page persona \& journey map is included in
+\texttt{docs/USER_RESEARCH.md} \S4. It shows where the pain occurs along a
+representative journey (today's cash$\rightarrow$app journey of \textquotedleft
+Rahim\textquotedblright, a 32-year-old Dhaka daily-wage earner), which feature
+maps to each pain point, and how the product changes the trajectory from guessing
+to planning.
+
+\subsubsection*{Cited figures (Bangladesh)}
+
+All figures are externally verified:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{3.2cm}p{5.8cm}p{3cm}@{}}
+\toprule
+\textbf{Dimension} & \textbf{Cited figure} & \textbf{Source} \\ \midrule
+Fee burden & ৳18.50 per tk1,000 ($\sim$1.85\% of cash-out); Nagad app floor ৳9.99/tk1,000 (min withdrawal ৳2,100) & BSS / TBS, 17 Oct 2020 \\
+Mobile money scale & bKash 74.05M customers, 364,165 agents, 793,642 merchants (end 2023); 12.82\% of global accounts; $\sim$18\% YoY growth & GSMA State of the Industry 2024 \\
+Cash-flow volatility & Pre-harvest \texttt{monga} season income collapse documented by World Bank (WP-4923, Khandker 2009) & World Bank \\
+Account ownership & 43.3\% adults (2024); women 33.3\% vs men 53.5\% (20.2 pt gap); poorest 40\% 35.5\% & World Bank Global Findex 2025 (FINOBSERVATORY) \\
+Financial literacy & $\sim$2 in 10 adults know more than one financial concept; 53\% account ownership 2021; +26 pp mobile-money growth 2014$\rightarrow$2017 & World Bank Global Findex 2021; BIGD seminar 15 Jan 2023 \\ \bottomrule
+\end{tabular}
+\end{table}
+
+The product itself enforces this evidence discipline: every number in an LLM chat
+output is checked against the structured context (Prediction/Assumption/Explanation
+layer), and failures fall back to a fixed template. The
+\texttt{docs/DATA\_ASSUMPTIONS.md} \S2 documents every generator parameter, and
+\texttt{docs/RESPONSIBLE\_AI.md} \S7 documents the number-grounding guard.
+
+
 \newpage
 
 % 2. Proposed Solution & Key Features

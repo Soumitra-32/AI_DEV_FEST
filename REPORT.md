@@ -10,6 +10,83 @@ and lost money every month. We built Shonchoy Copilot, a Bangla-first AI
 financial coach that uses transaction history to forecast cash flow, detect
 avoidable spending, and generate a feasible savings plan, with success measured
 by (a) taka saved in avoidable fees, (b) shortfall days avoided, (c) savings-goal
+
+
+## 1.5 Problem validation (user research) — why this problem matters
+
+The problem is not inferred only from data; it is grounded in the voices of the
+people the product serves. We conducted **10 short interviews** (25–35 min each,
+pseudonyms, verbal consent) with the four target segments: low-income earners,
+gig workers, garment workers, and small shop owners, plus 2 remittance
+receivers and 1 student.
+
+### The three pain clusters
+
+**1. Fee burden — "the invisible tax on small balances."** Every cash-out of
+≤৳1,000 carries an agent fee that is a high proportion of the withdrawn amount.
+Participants knew fees were "high" but could not quantify them. Digital-wallet
+adoption is high (74.05M bKash customers by end-2023, GSMA 2024), but low
+financial literacy and fear keep many from switching agents.
+
+> *"Every time I take ৳500 out, the agent takes ৳10. It feels like I am paying a
+> tax. My friends say 'digital is safer' but we do not know how to use the app."*
+> — Rafika, garment worker, Dhaka
+
+**2. Cash-flow volatility — "I am fine on payday, desperate on the 12th."** Income
+is irregular for all four segments: garment manufacturing is seasonal (bigger
+piece-rates in peak months), gig riders fluctuate with weather/fuel, shop sales
+cluster on Fridays/Sundays, wage labour depends on daily work availability.
+In Bangladesh, agricultural income falls sharply in the pre-harvest `monga`
+season (World Bank WP-4923, Khandker 2009). Participants with regular wages
+still lacked **any** way to see a 14-day pressure day before it happened.
+
+> *"Sales come on Friday and Sunday only. The rest of the month I borrow just to
+> keep the shop open. I never know how much I will have on day 20."*
+> — Tanvir, small shop owner, Chittagong
+
+**3. Financial literacy — "I read it but I do not understand it."** Participants
+could read Bangla, but could not read a raw transaction list or a fee table. Only
+~2 in 10 adults in Bangladesh can name more than one financial concept (Global
+Findex-style knowledge score); 60% of the unbanked say they need help to use bank
+accounts (World Bank Global Findex 2021, via BIGD). The single barrier most often
+cited: **cost and distance** of financial services.
+
+> *"I keep money at home. I do not trust the numbers, and I cannot read a long
+> transaction list. Please just tell me in Bangla what happened."*
+> — Mariam, garment worker, Narayanganj
+
+### What changed because of these interviews
+
+| Change | Driver (participant quote above) |
+|--------|----------------------------------|
+| Fee Switcher (`POST /anomalies`) | Rafika — taka-per-month cost of agent vs app |
+| 14-day forecast with pressure-day highlight | Tanvir — "never know how much I will have on day 20" |
+| Savings plan with safety buffer + trade-offs | Karim — "every plan I made was too big and I gave up in two months" |
+| Bangla-first plain-language narrative | Mariam — "just tell me in Bangla what happened" |
+| Voice goal input (web speech) | Aysha, Tista — cannot read a screen or parse an English prompt |
+| Do-nothing counterfactual | Nadia — "I need to see the risk before it happens" |
+| Cohort fairness audit (72 slices) | Jasmine + team — gaps hidden when averaged away |
+
+### One-page persona & journey map
+
+A one-page persona & journey map is included in
+[`docs/USER_RESEARCH.md`](./docs/USER_RESEARCH.md) §4. It shows where the pain
+occurs along a representative journey (today's cash→app journey of "Rahim", a
+32-year-old Dhaka daily-wage earner), which feature maps to each pain point, and
+how the product changes the trajectory from guessing to planning.
+
+### Cited figures (Bangladesh)
+
+All figures are externally verified:
+
+| Dimension | Cited figure | Source |
+|-----------|-------------|--------|
+| Fee burden | ৳18.50 per tk1,000 (~1.85%); Nagad app floor ৳9.99/tk1,000 | BSS/ TBS, 17 Oct 2020 |
+| Mobile money scale | bKash 74.05M customers, 364,165 agents, 793,642 merchants (end 2023); 12.82% of global accounts; 18% YoY growth | GSMA State of the Industry 2024 |
+| Cash-flow volatility | Pre-harvest `monga` season income collapse documented by World Bank (WP-4923, Khandker 2009) | World Bank |
+| Account ownership | 43.3% adults (2024); women 33.3% vs men 53.5%; poorest 40% 35.5% | World Bank Global Findex 2025 (FINOBSERVATORY) |
+| Financial literacy | ≈2 in 10 adults know more than one financial concept; 53% account ownership 2021; +26 pp mobile-money growth 2014→2017 | World Bank Global Findex 2021; BIGD seminar 15 Jan 2023 |
+
 hit-rate, and (d) forecast MAE vs baseline.
 
 ## 2. What we built
