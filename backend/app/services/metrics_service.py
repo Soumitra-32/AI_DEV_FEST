@@ -384,6 +384,7 @@ def build_metrics(
     artifact_dir: str | Path | None = None,
     *,
     feedback_path: str | Path | None = None,
+    events_path: str | Path | None = None,
     request_log_path: str | Path | None = None,
 ) -> dict[str, Any]:
     """The whole ``MetricsResponse`` payload, built from ``metrics.json``.
@@ -393,9 +394,9 @@ def build_metrics(
     works and has nothing to show" is a far better answer than a 500 on the
     metrics page.
 
-    ``feedback_path``/``request_log_path`` are the PII-free stores beside
+    ``feedback_path``/``events_path``/``request_log_path`` are the PII-free stores beside
     ``metrics.json``. They are read at request time (unlike the model blocks,
-    which are frozen into the artifact), because feedback and traffic keep
+    which are frozen into the artifact), because feedback, telemetry events and traffic keep
     arriving after training.
     """
     directory = Path(artifact_dir) if artifact_dir is not None else ARTIFACT_DIR
@@ -403,17 +404,31 @@ def build_metrics(
     notes: list[str] = []
 
     feedback = None
-    if feedback_path is not None:
+    customer_impact = None
+    if feedback_path is not None or events_path is not None:
         from . import feedback_service
 
-        feedback = feedback_service.summarise(feedback_path)
-        if feedback["responses"]:
+        if feedback_path is not None:
+            feedback = feedback_service.summarise(feedback_path)
+            if feedback["responses"]:
+                notes.append(
+                    f"feedback: {feedback['responses']} responses, "
+                    f"{feedback['helpful_rate_pct']}% helpful (no PII stored)."
+                )
+            else:
+                notes.append("feedback: no responses yet.")
+
+        customer_impact = feedback_service.compute_customer_impact(
+            events_path=events_path, feedback_path=feedback_path
+        )
+        if customer_impact["has_data"]:
             notes.append(
-                f"feedback: {feedback['responses']} responses, "
-                f"{feedback['helpful_rate_pct']}% helpful (no PII stored)."
+                f"customer_impact: {customer_impact['total_feedback']} feedback entries, "
+                f"{customer_impact['recommendations_shown']} recommendations shown, "
+                f"{customer_impact['actions_completed']} actions completed."
             )
         else:
-            notes.append("feedback: no responses yet.")
+            notes.append("customer_impact: No interaction data collected yet.")
 
     if not metrics:
         notes.append(
@@ -428,6 +443,7 @@ def build_metrics(
             "fairness": [],
             "impact": [],
             "feedback": feedback,
+            "customer_impact": customer_impact,
             "notes": notes,
         }
 
@@ -446,5 +462,6 @@ def build_metrics(
         "fairness": _fairness_rows(metrics.get("fairness") or {}, notes),
         "impact": _impact_rows(impact, notes),
         "feedback": feedback,
+        "customer_impact": customer_impact,
         "notes": _impact_notes(metrics) + notes,
     }

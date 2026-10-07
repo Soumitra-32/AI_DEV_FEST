@@ -8,8 +8,9 @@ import NotADecisionBanner from "@/components/NotADecisionBanner";
 import TopBar from "@/components/TopBar";
 import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
-import { fetchForecast } from "@/lib/api";
+import { fetchForecast, trackEvent } from "@/lib/api";
 import type { ForecastResponse } from "@/lib/api";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { formatBDT, formatDigits, formatModelName, formatFeatureName, formatWrittenDate } from "@/lib/i18n";
 
 export default function ForecastPage() {
@@ -47,6 +48,7 @@ export default function ForecastPage() {
 
   useEffect(() => {
     load();
+    trackEvent("forecast_viewed", { feature: "forecast" });
   }, [load]);
 
   return (
@@ -282,6 +284,9 @@ export default function ForecastPage() {
             {data.provenance && (
               <InsightCard provenance={data.provenance} />
             )}
+
+            {/* Feedback Loop */}
+            <FeedbackWidget feature="forecast" language={lang} />
 
             {/* Next Action Link */}
             <div className="p-4 bg-[#F1F4F9] border border-[#D8CFBB] rounded-[6px] flex items-center justify-between">

@@ -14,7 +14,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 SourceType = Literal["rule", "model", "template", "llm"]
 Language = Literal["bn", "en"]
@@ -403,6 +403,30 @@ class FairnessRow(BaseModel):
     relative_gap_pct: float
 
 
+class CustomerImpactSummary(BaseModel):
+    """Real customer impact metrics aggregated from authenticated telemetry events."""
+
+    total_feedback: int = 0
+    helpful_responses: int = 0
+    helpful_feedback_rate_pct: Optional[float] = None
+    understanding_responses: int = 0
+    understood_count: int = 0
+    understanding_rate_pct: Optional[float] = None
+    recommendations_shown: int = 0
+    recommendations_accepted: int = 0
+    recommendations_rejected: int = 0
+    actions_completed: int = 0
+    recommendation_acceptance_rate_pct: Optional[float] = None
+    action_completion_rate_pct: Optional[float] = None
+    savings_plans_created: int = 0
+    savings_plans_viewed: int = 0
+    forecast_views: int = 0
+    anomaly_views: int = 0
+    copilot_usage: int = 0
+    has_data: bool = False
+    message: str = "No interaction data collected yet"
+
+
 class MetricsResponse(BaseModel):
     generated_at: datetime
     forecast: List[ModelMetric] = Field(default_factory=list)
@@ -422,6 +446,13 @@ class MetricsResponse(BaseModel):
         description=(
             "Aggregated 'was this helpful?' responses, with no PII: only a count "
             "and rates per surface."
+        ),
+    )
+    customer_impact: Optional[CustomerImpactSummary] = Field(
+        default=None,
+        description=(
+            "Real telemetry aggregated from authenticated user interactions "
+            "(feedback, recommendation actions, feature views)."
         ),
     )
     notes: List[str] = Field(default_factory=list)
@@ -469,17 +500,56 @@ class HealthCoachResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # POST /feedback  (was this helpful?)
 # ---------------------------------------------------------------------------
-class FeedbackRequest(BaseModel):
-    """A 'was this helpful?' tap. Nothing here identifies the person."""
+ProductEventType = Literal[
+    "forecast_viewed",
+    "savings_plan_viewed",
+    "savings_plan_created",
+    "recommendation_shown",
+    "recommendation_accepted",
+    "recommendation_rejected",
+    "recommendation_action_completed",
+    "recommendation_feedback",
+    "anomaly_viewed",
+    "copilot_used",
+    "feedback_submitted",
+]
 
-    surface: str = Field(
+
+class FeedbackRequest(BaseModel):
+    """A 'was this helpful?' tap or detailed feedback. Nothing here identifies the person."""
+
+    surface: Optional[str] = Field(
+        default=None,
         min_length=1,
-        max_length=40,
+        max_length=50,
         description="Which card the tap came from, e.g. forecast | savings_plan",
     )
+    feature: Optional[str] = Field(
+        default=None,
+        min_length=1,
+        max_length=50,
+        description="Feature or surface name, e.g. savings_plan | forecast | tips | copilot",
+    )
     helpful: bool = Field(description="True for a thumbs-up, False for a thumbs-down")
+    understood: Optional[bool] = Field(
+        default=None,
+        description="Whether the user understood the recommendation/insight",
+    )
+    acted_on: Optional[bool] = Field(
+        default=None,
+        description="Whether the user took or plans to take action",
+    )
+    rating: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=5,
+        description="Optional rating on a 1-5 scale",
+    )
     intent: Optional[str] = Field(
         default=None, max_length=40, description="Optional intent the answer served"
+    )
+    recommendation_id: Optional[str] = Field(
+        default=None, max_length=100, description="Optional recommendation identifier"
     )
     comment: Optional[str] = Field(
         default=None,
@@ -490,6 +560,16 @@ class FeedbackRequest(BaseModel):
         ),
     )
 
+    @model_validator(mode="after")
+    def validate_surface_or_feature(self) -> FeedbackRequest:
+        if not self.surface and not self.feature:
+            raise ValueError("Either 'feature' or 'surface' must be provided.")
+        if not self.surface and self.feature:
+            self.surface = self.feature
+        if not self.feature and self.surface:
+            self.feature = self.surface
+        return self
+
 
 class FeedbackResponse(BaseModel):
     """The anonymised record that was written (never the raw user id)."""
@@ -498,11 +578,43 @@ class FeedbackResponse(BaseModel):
     recorded_at: datetime
     respondent: str = Field(description="Salted hash of the user id, never the id")
     surface: str
+    feature: str
     helpful: bool
+    understood: Optional[bool] = None
+    acted_on: Optional[bool] = None
+    rating: Optional[int] = None
+    recommendation_id: Optional[str] = None
     stored_fields: List[str] = Field(default_factory=list)
     note: str = (
         "No PII is stored: the user id is salted-hashed and any comment text is discarded."
     )
+
+
+# ---------------------------------------------------------------------------
+# POST /events  (Product telemetry events)
+# ---------------------------------------------------------------------------
+class ProductEventRequest(BaseModel):
+    """Structured telemetry event for customer impact measurement."""
+
+    event_type: ProductEventType
+    feature: Optional[str] = Field(default=None, max_length=50)
+    recommendation_id: Optional[str] = Field(default=None, max_length=100)
+    properties: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Safe metadata properties (no PII or raw transaction content)",
+    )
+
+
+class ProductEventResponse(BaseModel):
+    """Confirmation of product event recording."""
+
+    status: Literal["recorded"] = "recorded"
+    recorded_at: datetime
+    respondent: str
+    event_type: str
+    feature: Optional[str] = None
+    recommendation_id: Optional[str] = None
+    properties: Dict[str, Any] = Field(default_factory=dict)
 
 
 class FeedbackSurfaceSummary(BaseModel):
@@ -552,6 +664,7 @@ class GoalTemplatesResponse(BaseModel):
 
 
 FeedbackSummary.model_rebuild()
+CustomerImpactSummary.model_rebuild()
 MetricsResponse.model_rebuild()
 
 

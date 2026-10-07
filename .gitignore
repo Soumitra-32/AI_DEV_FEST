@@ -10,6 +10,8 @@ venv/
 node_modules/
 web/.next/
 web/out/
+web/coverage/
+coverage/
 web/tsconfig.tsbuildinfo
 npm-debug.log*
 

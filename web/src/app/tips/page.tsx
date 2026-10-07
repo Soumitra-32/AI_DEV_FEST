@@ -6,9 +6,10 @@ import NotADecisionBanner from "@/components/NotADecisionBanner";
 import InsightCard from "@/components/InsightCard";
 import DoNothingToggle from "@/components/DoNothingToggle";
 import Stamp from "@/components/Stamp";
-import { useLanguage } from "@/components/LangToggle";
-import { fetchExplain, fetchAnomalies, fetchSavingsPlan } from "@/lib/api";
+import { fetchExplain, fetchAnomalies, fetchSavingsPlan, trackEvent } from "@/lib/api";
 import type { ExplainResponse, FeeSwitchSuggestion, SavingsPlanResponse } from "@/lib/api";
+import { useLanguage } from "@/components/LangToggle";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { formatBDT, formatDigits, sanitizeBullet } from "@/lib/i18n";
 
 export default function TipsPage() {
@@ -17,6 +18,9 @@ export default function TipsPage() {
   const [feeSwitch, setFeeSwitch] = useState<FeeSwitchSuggestion | null>(null);
   const [plan, setPlan] = useState<SavingsPlanResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [actionStates, setActionStates] = useState<
+    Record<string, "idle" | "accepted" | "rejected" | "remind_later" | "completed">
+  >({});
 
   useEffect(() => {
     let cancelled = false;
@@ -82,12 +86,40 @@ export default function TipsPage() {
         setPlan(planResult.value);
       }
       setLoading(false);
+
+      // Track recommendation_shown for visible recommendations
+      trackEvent("recommendation_shown", { recommendation_id: "tip-month-end-expenses", feature: "tips" });
+      if (anomResult.status === "fulfilled" && (anomResult.value.fee_switch?.cash_out_count ?? 0) > 0) {
+        trackEvent("recommendation_shown", { recommendation_id: "tip-fee-switch", feature: "tips" });
+      }
+      if (planResult.status === "fulfilled") {
+        trackEvent("recommendation_shown", { recommendation_id: "tip-savings-assessment", feature: "tips" });
+      }
     });
 
     return () => {
       cancelled = true;
     };
   }, [lang]);
+
+  const handleTryThis = (tipId: string) => {
+    trackEvent("recommendation_accepted", { recommendation_id: tipId, feature: "tips" });
+    setActionStates((prev) => ({ ...prev, [tipId]: "accepted" }));
+  };
+
+  const handleMarkCompleted = (tipId: string) => {
+    trackEvent("recommendation_action_completed", { recommendation_id: tipId, feature: "tips" });
+    setActionStates((prev) => ({ ...prev, [tipId]: "completed" }));
+  };
+
+  const handleNotRelevant = (tipId: string) => {
+    trackEvent("recommendation_rejected", { recommendation_id: tipId, feature: "tips" });
+    setActionStates((prev) => ({ ...prev, [tipId]: "rejected" }));
+  };
+
+  const handleRemindLater = (tipId: string) => {
+    setActionStates((prev) => ({ ...prev, [tipId]: "remind_later" }));
+  };
 
   // GAP-10: no ?? fallbacks. Without live fee data there is no fee card —
   // an explicit unavailable note instead of 5 / 3500 / 324 guesses.
@@ -138,6 +170,7 @@ export default function TipsPage() {
                 "en"
               )} per month.`;
           return {
+            id: "tip-fee-switch",
             titleBn: qrCount > 0 ? "দোকানে ক্যাশ-আউটের বদলে বাংলা কিউআর" : "ক্যাশ-আউটের সংখ্যা কমান",
             titleEn: qrCount > 0 ? "Use Bangla QR instead of cash-out" : "Consolidate cash-out transactions",
             descBn: tip1DescBn,
@@ -153,6 +186,7 @@ export default function TipsPage() {
   // claim. Unavailable instead of invented when the API is down.
   const planCard = plan
     ? {
+        id: "tip-savings-assessment",
         titleBn: "সঞ্চয়ের লক্ষ্য মূল্যায়ন",
         titleEn: "Savings goal assessment",
         descBn: plan.feasible
@@ -170,6 +204,7 @@ export default function TipsPage() {
   const curatedTips = [
     ...(feeCard ? [feeCard] : []),
     {
+      id: "tip-month-end-expenses",
       titleBn: "মাসের শেষ দিনগুলোর ব্যয় ব্যবস্থাপনা",
       titleEn: "Manage month-end expenses",
       descBn:
@@ -266,31 +301,92 @@ export default function TipsPage() {
           )}
 
           <div className="border-t border-b border-rule bg-surface/30 divide-y divide-rule/60">
-            {curatedTips.map((tip, idx) => (
-              <div
-                key={idx}
-                className="p-5 space-y-2 hover:bg-surface/60 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <Stamp variant="ink">
-                    {lang === "bn" ? tip.tagBn : tip.tagEn}
-                  </Stamp>
-                  <span className="text-xs font-mono text-ink-muted">
-                    [{tr(tip.stampKey)}]
-                  </span>
+            {curatedTips.map((tip, idx) => {
+              const state = actionStates[tip.id] || "idle";
+              return (
+                <div
+                  key={idx}
+                  className="p-5 space-y-3 hover:bg-surface/60 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <Stamp variant="ink">
+                      {lang === "bn" ? tip.tagBn : tip.tagEn}
+                    </Stamp>
+                    <span className="text-xs font-mono text-ink-muted">
+                      [{tr(tip.stampKey)}]
+                    </span>
+                  </div>
+
+                  <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
+                    {lang === "bn" ? tip.titleBn : tip.titleEn}
+                  </h3>
+
+                  <p className="text-sm text-ink-muted leading-relaxed font-hind">
+                    {lang === "bn" ? tip.descBn : tip.descEn}
+                  </p>
+
+                  {/* Recommendation action tracking: shown -> accepted/rejected -> action_completed */}
+                  <div className="pt-2 border-t border-rule/50 flex flex-wrap items-center justify-between gap-2">
+                    {state === "completed" ? (
+                      <span className="text-xs font-semibold text-[#0054A6] flex items-center gap-1.5 font-hind">
+                        <span className="inline-block w-2 h-2 rounded-full bg-[#0054A6]" />
+                        {lang === "bn" ? "পদক্ষেপ সম্পন্ন হয়েছে ✓" : "Action completed ✓"}
+                      </span>
+                    ) : state === "accepted" ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-[#1E1B16] font-medium font-hind">
+                          {lang === "bn" ? "গ্রহণ করেছেন • কাজ শেষ হলে চিহ্নিত করুন:" : "Accepted • Mark when done:"}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleMarkCompleted(tip.id)}
+                          className="px-3 py-1.5 bg-[#0054A6] hover:bg-[#003E7E] text-white text-xs font-medium rounded-[6px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#0054A6]"
+                        >
+                          {lang === "bn" ? "✓ সম্পন্ন করেছি" : "✓ Mark completed"}
+                        </button>
+                      </div>
+                    ) : state === "rejected" ? (
+                      <span className="text-xs text-[#6A6355] font-hind">
+                        {lang === "bn" ? "প্রাসঙ্গিক নয় হিসেবে চিহ্নিত" : "Marked as not relevant"}
+                      </span>
+                    ) : state === "remind_later" ? (
+                      <span className="text-xs text-[#6A6355] font-hind">
+                        {lang === "bn" ? "পরে মনে করিয়ে দেওয়া হবে" : "Will remind you later"}
+                      </span>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleTryThis(tip.id)}
+                          className="px-3 py-1.5 border border-[#0054A6] text-[#0054A6] hover:bg-[#0054A6] hover:text-white text-xs font-medium rounded-[6px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#0054A6]"
+                        >
+                          {lang === "bn" ? "এটি চেষ্টা করব" : "I'll try this"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleNotRelevant(tip.id)}
+                          className="px-2.5 py-1.5 border border-[#D8CFBB] text-[#6A6355] hover:text-[#1E1B16] hover:border-[#1E1B16] text-xs font-medium rounded-[6px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#1E1B16]"
+                        >
+                          {lang === "bn" ? "প্রাসঙ্গিক নয়" : "Not relevant"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRemindLater(tip.id)}
+                          className="px-2.5 py-1.5 border border-[#D8CFBB] text-[#6A6355] hover:text-[#1E1B16] hover:border-[#1E1B16] text-xs font-medium rounded-[6px] transition-colors focus:outline-none focus:ring-1 focus:ring-[#1E1B16]"
+                        >
+                          {lang === "bn" ? "পরে মনে করিয়ে দিন" : "Remind me later"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-
-                <h3 className="font-serif-bn font-bold text-lg text-ink m-0">
-                  {lang === "bn" ? tip.titleBn : tip.titleEn}
-                </h3>
-
-                <p className="text-sm text-ink-muted leading-relaxed font-hind">
-                  {lang === "bn" ? tip.descBn : tip.descEn}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
+
+        {/* Feedback Loop */}
+        <FeedbackWidget feature="tips" language={lang} />
 
         <DoNothingToggle
           costBdt={feeSwitch?.potential_saving_bdt ?? null}

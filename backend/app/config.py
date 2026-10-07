@@ -74,6 +74,7 @@ class Settings(BaseSettings):
     feature_metrics: bool = True
     feature_health_coach: bool = True
     feature_feedback: bool = True
+    feature_events: bool = True
     feature_goal_templates: bool = True
 
     # Where the trained artifacts live. ``/metrics`` reads metrics.json from here
@@ -106,6 +107,11 @@ class Settings(BaseSettings):
     def feedback_path(self) -> Path:
         """Absolute path to the append-only feedback store (JSONL)."""
         return self.artifact_path / "feedback.jsonl"
+
+    @property
+    def events_path(self) -> Path:
+        """Absolute path to the append-only product events store (JSONL)."""
+        return self.artifact_path / "events.jsonl"
 
     @property
     def request_log_file(self) -> Path:
@@ -157,6 +163,7 @@ class Settings(BaseSettings):
             "metrics": self.feature_metrics,
             "health_coach": self.feature_health_coach,
             "feedback": self.feature_feedback,
+            "events": self.feature_events,
             "goal_templates": self.feature_goal_templates,
             "tips": self.feature_tips,
             "voice": self.feature_voice,

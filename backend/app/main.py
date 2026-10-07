@@ -24,6 +24,7 @@ from .routers import (
     anomalies,
     chat_explain,
     credit_readiness,
+    events,
     feedback,
     forecast,
     goal_templates,
@@ -104,6 +105,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     app.include_router(health_coach.router)
     app.include_router(goal_templates.router)
     app.include_router(feedback.router)
+    app.include_router(events.router)
     app.include_router(metrics.router)
     app.include_router(parse_goal.router)
 

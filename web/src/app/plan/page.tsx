@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import type { FormEvent } from "react";
 import DoNothingToggle from "@/components/DoNothingToggle";
 import InsightCard from "@/components/InsightCard";
 import NotADecisionBanner from "@/components/NotADecisionBanner";
+import SavingsPlanForm from "@/components/SavingsPlanForm";
 import TopBar from "@/components/TopBar";
 import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
-import { fetchSavingsPlan } from "@/lib/api";
+import { fetchSavingsPlan, trackEvent } from "@/lib/api";
 import type { SavingsPlanResponse, TradeOffAction } from "@/lib/api";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 import type { TranslationKey } from "@/lib/i18n";
 import { formatBDT, formatDigits, formatInteger } from "@/lib/i18n";
 
@@ -167,6 +168,10 @@ function PlanContent() {
   // would keep showing stale/default values (GAP-10 voice carry bug).
   const lastHandoff = useRef<string | null>(null);
 
+  useEffect(() => {
+    trackEvent("savings_plan_viewed", { feature: "savings_plan" });
+  }, []);
+
   function runPlan(goalBdt: number, monthsCount: number) {
     setBusy(true);
     setError(null);
@@ -174,29 +179,15 @@ function PlanContent() {
       .then((body) => {
         setPlan(body);
         setBusy(false);
+        trackEvent("savings_plan_created", {
+          feature: "savings_plan",
+          properties: { goal_bdt: goalBdt, months: Math.round(monthsCount) },
+        });
       })
       .catch(() => {
         setError(tr("error.title"));
         setBusy(false);
       });
-  }
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const goalBdt = Number(goal);
-    const monthsCount = Number(months);
-
-    if (
-      !Number.isFinite(goalBdt) ||
-      goalBdt <= 0 ||
-      !Number.isFinite(monthsCount) ||
-      monthsCount < 1
-    ) {
-      setError(tr("error.title"));
-      return;
-    }
-
-    runPlan(goalBdt, monthsCount);
   }
 
   // Voice handoff: landing with ?goal=&months=&prompt= means the user spoke
@@ -246,57 +237,17 @@ function PlanContent() {
 
         <NotADecisionBanner />
 
-        {/* Input Form Ledger Section */}
-        <form
-          onSubmit={submit}
-          className="bg-surface/50 border-t border-b border-rule p-5 md:p-6 space-y-4"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label htmlFor="goal-input" className="text-xs font-mono uppercase text-ink-muted block">
-                {tr("plan.goal")}
-              </label>
-              <input
-                id="goal-input"
-                type="number"
-                min={500}
-                step={500}
-                value={goal}
-                onChange={(e) => setGoal(e.target.value)}
-                className="w-full h-14 bg-[#F1F4F9] border border-[#D8CFBB] px-4 font-serif-bn text-xl font-bold text-[#1E1B16] rounded-[6px] focus:outline-none focus:border-[#0054A6] transition-colors"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="months-input" className="text-xs font-mono uppercase text-[#6A6355] block">
-                {tr("plan.months")}
-              </label>
-              <input
-                id="months-input"
-                type="number"
-                min={1}
-                max={36}
-                value={months}
-                onChange={(e) => setMonths(e.target.value)}
-                className="w-full h-14 bg-[#F1F4F9] border border-[#D8CFBB] px-4 font-mono text-lg text-[#1E1B16] rounded-[6px] focus:outline-none focus:border-[#0054A6] transition-colors"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full min-h-[48px] h-14 bg-[#0054A6] hover:bg-[#003E7E] text-white text-[17px] font-medium rounded-[6px] transition-colors cursor-pointer border-0"
-          >
-            {busy ? tr("plan.calculating") : tr("plan.submit")}
-          </button>
-        </form>
-
-        {error && (
-          <div className="bg-surface/50 border-l-2 border-brickRed border-t border-b border-r border-rule p-4 text-brickRed text-sm font-mono">
-            {error}
-          </div>
-        )}
+        <SavingsPlanForm
+          initialGoal={goal}
+          initialMonths={months}
+          busy={busy}
+          error={error}
+          onSubmit={({ goal_bdt, months: m }) => {
+            setGoal(String(goal_bdt));
+            setMonths(String(m));
+            runPlan(goal_bdt, m);
+          }}
+        />
 
         {/* Plan Results */}
         {plan && (
@@ -428,6 +379,9 @@ function PlanContent() {
               months={plan.months}
               outcome={formatDoNothingOutcome(plan.do_nothing?.description, lang) || undefined}
             />
+
+            {/* Feedback Loop */}
+            <FeedbackWidget feature="savings_plan" language={lang} />
 
             <div className="p-4 bg-surface/50 border-t border-b border-rule flex items-center justify-between">
               <span className="font-hind text-sm text-ink-muted">

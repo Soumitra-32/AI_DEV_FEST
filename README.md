@@ -98,6 +98,11 @@ assumption changes, and all cited Bangladesh statistics live in
 6. **Transparent Model Metrics & Cohort Fairness (`GET /metrics`)**
    - Public evaluation metrics comparing all models against naive trailing averages and fixed-threshold baselines.
    - Audits 72 demographic slices across 5 personas and 10 districts.
+7. **Customer Impact Instrumentation & Telemetry (`POST /feedback`, `POST /events`)**
+   - Privacy-first append-only telemetry measuring the complete recommendation lifecycle (`shown → accepted/rejected → action_completed`).
+   - Zero fabrication: Real feedback helpfulness, understanding rates, and action completion rates computed with exact denominators; safe empty state handling.
+   - Distinct separation of 3 evidence layers: Offline ML Models, Live Product Telemetry, and Counterfactual Macroeconomic Policy Simulation.
+   - See [`docs/CUSTOMER_IMPACT.md`](./docs/CUSTOMER_IMPACT.md).
 
 ---
 

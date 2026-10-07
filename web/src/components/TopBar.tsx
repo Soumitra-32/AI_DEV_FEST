@@ -6,7 +6,7 @@ import LangToggle, { useLanguage } from "@/components/LangToggle";
 import MaterialIcon from "@/components/MaterialIcon";
 
 export default function TopBar() {
-  const { tr } = useLanguage();
+  const { lang, tr } = useLanguage();
   const pathname = usePathname();
 
   const navItems = [
@@ -39,6 +39,47 @@ export default function TopBar() {
 
   return (
     <header className="border-b border-[#D8CFBB] bg-[#FFFFFF] mb-6">
+      {/* Demo Mode Strip */}
+      <div className="bg-[#F1F4F9] border-b border-[#D8CFBB] px-4 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs font-hind text-[#6A6355]">
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-2 h-2 rounded-full bg-[#0054A6]" />
+          <span className="font-semibold text-[#1E1B16]">
+            {lang === "bn" ? "ডেমো মোড" : "DEMO MODE"}
+          </span>
+          <span>—</span>
+          <span>
+            {lang === "bn"
+              ? "সিন্থেটিক লেনদেন ডেটা ব্যবহৃত হচ্ছে"
+              : "Using synthetic transaction data"}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 text-[11px] font-mono">
+          <span>{lang === "bn" ? "দৃশ্যপট:" : "Scenario:"}</span>
+          <select
+            aria-label="Demo Scenario"
+            className="bg-white border border-[#D8CFBB] text-[#1E1B16] rounded px-1.5 py-0.5 text-xs font-sans focus:outline-none focus:border-[#0054A6]"
+            defaultValue="healthy"
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "monthend") {
+                window.location.href = "/forecast";
+              } else if (val === "fees") {
+                window.location.href = "/tips";
+              } else if (val === "unusual") {
+                window.location.href = "/spending";
+              } else {
+                window.location.href = "/";
+              }
+            }}
+          >
+            <option value="healthy">{lang === "bn" ? "স্বাভাবিক ক্যাশ-ফ্লো" : "Healthy cash flow"}</option>
+            <option value="monthend">{lang === "bn" ? "মাস শেষের চাপ (২৮-৩১)" : "Month-end pressure"}</option>
+            <option value="fees">{lang === "bn" ? "অতিরিক্ত ক্যাশ-আউট ফি" : "High avoidable fees"}</option>
+            <option value="unusual">{lang === "bn" ? "অস্বাভাবিক লেনদেন" : "Unusual transaction"}</option>
+          </select>
+        </div>
+      </div>
+
       {/* Upper header bar */}
       <div className="px-4 py-3 flex items-center justify-between gap-4">
         {/* Brand: "সঞ্চয় Copilot" with a 3px upay-blue vertical bar */}

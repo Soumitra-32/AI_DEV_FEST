@@ -11,8 +11,9 @@ import SuggestionChips from "@/components/SuggestionChips";
 import Stamp from "@/components/Stamp";
 import MaterialIcon from "@/components/MaterialIcon";
 import { useLanguage } from "@/components/LangToggle";
-import { fetchAnomalies, fetchHealth, fetchIdentity, fetchParseGoal } from "@/lib/api";
+import { fetchAnomalies, fetchHealth, fetchIdentity, fetchParseGoal, trackEvent } from "@/lib/api";
 import type { HealthResponse, IdentityResponse } from "@/lib/api";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { formatBDT, formatDistrict, formatIncomeBand, formatInteger, formatPersona } from "@/lib/i18n";
 
 type Status = "checking" | "ok" | "unreachable";
@@ -230,6 +231,10 @@ export default function HomePage() {
         <section className="bg-[#FFFFFF] border border-[#D8CFBB] rounded-[6px] p-5 md:p-6 space-y-4">
           <VoiceInput
             onSubmitText={(text) => {
+              trackEvent("copilot_used", {
+                feature: "copilot",
+                properties: { query_len: text.length },
+              });
               fetchParseGoal(text)
                 .then((parsed) => {
                   setPending({
@@ -437,6 +442,9 @@ export default function HomePage() {
               : "After 6 months, savings will be ৳0. This is also your decision."
           }
         />
+
+        {/* Feedback Loop */}
+        <FeedbackWidget feature="copilot" language={lang} />
 
         {/* Component 6: Primary CTA */}
         <section className="space-y-3">

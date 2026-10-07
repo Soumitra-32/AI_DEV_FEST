@@ -44,12 +44,18 @@ def post_feedback(
     try:
         stored = feedback_service.record(
             user_id,
-            surface=body.surface,
+            surface=body.surface or body.feature or "unknown",
             helpful=body.helpful,
+            feature=body.feature or body.surface or "unknown",
+            understood=body.understood,
+            acted_on=body.acted_on,
+            rating=body.rating,
             intent=body.intent,
+            recommendation_id=body.recommendation_id,
             comment=body.comment,
             salt=settings.feedback_salt,
             path=settings.feedback_path,
+            events_path=settings.events_path,
         )
     except OSError as exc:
         raise HTTPException(
@@ -62,7 +68,12 @@ def post_feedback(
             "recorded_at": stored["recorded_at"],
             "respondent": stored["respondent"],
             "surface": stored["surface"],
+            "feature": stored["feature"],
             "helpful": stored["helpful"],
+            "understood": stored["understood"],
+            "acted_on": stored["acted_on"],
+            "rating": stored["rating"],
+            "recommendation_id": stored["recommendation_id"],
             "stored_fields": list(feedback_service.STORED_FIELDS),
         }
     )

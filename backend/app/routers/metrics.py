@@ -49,6 +49,7 @@ def get_metrics(
         metrics_service.build_metrics(
             settings.artifact_path,
             feedback_path=settings.feedback_path,
+            events_path=settings.events_path,
             request_log_path=settings.request_log_file,
         )
     )

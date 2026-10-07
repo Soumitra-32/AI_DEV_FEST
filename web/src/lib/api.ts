@@ -255,6 +255,42 @@ export interface FairnessRow {
   exceeds_target?: boolean;
 }
 
+export interface CustomerImpactSummary {
+  total_feedback: number;
+  helpful_responses: number;
+  helpful_feedback_rate_pct: number | null;
+  understanding_responses: number;
+  understood_count: number;
+  understanding_rate_pct: number | null;
+  recommendations_shown: number;
+  recommendations_accepted: number;
+  recommendations_rejected: number;
+  actions_completed: number;
+  recommendation_acceptance_rate_pct: number | null;
+  action_completion_rate_pct: number | null;
+  savings_plans_created: number;
+  savings_plans_viewed: number;
+  forecast_views: number;
+  anomaly_views: number;
+  copilot_usage: number;
+  has_data: boolean;
+  message: string;
+}
+
+export interface FeedbackSurfaceSummary {
+  surface: string;
+  responses: number;
+  helpful: number;
+  helpful_rate_pct: number;
+}
+
+export interface FeedbackSummary {
+  responses: number;
+  helpful: number;
+  helpful_rate_pct: number;
+  by_surface: FeedbackSurfaceSummary[];
+}
+
 export interface MetricsResponse {
   generated_at: string;
   forecast: ModelMetric[];
@@ -262,20 +298,102 @@ export interface MetricsResponse {
   signal: ModelMetric[];
   fairness: FairnessRow[];
   impact?: ModelMetric[];
+  feedback?: FeedbackSummary | null;
+  customer_impact?: CustomerImpactSummary | null;
   notes?: string[];
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-const DEMO_TOKEN = process.env.NEXT_PUBLIC_DEMO_TOKEN ?? "change-me";
+export interface FeedbackRequest {
+  feature?: string;
+  surface?: string;
+  helpful: boolean;
+  understood?: boolean;
+  acted_on?: boolean;
+  rating?: number;
+  intent?: string;
+  recommendation_id?: string;
+  comment?: string;
+}
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+export interface FeedbackResponse {
+  status: "recorded";
+  recorded_at: string;
+  respondent: string;
+  surface: string;
+  feature: string;
+  helpful: boolean;
+  understood?: boolean | null;
+  acted_on?: boolean | null;
+  rating?: number | null;
+  recommendation_id?: string | null;
+  stored_fields: string[];
+  note: string;
+}
+
+export type ProductEventType =
+  | "forecast_viewed"
+  | "savings_plan_viewed"
+  | "savings_plan_created"
+  | "recommendation_shown"
+  | "recommendation_accepted"
+  | "recommendation_rejected"
+  | "recommendation_action_completed"
+  | "recommendation_feedback"
+  | "anomaly_viewed"
+  | "copilot_used"
+  | "feedback_submitted";
+
+export interface ProductEventRequest {
+  event_type: ProductEventType;
+  feature?: string;
+  recommendation_id?: string;
+  properties?: Record<string, any>;
+}
+
+export interface ProductEventResponse {
+  status: "recorded";
+  recorded_at: string;
+  respondent: string;
+  event_type: string;
+  feature?: string | null;
+  recommendation_id?: string | null;
+  properties: Record<string, any>;
+}
+
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+export const DEMO_TOKEN = process.env.NEXT_PUBLIC_DEMO_TOKEN ?? "change-me";
+
+export class ApiError extends Error {
+  status: number;
+  path: string;
+
+  constructor(message: string, status: number, path: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.path = path;
+  }
+}
+
+export function buildApiUrl(path: string, base: string = BASE_URL): string {
+  const cleanBase = base.replace(/\/+$/, "");
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${cleanBase}${cleanPath}`;
+}
+
+export async function request<T>(
+  path: string,
+  init?: RequestInit,
+  timeoutMs: number = 60000,
+): Promise<T> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const response = await fetch(`${BASE_URL}${path}`, {
+    const url = buildApiUrl(path);
+    const response = await fetch(url, {
       ...init,
-      signal: controller.signal,
+      signal: init?.signal ?? controller.signal,
       headers: {
         "Content-Type": "application/json",
         "X-Demo-Token": DEMO_TOKEN,
@@ -283,7 +401,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       },
     });
     if (!response.ok) {
-      throw new Error(`API ${path} failed with status ${response.status}`);
+      throw new ApiError(`API ${path} failed with status ${response.status}`, response.status, path);
     }
     return (await response.json()) as T;
   } finally {
@@ -361,5 +479,37 @@ export function fetchParseGoal(message: string): Promise<ParseGoalResponse> {
   return request<ParseGoalResponse>("/parse-goal", {
     method: "POST",
     body: JSON.stringify({ message }),
+  });
+}
+
+export function postFeedback(body: FeedbackRequest): Promise<FeedbackResponse> {
+  return request<FeedbackResponse>("/feedback", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function trackEvent(
+  eventType: ProductEventType,
+  options?: {
+    feature?: string;
+    recommendation_id?: string;
+    properties?: Record<string, any>;
+  },
+): Promise<ProductEventResponse | null> {
+  return request<ProductEventResponse>("/events", {
+    method: "POST",
+    body: JSON.stringify({
+      event_type: eventType,
+      feature: options?.feature,
+      recommendation_id: options?.recommendation_id,
+      properties: options?.properties ?? {},
+    }),
+  }).catch((err) => {
+    // Non-blocking telemetry tracking
+    if (process.env.NODE_ENV !== "test") {
+      console.warn("Telemetry event failed to send:", err);
+    }
+    return null;
   });
 }

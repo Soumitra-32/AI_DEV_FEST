@@ -10,8 +10,9 @@ import InsightCard from "@/components/InsightCard";
 import DoNothingToggle from "@/components/DoNothingToggle";
 import Stamp from "@/components/Stamp";
 import { useLanguage } from "@/components/LangToggle";
-import { fetchAnomalies } from "@/lib/api";
+import { fetchAnomalies, trackEvent } from "@/lib/api";
 import type { AnomalyResponse } from "@/lib/api";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 import { formatBDT } from "@/lib/i18n";
 
 export default function SpendingPage() {
@@ -36,6 +37,7 @@ export default function SpendingPage() {
 
   useEffect(() => {
     load();
+    trackEvent("anomaly_viewed", { feature: "spending" });
   }, [load]);
 
   return (
@@ -122,6 +124,9 @@ export default function SpendingPage() {
             {data.provenance && (
               <InsightCard provenance={data.provenance} />
             )}
+
+            {/* Feedback Loop */}
+            <FeedbackWidget feature="spending" language={lang} />
 
             {/* Do Nothing Consent */}
             <DoNothingToggle

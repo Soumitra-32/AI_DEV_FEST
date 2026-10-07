@@ -17,7 +17,10 @@ import type { TranslationKey } from "@/lib/i18n";
 import { formatBDT, formatDigits, formatWrittenDate } from "@/lib/i18n";
 
 interface ForecastChartProps {
-  days: DayForecast[];
+  days?: DayForecast[];
+  isLoading?: boolean;
+  hasError?: boolean;
+  errorMessage?: string;
 }
 
 interface ChartPoint {
@@ -38,8 +41,55 @@ const REASON_KEY: Record<PressureReason, TranslationKey> = {
  * Authentic upay accounting palette: #0054A6 (Inflow), #B0431F (Outflow), #1E1B16 (Balance).
  * Zero gradients, flat zero elevation, #D8CFBB rule lines, 6px radius.
  */
-export default function ForecastChart({ days }: ForecastChartProps) {
+export default function ForecastChart({
+  days = [],
+  isLoading = false,
+  hasError = false,
+  errorMessage,
+}: ForecastChartProps) {
   const { lang, tr } = useLanguage();
+
+  if (isLoading) {
+    return (
+      <div
+        role="status"
+        aria-busy="true"
+        aria-label={tr("forecast.loading")}
+        className="w-full h-[320px] p-6 bg-[#FFFFFF] border border-[#D8CFBB] rounded-[6px] flex flex-col items-center justify-center space-y-3"
+      >
+        <div className="w-12 h-12 border-2 border-[#0054A6] border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs font-mono text-[#6A6355] animate-pulse">
+          {tr("forecast.loading")}
+        </p>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div
+        role="alert"
+        className="w-full h-[320px] p-6 bg-[#FFFFFF] border-l-[3px] border-[#B0431F] border border-[#D8CFBB] rounded-[6px] flex flex-col items-center justify-center space-y-2 text-center"
+      >
+        <p className="font-mono text-sm text-[#B0431F]">
+          {errorMessage || tr("error.title")}
+        </p>
+      </div>
+    );
+  }
+
+  if (days.length === 0) {
+    return (
+      <div
+        role="status"
+        className="w-full h-[320px] p-6 bg-[#FFFFFF] border border-[#D8CFBB] rounded-[6px] flex flex-col items-center justify-center space-y-2 text-center"
+      >
+        <p className="font-mono text-sm text-[#6A6355]">
+          {lang === "bn" ? "কোনো পূর্বাভাসের তথ্য পাওয়া যায়নি।" : "No forecast data available."}
+        </p>
+      </div>
+    );
+  }
 
   const points: ChartPoint[] = days.map((day) => ({
     label: formatDigits(day.date.slice(8, 10), lang),
