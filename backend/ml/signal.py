@@ -520,6 +520,13 @@ def _shap(model: Any, scaler: Any, scaled: np.ndarray) -> tuple[np.ndarray, floa
     intercept = np.asarray(model.intercept_, dtype=float).reshape(-1)
     values = np.asarray(scaled, dtype=float) * weights.reshape(1, -1)
     base = float(intercept[0]) if intercept.size else 0.0
+    # NaN/inf guard: a non-finite coefficient or input would poison every
+    # attribution and the band probability derived from them. A 0.0
+    # contribution is the honest neutral ("this feature did not move the
+    # decision"), and a non-finite base becomes 0.0 log-odds (p = 0.5).
+    values = np.where(np.isfinite(values), values, 0.0)
+    if not np.isfinite(base):
+        base = 0.0
     return values, base
 
 

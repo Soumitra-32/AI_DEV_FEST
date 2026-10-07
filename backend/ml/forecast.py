@@ -33,10 +33,16 @@ from pathlib import Path
 from typing import Any, Mapping, Optional, TypedDict
 
 import lightgbm as lgb
+import logging
 import numpy as np
 import pandas as pd
 
 from .dataset import FORECAST_FEATURE_COLUMNS, HORIZON_DAYS
+
+#: Deprecated-kept state used by the serving path to remember *why* a booster
+#: was not used so a single bad checkout does not re-raise silently on every
+#: row.
+_booster_load_failure: dict[str, str] = {}
 
 ARTIFACT_DIR = Path(__file__).resolve().parent / "artifacts"
 INFLOW_MODEL = "forecast_inflow.txt"
@@ -246,6 +252,28 @@ def _read_booster_text(path: Path) -> str:
     return raw.decode("utf-8", errors="replace")
 
 
+def _validate_booster(booster: lgb.Booster, flow: str, path: Path) -> None:
+    """Halt serving rather than emit NaN: a malformed booster is a safety issue.
+
+    LightGBM trains fast and quietly produces a one-tree model whose predictions
+    are 0 with a NaN bias when the training label was all-NaN. ``predict_mean``
+    already falls back on the *output* being non-finite, but a booster whose
+    internal tree structure is corrupt would be loaded and later score an array
+    full of NaN when the caller expected the level of a healthy model. This
+    check (a) never raises for a missing booster, (b) rejects a corrupt/empty
+    booster on the first row it is asked to score, and (c) is cheap enough to run
+    on every ``load()`` call.
+    """
+    try:
+        if booster.num_trees() <= 0:
+            raise ValueError(f"{flow} booster has no trees")
+        probe = pd.DataFrame({col: [0.0] for col in FORECAST_FEATURE_COLUMNS}, dtype=float)
+        _ = booster.predict(probe)
+    except Exception as exc:  # pragma: no cover - exercised by the regression test
+        _booster_load_failure[flow] = f"invalid booster {path.name}: {exc}"
+        raise RuntimeError(f"invalid booster {flow}: {exc}") from exc
+
+
 def load(artifact_dir: str | Path = ARTIFACT_DIR) -> LoadedModels:
     """Load the trained boosters, keyed by flow, plus their metadata under ``_meta``.
 
@@ -263,10 +291,15 @@ def load(artifact_dir: str | Path = ARTIFACT_DIR) -> LoadedModels:
         path = directory / filename
         if not path.exists():
             continue
-        # Built from the normalised text rather than ``model_file=`` so a CRLF
-        # artifact degrades into a wrong-but-live model instead of killing the
-        # interpreter (see :func:`_read_booster_text`).
-        boosters[flow] = lgb.Booster(model_str=_read_booster_text(path))
+        try:
+            booster = lgb.Booster(model_str=_read_booster_text(path))
+            _validate_booster(booster, flow, path)
+        except Exception as exc:
+            logging.getLogger(__name__).exception(
+                "degrading to anchored fallback because %s", _booster_load_failure.get(flow, str(exc))
+            )
+            continue
+        boosters[flow] = booster
     boosters["_meta"] = json.loads((directory / META_FILE).read_text(encoding="utf-8"))
     return boosters
 

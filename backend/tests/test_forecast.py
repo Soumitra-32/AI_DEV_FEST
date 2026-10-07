@@ -7,9 +7,13 @@ no-artifacts fallback) and the savings plan built from that forecast.
 
 from __future__ import annotations
 
+import os
+import tempfile
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+import json
 from pydantic import ValidationError
 
 from backend.app.schemas import ForecastRequest
@@ -426,4 +430,60 @@ def test_forecast_route_maps_drivers_into_the_response(monkeypatch, tmp_path) ->
         }
     ]
     assert captured["language"] == "en"
+
     assert captured["include_drivers"] is True
+
+
+def test_read_booster_text_normalizes_crlf_to_lf() -> None:
+    """C1: the loader must not choke on CRLF boosters.
+
+    ``lgb.Booster(model_file=...)`` aborts the whole process when a booster
+    file has CRLF endings. ``_read_booster_text`` collapses CRLF -> LF before
+    handing the text to LightGBM, so a CRLF artifact degrades instead of
+    aborting.
+    """
+    import tempfile
+
+    with tempfile.NamedTemporaryFile("wb", delete=False) as handle:
+        handle.write(b"lightgbm version = 4.7.0\r\ndata pointer = 0\r\n")
+        tmp_path = handle.name
+    try:
+        text = forecast._read_booster_text(Path(tmp_path))
+    finally:
+        os.remove(tmp_path)
+    assert chr(13) not in text
+    assert text.startswith("lightgbm version = 4.7.0\n")
+
+
+def test_forecast_model_loading_degrades_on_non_booster(tmp_path) -> None:
+    """C1: a directory with only a meta file must still serve a forecast.
+    The loader degrades to anchored fallback instead of raising.
+    """
+    artifacts = tmp_path / "artifacts"
+    artifacts.mkdir()
+    (artifacts / "forecast_meta.json").write_text(
+        json.dumps({"features": []}), encoding="utf-8"
+    )
+    boosters = forecast.load(artifacts)
+    assert "_meta" in boosters
+    assert "inflow" not in boosters
+    assert "outflow" not in boosters
+    # Minimal feature matrix: predict_mean requires the full forecast feature
+    # columns even though only the anchored levels are used.
+    feat_cols = [
+        "day_of_month", "weekday", "is_weekend", "is_month_end", "days_to_month_end",
+        "lag_1_net", "lag_2_net", "lag_3_net", "lag_7_net", "lag_14_net",
+        "lag_1_outflow", "lag_2_outflow", "lag_3_outflow", "lag_7_outflow", "lag_1_inflow",
+        "roll_3_inflow", "roll_3_outflow", "roll_3_net", "roll_7_inflow", "roll_7_outflow",
+        "roll_7_net", "roll_14_outflow", "roll_14_net", "roll_28_inflow", "roll_28_outflow",
+        "roll_28_net", "max_7_outflow", "shortfall_last_7", "mtd_inflow", "mtd_outflow",
+        "mtd_cash_out_bdt", "mtd_cash_out_count", "roll_7_cash_out_bdt", "roll_28_cash_out_bdt",
+        "days_since_cash_out", "balance_end_bdt",
+    ]
+    row = pd.DataFrame([{c: 0.0 for c in feat_cols}])
+    row["roll_28_inflow"] = [100.0]
+    row["roll_28_outflow"] = [60.0]
+    row["roll_28_net"] = [40.0]
+    flows = forecast.predict_mean(row, artifact_dir=artifacts)
+    assert np.isfinite(flows["mean_inflow"]).all()
+    assert np.isfinite(flows["mean_net"]).all()

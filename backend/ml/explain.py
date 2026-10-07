@@ -227,7 +227,15 @@ def shap_contributions(
         values = np.asarray(explainer.shap_values(matrix)).reshape(len(usable), -1)[:, 0]
     except Exception:  # pragma: no cover - shap version differences
         return {}
-    return {name: float(values[index]) for index, name in enumerate(usable)}
+    # NaN/inf guard: a TreeExplainer can emit non-finite values for degenerate
+    # trees or inputs. A NaN impact would render as "৳nan" in the UI and a
+    # comparison against it is always False, so the driver silently vanishes.
+    # Drop non-finite contributions rather than serve them.
+    return {
+        name: float(values[index])
+        for index, name in enumerate(usable)
+        if np.isfinite(values[index])
+    }
 
 
 def _driver_text(
